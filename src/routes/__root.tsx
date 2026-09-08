@@ -30,7 +30,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Start once. Train freely. A session is a sequence of sports.",
       },
-      { name: "theme-color", content: "#0a0a0b" },
+      { name: "theme-color", content: "#070708" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -50,7 +50,7 @@ export const Route = createRootRoute({
     ],
   }),
   component: () => (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-PT" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

@@ -2,6 +2,8 @@
 
 Start once. Train freely. Uma sessão não é um desporto — é uma sequência.
 
+**Língua do projeto: português de Portugal (pt-PT). Lei: Portugal e UE. Não é um produto brasileiro.**
+
 ## O que isto é (lê isto)
 
 Isto **não** é ainda a app nativa Android/iOS nem uma app Garmin Connect IQ.
@@ -10,14 +12,14 @@ Isto **é**:
 
 1. O **motor de produto** (`Session → Event → Segment → métricas`), com timeseries como fonte de verdade.
 2. Um **laboratório web jogável**: Start / Change / Stop, histórico local, face de relógio (estudo de UX).
-3. A **base legal mínima** para um pré-lançamento na UE/Portugal (privacidade, cookies, termos, copyright).
+3. A **base legal mínima** para um pré-lançamento em Portugal / União Europeia (privacidade, cookies, termos, direitos de autor).
 
 Estamos a construir o produto a sério no domínio. A superfície atual é um protótipo web funcional — rápido de iterar, honesto sobre GPS simulado, insuficiente para quem treina só com o relógio.
 
 O caminho de produção:
 
 ```
-domínio Afterlap  →  Flutter (telefone)  →  Connect IQ (Garmin)
+domínio Afterlap  →  Flutter (telemóvel)  →  Connect IQ (Garmin)
                          ↑
                    este repo (lab + leis)
 ```
@@ -35,6 +37,8 @@ Textos na app:
 
 Versão atual: **sem contas, sem cookies de rastreio, treinos só no dispositivo.**
 
+Fora de âmbito: Brasil, LGPD, português do Brasil.
+
 ## Stack do lab web
 
 TanStack Start, React, Tailwind, Zustand, `localStorage`.
@@ -49,7 +53,7 @@ Não há autenticação nem base de dados de utilizador.
 - `engine.ts` — rebuild de segmentos a partir do log de eventos; métricas
 - `store.ts` — persistência local e recuperação de sessão viva
 
-UI não é a fonte de verdade. Os eventos são.
+A interface não é a fonte de verdade. Os eventos são.
 
 ## Marcas
 
