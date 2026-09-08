@@ -1,12 +1,7 @@
-# Afterlap — regras de projeto
+# Notas de origem (Grok Build)
 
-## Língua e jurisdição (obrigatório)
+Este projeto no sandbox Grok Build foi escrito pelo **Grok / Grok Build**.
 
-- Português de Portugal (**pt-PT**). Tu, telemóvel, ecrã, aplicação, registo, ficheiro.
-- Lei: **Portugal** e **União Europeia** (RGPD, Lei 58/2019, CNPD).
-- **Proibido:** Brasil, LGPD, ANPD, português brasileiro (você, celular, tela, aplicativo).
-- Pesquisa legal e de produto: fontes PT/UE.
-
-## Produto
-
-Laboratório web do Afterlap. O motor de sessão é real. GPS nativo, Garmin e lojas: **Claude Code**, ver `CLAUDE.md`.
+- Língua usada no lab: português de Portugal (pt-PT).
+- Lei usada nos textos: Portugal e União Europeia (RGPD, Lei 58/2019, CNPD). O Grok não usou lei brasileira.
+- Contexto e estado: `GROK.md` e `README.md`. Não são instruções a outras ferramentas.
