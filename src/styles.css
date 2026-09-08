@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #070708;
+  --color-foreground: #f3f1ec;
+  --color-elevated: #101012;
+  --color-card: #121214;
+  --color-secondary: #1c1c20;
+  --color-muted: #9c9ca4;
+  --color-subtle: #6e6e76;
+  --color-border: color-mix(in oklab, #f3f1ec 11%, transparent);
+  --color-border-strong: color-mix(in oklab, #f3f1ec 22%, transparent);
+  --color-primary: #e8e4db;
+  --color-primary-foreground: #0b0b0c;
+  --color-secondary-foreground: #f3f1ec;
+  --color-muted-foreground: #9c9ca4;
+  --color-ring: #e8e4db;
+  --color-danger: #c45c52;
+  --color-danger-foreground: #f3f1ec;
+  --color-overlay: color-mix(in oklab, #070708 78%, transparent);
+  --color-map: #0c0c0e;
+  --color-track: #e8e4db;
+  --color-track-ghost: color-mix(in oklab, #e8e4db 18%, transparent);
+  --color-bezel: #2a2a2e;
+  --color-watch: #050506;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --motion-quick: 150ms;
+  --motion-fast: 250ms;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    min-height: 100%;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  #app {
+    min-height: 100dvh;
+  }
+}
+
+.pulse-dot {
+  transform-origin: center;
+  animation: pulse-dot 1.6s var(--ease-out) infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.grain {
+  background-image: radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--color-primary) 7%, transparent), transparent 42%);
+}
+
+.watch-ticks {
+  background:
+    repeating-conic-gradient(from 0deg, var(--color-bezel) 0deg 1.2deg, transparent 1.2deg 30deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot {
+    animation: none;
+  }
+}

@@ -1,0 +1,14 @@
+Afterlap inclui software de terceiros. Licenças originais prevalecem.
+
+- React, React DOM — MIT, Meta
+- TanStack Router / Start / Query / Table — MIT
+- Zustand — MIT
+- Lucide React — ISC
+- class-variance-authority, clsx, tailwind-merge — MIT
+- Radix UI Slot — MIT
+- Tailwind CSS — MIT
+- IBM Plex Sans / Mono — SIL Open Font License 1.1
+- Barlow Condensed — SIL Open Font License 1.1
+
+Garmin, Strava, Apple, Ironman e outras marcas citadas na documentação
+pertencem aos respetivos titulares. Sem afiliação.
