@@ -128,6 +128,17 @@ export function distanceMeters(samples: Sample[]): number {
   return total;
 }
 
+/**
+ * Samples that belong to a segment. Both bounds are inclusive on purpose: a
+ * sample that sits exactly on a sport-change boundary is the last point of the
+ * previous segment and the first point of the next one, so distance stays
+ * continuous across the change (no gap between segments).
+ */
+export function samplesForSegment(session: Session, segment: Segment, at = nowMs()): Sample[] {
+  const end = segment.endAt ?? (session.status === "live" ? at : sessionBounds(session).end);
+  return samplesInRange(session.samples, segment.startAt, end);
+}
+
 export function metricsFor(
   samples: Sample[],
   startAt: number,
@@ -180,24 +191,24 @@ export function formatSpeedKmh(mps: number) {
   return `${(mps * 3.6).toFixed(1)} km/h`;
 }
 
-export function formatClock(ts: number) {
-  return new Date(ts).toLocaleTimeString(undefined, {
+export function formatClock(ts: number, locale?: string) {
+  return new Date(ts).toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-export function formatDay(ts: number) {
-  return new Date(ts).toLocaleDateString(undefined, {
+export function formatDay(ts: number, locale?: string) {
+  return new Date(ts).toLocaleDateString(locale, {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
 }
 
-export function createLiveSession(sport: Sport, at = nowMs()): Session {
+export function createLiveSession(sport: Sport, at = nowMs(), id = newId()): Session {
   return {
-    id: newId(),
+    id,
     createdAt: at,
     status: "live",
     events: [{ type: "started", at, sport }],
@@ -232,6 +243,14 @@ export function applyRecovered(session: Session, at = nowMs()): Session {
     ...session,
     events: [...session.events, { type: "recovered", at }],
   };
+}
+
+/**
+ * Mark every live session as recovered (app restarted, tab reopened). Stopped
+ * sessions are returned untouched. Used by persistence adapters on hydrate.
+ */
+export function recoverLiveSessions(sessions: Session[], at = nowMs()): Session[] {
+  return sessions.map((s) => (s.status === "live" ? applyRecovered(s, at) : s));
 }
 
 export function appendSample(session: Session, sample: Sample): Session {

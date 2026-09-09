@@ -1,5 +1,5 @@
 import { destination, typicalSpeed } from "./engine";
-import type { Sample, Sport } from "./types";
+import type { GpsCoords, Sample, Sport } from "./types";
 
 export const LISBON = { lat: 38.7223, lng: -9.1393 };
 
@@ -17,9 +17,18 @@ export function createSim(origin = LISBON): SimState {
   };
 }
 
-export function stepSim(state: SimState, sport: Sport, dtMs: number): SimState {
+/**
+ * Advance the simulated walker by `dtMs` at the sport's typical speed with a
+ * small heading jitter. `rng` is injectable so tests are deterministic.
+ */
+export function stepSim(
+  state: SimState,
+  sport: Sport,
+  dtMs: number,
+  rng: () => number = Math.random,
+): SimState {
   const speed = typicalSpeed(sport);
-  const jitter = (Math.random() - 0.5) * 0.18;
+  const jitter = (rng() - 0.5) * 0.18;
   const heading = state.heading + jitter;
   const meters = speed * (dtMs / 1000);
   const next = destination(state.lat, state.lng, heading, meters);
@@ -40,15 +49,13 @@ export function sampleFromSim(
   };
 }
 
-export function sampleFromGps(
-  coords: GeolocationCoordinates,
-  t: number,
-): Sample {
+export function sampleFromGps(coords: GpsCoords, t: number): Sample {
+  const speed = coords.speed ?? 0;
   return {
     t,
     lat: coords.latitude,
     lng: coords.longitude,
-    speedMps: coords.speed && coords.speed > 0 ? coords.speed : 0,
+    speedMps: speed > 0 ? speed : 0,
     source: "gps",
   };
 }

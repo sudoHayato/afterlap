@@ -21,6 +21,17 @@ export type Sample = {
   source: "sim" | "gps";
 };
 
+/**
+ * Minimal structural shape of a GPS fix. Matches the browser's
+ * `GeolocationCoordinates` and Expo's `LocationObjectCoords` without importing
+ * either, so the engine stays platform-free.
+ */
+export type GpsCoords = {
+  latitude: number;
+  longitude: number;
+  speed?: number | null;
+};
+
 export type SessionStatus = "live" | "stopped";
 
 export type Session = {
