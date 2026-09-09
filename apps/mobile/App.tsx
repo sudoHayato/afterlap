@@ -56,6 +56,17 @@ const COLORS = {
 
 const CLOCK_TICK_MS = 250;
 const GPS_TICK_MS = 1000;
+const RESET_GUARD_MS = 700;
+
+/** True once `ms` have elapsed since mount. */
+function useArmedAfter(ms: number): boolean {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setArmed(true), ms);
+    return () => clearTimeout(id);
+  }, [ms]);
+  return armed;
+}
 
 function paceOrSpeed(sport: Sport, m: SegmentMetrics): string | null {
   const kind = SPORT_META[sport].paceKind;
@@ -106,6 +117,8 @@ export default function App() {
       const sample = tickSim();
       if (!sample) return;
       setSession((prev) => (prev ? appendSample(prev, sample) : prev));
+      // Keep `now` >= the newest sample so live metrics include it at once.
+      setNow(sample.t);
     }, GPS_TICK_MS);
     return () => {
       clearInterval(clock);
@@ -276,6 +289,10 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
   const { session } = props;
   const total = sessionMetrics(session);
   const segments = segmentsFromEvents(session.events);
+  // "Parar" and "Nova sessão" can occupy the same screen rect across the
+  // live → summary re-render; ignore taps for a moment so a double tap on
+  // Parar cannot discard the session (there is no persistence yet).
+  const armed = useArmedAfter(RESET_GUARD_MS);
 
   return (
     <View style={styles.stack}>
@@ -291,7 +308,7 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
 
       <SegmentList session={session} now={Date.now()} />
 
-      <Button label="Nova sessão" kind="primary" big onPress={props.onReset} />
+      <Button label="Nova sessão" kind="primary" big disabled={!armed} onPress={props.onReset} />
     </View>
   );
 }
@@ -372,6 +389,7 @@ function Button(props: {
   label: string;
   kind: ButtonKind;
   big?: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   const box =
@@ -387,12 +405,14 @@ function Button(props: {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: props.disabled === true }}
+      disabled={props.disabled}
       onPress={props.onPress}
       style={({ pressed }) => [
         styles.btn,
         box,
         props.big && styles.btnBig,
-        pressed && styles.pressed,
+        (pressed || props.disabled) && styles.pressed,
       ]}
     >
       <Text style={[text, props.big && styles.btnTextBig]}>{props.label}</Text>
@@ -406,8 +426,10 @@ function Button(props: {
 
 // Edge-to-edge is mandatory on Android 16, and react-native's SafeAreaView is
 // deprecated (and a no-op on Android), so pad the status bar height by hand.
+// Bottom: the 3-button navigation bar is 48dp; keep the last button clear of it.
+// TODO(Fase 2): react-native-safe-area-context for real insets.
 const TOP_INSET = (RNStatusBar.currentHeight ?? 0) + 16;
-const BOTTOM_INSET = 40;
+const BOTTOM_INSET = 48 + 16;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
