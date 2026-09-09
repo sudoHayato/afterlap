@@ -86,10 +86,10 @@ describe("stepSim", () => {
     expect(haversineMeters(start, next)).toBeCloseTo(typicalSpeed("walk"), 3);
   });
 
-  it("dt = 0 stays in place", () => {
+  it("dt = 0 stays in place; a negative dt (clock stepped back) also stays in place", () => {
     const start = createSim();
-    const next = stepSim(start, "run", 0, () => 0.5);
-    expect(haversineMeters(start, next)).toBeCloseTo(0, 6);
+    expect(haversineMeters(start, stepSim(start, "run", 0, () => 0.5))).toBeCloseTo(0, 6);
+    expect(haversineMeters(start, stepSim(start, "run", -1_000, () => 0.5))).toBeCloseTo(0, 6);
   });
 });
 

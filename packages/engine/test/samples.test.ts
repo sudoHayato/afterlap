@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   distanceMeters,
   durationMs,
+  interpolateAt,
+  isLive,
   metricsFor,
+  samplesBetween,
   samplesForSegment,
   samplesInRange,
   segmentMetrics,
   segmentsFromEvents,
   sessionBounds,
   sessionMetrics,
+  type Sample,
 } from "../src";
 import { makeSession, sampleAt, track } from "./helpers";
 
@@ -32,6 +36,53 @@ describe("samplesInRange", () => {
   });
 });
 
+describe("interpolateAt", () => {
+  const a: Sample = { t: 0, lat: 10, lng: 20, speedMps: 2, source: "gps" };
+  const b: Sample = { t: 10_000, lat: 11, lng: 22, speedMps: 4, source: "sim" };
+
+  it("interpolates position and speed linearly in time, keeping the earlier source", () => {
+    expect(interpolateAt([a, b], 2_500)).toEqual({
+      t: 2_500,
+      lat: 10.25,
+      lng: 20.5,
+      speedMps: 2.5,
+      source: "gps",
+    });
+  });
+
+  it("is null outside the recorded span or when a sample already sits at t", () => {
+    expect(interpolateAt([a, b], -1)).toBeNull();
+    expect(interpolateAt([a, b], 10_001)).toBeNull();
+    expect(interpolateAt([a, b], 0)).toBeNull();
+    expect(interpolateAt([a, b], 10_000)).toBeNull();
+    expect(interpolateAt([], 5)).toBeNull();
+    expect(interpolateAt([a], 5)).toBeNull();
+  });
+});
+
+describe("samplesBetween — janela com fronteiras interpoladas", () => {
+  it("returns real samples when they sit exactly on both bounds", () => {
+    expect(samplesBetween(SAMPLES, 5_000, 15_000)).toEqual(samplesInRange(SAMPLES, 5_000, 15_000));
+  });
+
+  it("synthesises a sample on a bound that falls between two real samples", () => {
+    const out = samplesBetween(SAMPLES, 2_500, 12_500);
+    expect(out.map((s) => s.t)).toEqual([2_500, 5_000, 10_000, 12_500]);
+    expect(out[0]!.source).toBe("sim");
+  });
+
+  it("does not synthesise beyond the recorded span", () => {
+    expect(samplesBetween(SAMPLES, -5_000, 2_500).map((s) => s.t)).toEqual([0, 2_500]);
+    expect(samplesBetween(SAMPLES, 17_500, 30_000).map((s) => s.t)).toEqual([17_500, 20_000]);
+  });
+
+  it("an inverted window is empty; a zero-length window yields at most one sample", () => {
+    expect(samplesBetween(SAMPLES, 15_000, 5_000)).toEqual([]);
+    expect(samplesBetween(SAMPLES, 5_000, 5_000).map((s) => s.t)).toEqual([5_000]);
+    expect(samplesBetween(SAMPLES, 7_500, 7_500).map((s) => s.t)).toEqual([7_500]);
+  });
+});
+
 describe("samplesForSegment — atribuição de amostras a segmentos", () => {
   const [run, bike] = segmentsFromEvents(STOPPED.events);
 
@@ -46,24 +97,32 @@ describe("samplesForSegment — atribuição de amostras a segmentos", () => {
     expect(samplesForSegment(STOPPED, bike!)).toContain(boundary);
   });
 
-  it("a sample 1 ms after the boundary belongs only to the next segment", () => {
-    const s = makeSession([...EVENTS], [sampleAt(9_999, 0), sampleAt(10_001, 10)]);
+  it("a leg that straddles the boundary is split: both segments get an interpolated boundary sample", () => {
+    // 10 m in 2 s (5 m/s) from 9 s to 11 s; the change is at 10 s, between the two samples.
+    const s = makeSession([...EVENTS], [sampleAt(9_000, 0), sampleAt(11_000, 10)]);
     const [a, b] = segmentsFromEvents(s.events);
-    expect(samplesForSegment(s, a!).map((x) => x.t)).toEqual([9_999]);
-    expect(samplesForSegment(s, b!).map((x) => x.t)).toEqual([10_001]);
+    const inA = samplesForSegment(s, a!);
+    const inB = samplesForSegment(s, b!);
+    expect(inA.map((x) => x.t)).toEqual([9_000, 10_000]);
+    expect(inB.map((x) => x.t)).toEqual([10_000, 11_000]);
+    expect(inA[1]).toEqual(inB[0]);
+    expect(distanceMeters(inA)).toBeCloseTo(5, 3);
+    expect(distanceMeters(inB)).toBeCloseTo(5, 3);
+    expect(distanceMeters(inA) + distanceMeters(inB)).toBeCloseTo(distanceMeters(s.samples), 6);
   });
 
-  it("because the boundary sample is shared, segment distances add up to the session distance", () => {
+  it("segment distances add up to the session distance (shared boundary sample)", () => {
     const perSegment = [run!, bike!].map((seg) => distanceMeters(samplesForSegment(STOPPED, seg)));
     const total = distanceMeters(STOPPED.samples);
     expect(perSegment[0]! + perSegment[1]!).toBeCloseTo(total, 6);
     expect(total).toBeCloseTo(40, 3);
   });
 
-  it("the open segment of a live session ends at `at`", () => {
+  it("the open segment of a live session ends at `at`, interpolating there if needed", () => {
     const live = makeSession([{ type: "started", at: 0, sport: "run" }], SAMPLES, "live");
     const [seg] = segmentsFromEvents(live.events);
-    expect(samplesForSegment(live, seg!, 12_000).map((s) => s.t)).toEqual([0, 5_000, 10_000]);
+    expect(samplesForSegment(live, seg!, 12_000).map((s) => s.t)).toEqual([0, 5_000, 10_000, 12_000]);
+    expect(samplesForSegment(live, seg!, 10_000).map((s) => s.t)).toEqual([0, 5_000, 10_000]);
   });
 
   it("an open segment of a stopped session (no 'stopped' event) ends at the last sample", () => {
@@ -73,9 +132,26 @@ describe("samplesForSegment — atribuição de amostras a segmentos", () => {
   });
 });
 
-describe("sessionBounds", () => {
+describe("isLive / sessionBounds — eventos mandam sobre o status", () => {
+  it("isLive needs status live AND no 'stopped' event", () => {
+    expect(isLive(makeSession([{ type: "started", at: 0, sport: "run" }]))).toBe(true);
+    expect(isLive(STOPPED)).toBe(false);
+    const stale = makeSession([{ type: "started", at: 0, sport: "run" }, { type: "stopped", at: 10_000 }], [], "live");
+    expect(isLive(stale)).toBe(false);
+  });
+
   it("start = first 'started', end = 'stopped'", () => {
     expect(sessionBounds(STOPPED)).toEqual({ start: 0, end: 20_000 });
+  });
+
+  it("with two 'stopped' events the LAST wins, same as segmentsFromEvents", () => {
+    const twice = makeSession([
+      { type: "started", at: 0, sport: "run" },
+      { type: "stopped", at: 10 },
+      { type: "stopped", at: 99 },
+    ]);
+    expect(sessionBounds(twice).end).toBe(99);
+    expect(segmentsFromEvents(twice.events)[0]!.endAt).toBe(99);
   });
 
   it("falls back to the last sample when there is no 'stopped'", () => {
@@ -100,6 +176,20 @@ describe("durationMs", () => {
 
   it("stopped: stop minus start, ignoring `at`", () => {
     expect(durationMs(STOPPED, 999_999)).toBe(20_000);
+  });
+
+  it("status live but a 'stopped' event recorded: the event wins", () => {
+    const stale = makeSession([{ type: "started", at: 0, sport: "run" }, { type: "stopped", at: 10_000 }], SAMPLES, "live");
+    expect(durationMs(stale, 50_000)).toBe(10_000);
+    expect(sessionMetrics(stale, 50_000).durationMs).toBe(10_000);
+    const [seg] = segmentsFromEvents(stale.events);
+    expect(segmentMetrics(stale, seg!, 50_000).durationMs).toBe(10_000);
+  });
+
+  it("stopped without a 'stopped' event: last sample, or zero without samples", () => {
+    const odd = makeSession([{ type: "started", at: 0, sport: "run" }], SAMPLES, "stopped");
+    expect(durationMs(odd, 1)).toBe(20_000);
+    expect(durationMs({ ...odd, samples: [] }, 1)).toBe(0);
   });
 
   it("never negative", () => {
@@ -131,11 +221,12 @@ describe("metricsFor / segmentMetrics / sessionMetrics", () => {
     expect(segmentMetrics(STOPPED, bike!).distanceM).toBeCloseTo(20, 3);
   });
 
-  it("segmentMetrics of the open segment of a live session grows with `at`", () => {
+  it("segmentMetrics of the open segment of a live session grows with `at`, pro rata between samples", () => {
     const live = makeSession([{ type: "started", at: 0, sport: "run" }], SAMPLES, "live");
     const [seg] = segmentsFromEvents(live.events);
     expect(segmentMetrics(live, seg!, 5_000).durationMs).toBe(5_000);
     expect(segmentMetrics(live, seg!, 5_000).distanceM).toBeCloseTo(10, 3);
+    expect(segmentMetrics(live, seg!, 7_500).distanceM).toBeCloseTo(15, 3);
     expect(segmentMetrics(live, seg!, 20_000).distanceM).toBeCloseTo(40, 3);
   });
 
@@ -151,6 +242,11 @@ describe("metricsFor / segmentMetrics / sessionMetrics", () => {
 
     const live = makeSession([{ type: "started", at: 0, sport: "run" }], SAMPLES, "live");
     expect(sessionMetrics(live, 7_500)).toMatchObject({ durationMs: 7_500 });
-    expect(sessionMetrics(live, 7_500).distanceM).toBeCloseTo(10, 3);
+    expect(sessionMetrics(live, 7_500).distanceM).toBeCloseTo(15, 3);
+  });
+
+  it("sessionMetrics ignores samples recorded after the stop (up to the stop instant only)", () => {
+    const stray = makeSession([...EVENTS], [...SAMPLES, sampleAt(25_000, 999)]);
+    expect(sessionMetrics(stray).distanceM).toBeCloseTo(40, 3);
   });
 });

@@ -10,6 +10,12 @@ import {
 
 const EARTH_M = 6_371_000;
 
+/** Legs faster than this are GPS teleports and are ignored by distanceMeters. */
+export const MAX_PLAUSIBLE_SPEED_MPS = 55;
+
+/** Two 'recovered' events closer than this are collapsed into one. */
+export const RECOVERED_DEDUPE_MS = 2000;
+
 export function nowMs() {
   return Date.now();
 }
@@ -97,9 +103,27 @@ export function currentSport(events: SessionEvent[]): Sport | null {
   return segs[segs.length - 1]!.sport;
 }
 
+/** Time of the last 'stopped' event, if any. The last one wins, like in segmentsFromEvents. */
+function lastStoppedAt(events: SessionEvent[]): number | undefined {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i]!;
+    if (e.type === "stopped") return e.at;
+  }
+  return undefined;
+}
+
+/**
+ * A session is live only while its status says so AND no 'stopped' event
+ * exists. Events are the source of truth, so a stale status never reopens a
+ * session that already recorded its stop.
+ */
+export function isLive(session: Session): boolean {
+  return session.status === "live" && lastStoppedAt(session.events) === undefined;
+}
+
 export function sessionBounds(session: Session): { start: number; end: number } {
   const start = session.events.find((e) => e.type === "started")?.at ?? session.createdAt;
-  const stopped = session.events.find((e) => e.type === "stopped")?.at;
+  const stopped = lastStoppedAt(session.events);
   const lastSample = session.samples.at(-1)?.t;
   const end = stopped ?? lastSample ?? start;
   return { start, end };
@@ -107,12 +131,62 @@ export function sessionBounds(session: Session): { start: number; end: number } 
 
 export function durationMs(session: Session, at = nowMs()) {
   const { start, end } = sessionBounds(session);
-  if (session.status === "live") return Math.max(0, at - start);
+  if (isLive(session)) return Math.max(0, at - start);
   return Math.max(0, end - start);
 }
 
+/** Plain filter: samples with start <= t <= end. No interpolation. */
 export function samplesInRange(samples: Sample[], start: number, end: number) {
   return samples.filter((s) => s.t >= start && s.t <= end);
+}
+
+/**
+ * Sample synthesised at time `t` by linear interpolation between the last
+ * sample before `t` and the first one after it. Null when `t` is outside the
+ * recorded span or when a real sample already sits exactly at `t`. Assumes
+ * chronological samples.
+ */
+export function interpolateAt(samples: Sample[], t: number): Sample | null {
+  let before: Sample | null = null;
+  let after: Sample | null = null;
+  for (const s of samples) {
+    if (s.t < t) {
+      before = s;
+    } else if (s.t > t) {
+      after = s;
+      break;
+    } else {
+      return null;
+    }
+  }
+  if (!before || !after) return null;
+  const f = (t - before.t) / (after.t - before.t);
+  return {
+    t,
+    lat: before.lat + (after.lat - before.lat) * f,
+    lng: before.lng + (after.lng - before.lng) * f,
+    speedMps: before.speedMps + (after.speedMps - before.speedMps) * f,
+    source: before.source,
+  };
+}
+
+/**
+ * Samples that belong to the window [start, end]. Both bounds are inclusive,
+ * and when no real sample sits exactly on a bound but samples exist on both
+ * sides of it, a sample is interpolated there. So a leg that straddles a
+ * sport change is split between the two segments instead of being lost, and
+ * the segment distances add up to the session distance whatever the sampling
+ * cadence.
+ */
+export function samplesBetween(samples: Sample[], start: number, end: number): Sample[] {
+  if (end < start) return [];
+  const inside = samplesInRange(samples, start, end);
+  const head = inside[0]?.t === start ? null : interpolateAt(samples, start);
+  const tail = start === end || inside.at(-1)?.t === end ? null : interpolateAt(samples, end);
+  const out = inside.slice();
+  if (head) out.unshift(head);
+  if (tail) out.push(tail);
+  return out;
 }
 
 export function distanceMeters(samples: Sample[]): number {
@@ -122,21 +196,19 @@ export function distanceMeters(samples: Sample[]): number {
     const b = samples[i]!;
     const d = haversineMeters(a, b);
     const dt = Math.max(0.001, (b.t - a.t) / 1000);
-    if (d / dt > 55) continue;
+    if (d / dt > MAX_PLAUSIBLE_SPEED_MPS) continue;
     total += d;
   }
   return total;
 }
 
-/**
- * Samples that belong to a segment. Both bounds are inclusive on purpose: a
- * sample that sits exactly on a sport-change boundary is the last point of the
- * previous segment and the first point of the next one, so distance stays
- * continuous across the change (no gap between segments).
- */
+function segmentEnd(session: Session, segment: Segment, at: number): number {
+  return segment.endAt ?? (isLive(session) ? at : sessionBounds(session).end);
+}
+
+/** Samples of a segment (see samplesBetween for the boundary rules). */
 export function samplesForSegment(session: Session, segment: Segment, at = nowMs()): Sample[] {
-  const end = segment.endAt ?? (session.status === "live" ? at : sessionBounds(session).end);
-  return samplesInRange(session.samples, segment.startAt, end);
+  return samplesBetween(session.samples, segment.startAt, segmentEnd(session, segment, at));
 }
 
 export function metricsFor(
@@ -144,7 +216,7 @@ export function metricsFor(
   startAt: number,
   endAt: number,
 ): SegmentMetrics {
-  const slice = samplesInRange(samples, startAt, endAt);
+  const slice = samplesBetween(samples, startAt, endAt);
   const durationMs = Math.max(0, endAt - startAt);
   const distanceM = distanceMeters(slice);
   const avgSpeedMps = durationMs > 0 ? distanceM / (durationMs / 1000) : 0;
@@ -152,14 +224,12 @@ export function metricsFor(
 }
 
 export function sessionMetrics(session: Session, at = nowMs()) {
-  const { start } = sessionBounds(session);
-  const end = session.status === "live" ? at : sessionBounds(session).end;
-  return metricsFor(session.samples, start, end);
+  const { start, end } = sessionBounds(session);
+  return metricsFor(session.samples, start, isLive(session) ? at : end);
 }
 
 export function segmentMetrics(session: Session, segment: Segment, at = nowMs()) {
-  const end = segment.endAt ?? (session.status === "live" ? at : sessionBounds(session).end);
-  return metricsFor(session.samples, segment.startAt, end);
+  return metricsFor(session.samples, segment.startAt, segmentEnd(session, segment, at));
 }
 
 export function formatDuration(ms: number) {
@@ -173,7 +243,8 @@ export function formatDuration(ms: number) {
 }
 
 export function formatDistance(meters: number) {
-  if (meters < 1000) return `${Math.round(meters)} m`;
+  const rounded = Math.round(meters);
+  if (rounded < 1000) return `${rounded} m`;
   return `${(meters / 1000).toFixed(meters >= 10_000 ? 1 : 2)} km`;
 }
 
@@ -181,8 +252,10 @@ export function formatPace(meters: number, durationMs: number) {
   if (meters < 20) return "—";
   const secPerKm = durationMs / 1000 / (meters / 1000);
   if (!Number.isFinite(secPerKm) || secPerKm <= 0 || secPerKm > 3600) return "—";
-  const m = Math.floor(secPerKm / 60);
-  const s = Math.round(secPerKm % 60);
+  // Round the total first so 299.6 s reads 5:00, never 4:60.
+  const total = Math.round(secPerKm);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${s.toString().padStart(2, "0")}/km`;
 }
 
@@ -217,9 +290,10 @@ export function createLiveSession(sport: Sport, at = nowMs(), id = newId()): Ses
 }
 
 export function applyChange(session: Session, sport: Sport, at = nowMs()): Session {
-  if (session.status !== "live") return session;
+  if (!isLive(session)) return session;
   const current = currentSport(session.events);
-  if (current === sport) return session;
+  // No open segment (no 'started' yet) or same sport: nothing to record.
+  if (current === null || current === sport) return session;
   return {
     ...session,
     events: [...session.events, { type: "sport_changed", at, sport }],
@@ -228,6 +302,8 @@ export function applyChange(session: Session, sport: Sport, at = nowMs()): Sessi
 
 export function applyStop(session: Session, at = nowMs()): Session {
   if (session.status !== "live") return session;
+  // A 'stopped' event already recorded: only the stale status needs fixing.
+  if (lastStoppedAt(session.events) !== undefined) return { ...session, status: "stopped" };
   return {
     ...session,
     status: "stopped",
@@ -236,9 +312,9 @@ export function applyStop(session: Session, at = nowMs()): Session {
 }
 
 export function applyRecovered(session: Session, at = nowMs()): Session {
-  if (session.status !== "live") return session;
+  if (!isLive(session)) return session;
   const last = session.events.at(-1);
-  if (last?.type === "recovered" && at - last.at < 2000) return session;
+  if (last?.type === "recovered" && at - last.at < RECOVERED_DEDUPE_MS) return session;
   return {
     ...session,
     events: [...session.events, { type: "recovered", at }],
@@ -250,11 +326,11 @@ export function applyRecovered(session: Session, at = nowMs()): Session {
  * sessions are returned untouched. Used by persistence adapters on hydrate.
  */
 export function recoverLiveSessions(sessions: Session[], at = nowMs()): Session[] {
-  return sessions.map((s) => (s.status === "live" ? applyRecovered(s, at) : s));
+  return sessions.map((s) => (isLive(s) ? applyRecovered(s, at) : s));
 }
 
 export function appendSample(session: Session, sample: Sample): Session {
-  if (session.status !== "live") return session;
+  if (!isLive(session)) return session;
   return { ...session, samples: [...session.samples, sample] };
 }
 

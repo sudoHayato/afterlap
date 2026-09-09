@@ -30,6 +30,11 @@ describe("formatDistance", () => {
     expect(formatDistance(12.6)).toBe("13 m");
   });
 
+  it("switches to km when the rounded value reaches 1000 (never prints '1000 m')", () => {
+    expect(formatDistance(999.5)).toBe("1.00 km");
+    expect(formatDistance(999.999)).toBe("1.00 km");
+  });
+
   it("two decimals under 10 km, one decimal from 10 km", () => {
     expect(formatDistance(1_000)).toBe("1.00 km");
     expect(formatDistance(1_234)).toBe("1.23 km");
@@ -56,6 +61,12 @@ describe("formatPace", () => {
     expect(formatPace(1_000, 0)).toBe("—");
     expect(formatPace(1_000, 3_600_000)).toBe("60:00/km");
     expect(formatPace(1_000, 3_601_000)).toBe("—");
+  });
+
+  it("never renders 60 seconds: 299.6 s/km is 5:00, not 4:60", () => {
+    expect(formatPace(1_000, 299_600)).toBe("5:00/km");
+    expect(formatPace(1_000, 359_990)).toBe("6:00/km");
+    expect(formatPace(1_000, 3_599_900)).toBe("60:00/km");
   });
 });
 

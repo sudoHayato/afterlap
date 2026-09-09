@@ -8,6 +8,7 @@ import {
   newId,
   nowMs,
   segmentsFromEvents,
+  sessionBounds,
 } from "../src";
 import { makeSession, sampleAt } from "./helpers";
 
@@ -65,6 +66,17 @@ describe("applyChange", () => {
     expect(applyChange(stopped, "bike", 20)).toBe(stopped);
   });
 
+  it("is a no-op when there is no open segment yet (no 'started' event)", () => {
+    const empty = makeSession([], [], "live");
+    expect(applyChange(empty, "bike", 5)).toBe(empty);
+    expect(segmentsFromEvents(applyChange(empty, "bike", 5).events)).toEqual([]);
+  });
+
+  it("is a no-op when a 'stopped' event exists even if the status is stale", () => {
+    const stale = makeSession([{ type: "started", at: 0, sport: "run" }, { type: "stopped", at: 10 }], [], "live");
+    expect(applyChange(stale, "bike", 20)).toBe(stale);
+  });
+
   it("does not mutate the input", () => {
     const s = createLiveSession("run", 0, "a");
     applyChange(s, "walk", 1);
@@ -93,6 +105,14 @@ describe("applyStop", () => {
     expect(stopped.events.filter((e) => e.type === "stopped")).toHaveLength(1);
   });
 
+  it("with a stale live status but a 'stopped' event already recorded, only the status is fixed", () => {
+    const stale = makeSession([{ type: "started", at: 0, sport: "run" }, { type: "stopped", at: 10 }], [], "live");
+    const fixed = applyStop(stale, 99);
+    expect(fixed.status).toBe("stopped");
+    expect(fixed.events).toEqual(stale.events);
+    expect(sessionBounds(fixed).end).toBe(10);
+  });
+
   it("uses the current time by default", () => {
     const before = Date.now();
     const stopped = applyStop(createLiveSession("run", 0, "a"));
@@ -109,12 +129,14 @@ describe("appendSample", () => {
     expect(next).not.toBe(s);
   });
 
-  it("is a no-op on a stopped session", () => {
+  it("is a no-op on a stopped session, or once a 'stopped' event exists", () => {
     const stopped = makeSession([
       { type: "started", at: 0, sport: "run" },
       { type: "stopped", at: 1 },
     ]);
     expect(appendSample(stopped, sampleAt(2, 1))).toBe(stopped);
+    const stale = { ...stopped, status: "live" as const };
+    expect(appendSample(stale, sampleAt(2, 1))).toBe(stale);
   });
 
   it("preserves order (no sorting): the caller owns chronology", () => {

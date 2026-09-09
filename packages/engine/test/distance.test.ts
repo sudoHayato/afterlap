@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { destination, distanceMeters, haversineMeters, LISBON, toRad, type Sample } from "../src";
+import {
+  destination,
+  distanceMeters,
+  haversineMeters,
+  LISBON,
+  MAX_PLAUSIBLE_SPEED_MPS,
+  toRad,
+  type Sample,
+} from "../src";
 import { sampleAt } from "./helpers";
 
 const PORTO = { lat: 41.1579, lng: -8.6291 };
@@ -75,6 +83,15 @@ describe("distanceMeters — filtro de velocidade", () => {
 
   it("uses elapsed time, not sample count: a 100 m leg over 10 s is only 10 m/s", () => {
     expect(distanceMeters([sampleAt(0, 0), sampleAt(10_000, 100)])).toBeCloseTo(100, 3);
+  });
+
+  it("treats an out-of-order leg as a teleport (negative dt collapses to the 1 ms floor)", () => {
+    expect(distanceMeters([sampleAt(1_000, 0), sampleAt(0, 3)])).toBe(0);
+    expect(distanceMeters([sampleAt(0, 0), sampleAt(1_000, 3)])).toBeCloseTo(3, 3);
+  });
+
+  it("exposes the threshold as MAX_PLAUSIBLE_SPEED_MPS = 55", () => {
+    expect(MAX_PLAUSIBLE_SPEED_MPS).toBe(55);
   });
 
   it("ignores the reported speedMps field entirely", () => {

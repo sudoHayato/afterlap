@@ -30,7 +30,8 @@ export function stepSim(
   const speed = typicalSpeed(sport);
   const jitter = (rng() - 0.5) * 0.18;
   const heading = state.heading + jitter;
-  const meters = speed * (dtMs / 1000);
+  // A clock that steps backwards must not walk the simulation backwards.
+  const meters = speed * (Math.max(0, dtMs) / 1000);
   const next = destination(state.lat, state.lng, heading, meters);
   return { lat: next.lat, lng: next.lng, heading };
 }

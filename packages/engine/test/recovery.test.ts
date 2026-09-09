@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyRecovered, recoverLiveSessions, segmentsFromEvents } from "../src";
+import { applyRecovered, RECOVERED_DEDUPE_MS, recoverLiveSessions, segmentsFromEvents } from "../src";
 import { makeSession } from "./helpers";
 
 const live = () => makeSession([{ type: "started", at: 0, sport: "run" }]);
@@ -44,6 +44,13 @@ describe("applyRecovered — recuperação de uma sessão ao vivo", () => {
     const before = s.events.length;
     applyRecovered(s, 10);
     expect(s.events).toHaveLength(before);
+  });
+
+  it("exposes the window as RECOVERED_DEDUPE_MS = 2000 and ignores sessions with a 'stopped' event", () => {
+    expect(RECOVERED_DEDUPE_MS).toBe(2000);
+    const stale = makeSession([{ type: "started", at: 0, sport: "run" }, { type: "stopped", at: 1 }], [], "live");
+    expect(applyRecovered(stale, 5_000)).toBe(stale);
+    expect(recoverLiveSessions([stale], 5_000)[0]).toBe(stale);
   });
 
   it("'recovered' never changes the derived segments", () => {
