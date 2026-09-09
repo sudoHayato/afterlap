@@ -15,47 +15,59 @@ import {
 /** localStorage key for the lab's sessions. Also quoted by the legal pages. */
 export const STORAGE_KEY = "bricklap.v1";
 /** Key used before the rename. Adopted once, then removed. */
-const LEGACY_STORAGE_KEY = "afterlap.v1";
+export const LEGACY_STORAGE_KEY = "afterlap.v1";
 
-type PersistShape = {
+export type PersistShape = {
   sessions: Session[];
+  /** True once the demo sessions were written. An empty list is then real data. */
   seeded: boolean;
 };
 
-function parse(raw: string | null): PersistShape | null {
+/** The subset of the Web Storage API the store needs; injectable for tests. */
+export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+export function parsePersisted(raw: string | null): PersistShape | null {
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as PersistShape | null;
-    if (!parsed || !Array.isArray(parsed.sessions) || parsed.sessions.length === 0) {
-      return null;
-    }
-    return parsed;
+    const parsed = JSON.parse(raw) as Partial<PersistShape> | null;
+    if (!parsed || !Array.isArray(parsed.sessions)) return null;
+    const seeded = parsed.seeded === true;
+    // Before seeding, an empty list means "nothing stored yet"; after seeding it
+    // means the athlete deleted every session, and the demo data must not return.
+    if (parsed.sessions.length === 0 && !seeded) return null;
+    return { sessions: parsed.sessions, seeded };
   } catch {
     return null;
   }
 }
 
 /**
- * Read the persisted state. When nothing is stored under STORAGE_KEY but a
- * valid payload exists under the legacy key, adopt it: copy it to STORAGE_KEY
- * and drop the legacy key. Never throws — any failure just means "nothing".
+ * Read the persisted state from `storage`.
+ * - STORAGE_KEY valid → use it and drop any leftover legacy key.
+ * - Otherwise, LEGACY_STORAGE_KEY valid → adopt it: copy to STORAGE_KEY, remove the legacy key.
+ * - Otherwise null. Never throws.
  */
-function load(): PersistShape | null {
-  if (typeof window === "undefined") return null;
+export function loadFrom(storage: StorageLike): PersistShape | null {
   try {
-    const storage = window.localStorage;
-    const current = storage.getItem(STORAGE_KEY);
-    if (current !== null) return parse(current);
-
-    const legacy = storage.getItem(LEGACY_STORAGE_KEY);
-    const migrated = parse(legacy);
-    if (!migrated || legacy === null) return null;
-    storage.setItem(STORAGE_KEY, legacy);
+    const current = parsePersisted(storage.getItem(STORAGE_KEY));
+    if (current) {
+      storage.removeItem(LEGACY_STORAGE_KEY);
+      return current;
+    }
+    const legacyRaw = storage.getItem(LEGACY_STORAGE_KEY);
+    const legacy = parsePersisted(legacyRaw);
+    if (!legacy || legacyRaw === null) return null;
+    storage.setItem(STORAGE_KEY, legacyRaw);
     storage.removeItem(LEGACY_STORAGE_KEY);
-    return migrated;
+    return legacy;
   } catch {
     return null;
   }
+}
+
+function load(): PersistShape | null {
+  if (typeof window === "undefined") return null;
+  return loadFrom(window.localStorage);
 }
 
 function save(state: PersistShape) {
@@ -68,6 +80,7 @@ function save(state: PersistShape) {
 }
 
 export type BricklapState = {
+  /** False until hydrate() has read storage; routes that need a session wait for it. */
   ready: boolean;
   sessions: Session[];
   seeded: boolean;
@@ -83,9 +96,9 @@ export type BricklapState = {
 };
 
 export const useBricklap = create<BricklapState>((set, get) => ({
-  ready: true,
-  sessions: seedSessions(),
-  seeded: true,
+  ready: false,
+  sessions: [],
+  seeded: false,
 
   hydrate: () => {
     const loaded = load();

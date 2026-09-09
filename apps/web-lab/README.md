@@ -41,10 +41,19 @@ As sessões ficam apenas no browser, em `localStorage`, sob a chave
 `bricklap.v1` (`STORAGE_KEY` em `src/lib/store.ts`). Não há contas nem
 servidor.
 
-Migração: se `bricklap.v1` não existir e a chave antiga `afterlap.v1` existir
-com conteúdo válido, o conteúdo é adotado, gravado em `bricklap.v1` e a chave
-antiga é removida. A migração nunca lança exceções; em caso de falha a app
-arranca com as sessões de demonstração.
+Migração: se `bricklap.v1` não existir (ou estiver corrompida) e a chave antiga
+`afterlap.v1` existir com conteúdo válido, o conteúdo é adotado, gravado em
+`bricklap.v1` e a chave antiga é removida. Se as duas existirem, `bricklap.v1`
+vale e a antiga é limpa. A migração nunca lança exceções; sem nada válido a app
+arranca com as sessões de demonstração e marca `seeded: true`.
+
+Apagar todas as sessões deixa a lista vazia — as sessões de demonstração só
+voltam se os dados do sítio forem limpos no browser. O store começa com
+`ready: false` e só as rotas `/record` e `/session/$id` esperam pela
+hidratação (feita em `__root.tsx`, antes do primeiro paint).
+
+Testes: `src/lib/store.test.ts` (corre com `npm test` na raiz) cobre
+`parsePersisted` e `loadFrom` com um storage em memória.
 
 ## Estrutura
 

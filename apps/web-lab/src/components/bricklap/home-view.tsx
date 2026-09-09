@@ -8,7 +8,6 @@ import {
   formatDay,
   formatDistance,
   formatDuration,
-  seedSessions,
   segmentsFromEvents,
   sessionMetrics,
   type Sport,
@@ -26,10 +25,9 @@ export function HomeView() {
   const live = useBricklap((s) => s.live());
   const [sport, setSport] = useState<Sport>("run");
 
-  const sessions = stored.length > 0 ? stored : seedSessions();
   const history = useMemo(
-    () => sessions.filter((s) => s.status === "stopped"),
-    [sessions],
+    () => stored.filter((s) => s.status === "stopped"),
+    [stored],
   );
 
   function onStart() {
