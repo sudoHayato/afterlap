@@ -52,6 +52,7 @@ Uma tarefa só está feita quando:
 5. `STATUS.md` atualizado e relatório da sessão em `docs/reports/AAAA-MM-DD-sessao-NN.md` (feito, por fazer, decisões, dúvidas para o CTO, próximos passos).
 6. Nenhuma dependência nova sem justificação escrita.
 7. Textos legais intocados (salvo pedido explícito do CTO).
+8. **Branch de trabalho publicado no remoto** (`git push -u origin <branch>`), com o commit local confirmado igual ao remoto. Regra permanente: nenhuma sessão termina sem este push.
 
 ## Nunca
 
