@@ -5,7 +5,7 @@ Prioridades: **P0** bloqueia a próxima sessão; **P1** próxima fase; **P2** qu
 ## P0 — Fase 1, fecho
 
 - [ ] **`android.package` definitivo** (a decidir; hoje `com.bricklap.app` placeholder; mudar depois de publicar é doloroso).
-- [ ] **Login EAS + primeiro build** — bloqueado nesta sessão: precisa do fundador a correr `npx eas-cli login` na própria máquina (ver relatório da sessão 02). `apps/mobile/eas.json` já está pronto (perfil `development`, `developmentClient: true`, `distribution: "internal"`, `android.buildType: "apk"`); falta `eas build:configure` (liga o projeto à conta) e `eas build --platform android --profile development`.
+- [ ] **Login EAS + primeiro build** — bloqueado nesta sessão: precisa do CTO a correr `npx eas-cli login` na própria máquina (ver relatório da sessão 02). `apps/mobile/eas.json` já está pronto (perfil `development`, `developmentClient: true`, `distribution: "internal"`, `android.buildType: "apk"`); falta `eas build:configure` (liga o projeto à conta) e `eas build --platform android --profile development`.
 - [ ] **Instalar o APK no telemóvel** a partir do link/QR do EAS Build e validar o ecrã START/CHANGE/STOP com os três desportos e as duas línguas.
 - [ ] Decidir se `npm install --global eas-cli` fica na máquina, ou se se continua a invocar via `npx eas-cli@latest` (sessão 02 usou `npx`, sem instalação global).
 

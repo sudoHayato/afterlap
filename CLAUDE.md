@@ -64,6 +64,7 @@ Uma tarefa só está feita quando:
 - Nunca fazer push para `main`, nunca `push --force`, nunca reescrever histórico já publicado.
 - Nunca apagar ou reescrever relatórios em `docs/reports/`.
 - Nunca guardar segredos (tokens EAS, keystores) no repositório.
+- **Nunca escrever dados pessoais identificáveis do fundador em ficheiros do repositório** (nome próprio, apelidos, morada, telefone, NIF, email pessoal, entidade empregadora). Em relatórios, documentação, comentários e mensagens de commit, referir sempre **"o CTO"** ou **"o fundador"** — nunca por nome. O campo de responsável pelo tratamento nos textos legais (`controllerName`, `address`, `nif`, `email` em `apps/web-lab/src/lib/legal/config.ts`) fica **por preencher** até haver decisão explícita do CTO.
 - Nunca mudar `android.package`, o nome da app ou a slug sem decisão do CTO.
 - Nunca guardar segmentos/métricas derivados como estado persistido.
 
