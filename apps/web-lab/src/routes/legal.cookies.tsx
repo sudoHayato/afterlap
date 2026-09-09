@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LegalDoc } from "@/components/afterlap/legal-doc";
+import { LegalDoc } from "@/components/bricklap/legal-doc";
 import { LEGAL } from "@/lib/legal/config";
 
 export const Route = createFileRoute("/legal/cookies")({ component: Cookies });

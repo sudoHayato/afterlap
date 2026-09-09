@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SummaryView } from "@/components/afterlap/summary-view";
-import { AppShell, Wordmark } from "@/components/afterlap/shell";
-import { useAfterlap } from "@/lib/afterlap/store";
+import { SummaryView } from "@/components/bricklap/summary-view";
+import { AppShell, Wordmark } from "@/components/bricklap/shell";
+import { useBricklap } from "@/lib/store";
 
 export const Route = createFileRoute("/session/$id")({ component: SessionPage });
 
 function SessionPage() {
   const { id } = Route.useParams();
-  const ready = useAfterlap((s) => s.ready);
+  const ready = useBricklap((s) => s.ready);
   if (!ready) {
     return (
       <AppShell>

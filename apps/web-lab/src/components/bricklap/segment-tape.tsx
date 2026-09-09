@@ -1,6 +1,4 @@
-import { segmentMetrics } from "@/lib/afterlap/engine";
-import type { Segment, Session } from "@/lib/afterlap/types";
-import { SPORT_META } from "@/lib/afterlap/types";
+import { SPORT_META, segmentMetrics, type Segment, type Session } from "@bricklap/engine";
 import { cn } from "@/lib/utils";
 
 const TONE = ["bg-primary", "bg-primary/70", "bg-primary/45", "bg-primary/25"] as const;

@@ -1,29 +1,29 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Play, Watch } from "lucide-react";
 import { useMemo, useState } from "react";
-import { SegmentTape } from "@/components/afterlap/segment-tape";
-import { AppShell, Wordmark } from "@/components/afterlap/shell";
-import { SportPicker } from "@/components/afterlap/sport-picker";
-import { Button } from "@/components/ui/button";
 import {
+  SPORT_META,
   currentSport,
   durationMs,
   formatDay,
   formatDistance,
   formatDuration,
+  seedSessions,
   segmentsFromEvents,
   sessionMetrics,
-} from "@/lib/afterlap/engine";
-import { seedSessions } from "@/lib/afterlap/seed";
-import { useAfterlap } from "@/lib/afterlap/store";
-import type { Sport } from "@/lib/afterlap/types";
-import { SPORT_META } from "@/lib/afterlap/types";
+  type Sport,
+} from "@bricklap/engine";
+import { SegmentTape } from "@/components/bricklap/segment-tape";
+import { AppShell, Wordmark } from "@/components/bricklap/shell";
+import { SportPicker } from "@/components/bricklap/sport-picker";
+import { Button } from "@/components/ui/button";
+import { useBricklap } from "@/lib/store";
 
 export function HomeView() {
   const navigate = useNavigate();
-  const stored = useAfterlap((s) => s.sessions);
-  const start = useAfterlap((s) => s.start);
-  const live = useAfterlap((s) => s.live());
+  const stored = useBricklap((s) => s.sessions);
+  const start = useBricklap((s) => s.start);
+  const live = useBricklap((s) => s.live());
   const [sport, setSport] = useState<Sport>("run");
 
   const sessions = stored.length > 0 ? stored : seedSessions();

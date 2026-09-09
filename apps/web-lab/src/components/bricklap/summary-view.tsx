@@ -1,34 +1,34 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Trash2 } from "lucide-react";
-import { SportIcon } from "@/components/afterlap/icons";
-import { SegmentTape } from "@/components/afterlap/segment-tape";
-import { AppShell } from "@/components/afterlap/shell";
-import { TrackMap } from "@/components/afterlap/track-map";
-import { Button } from "@/components/ui/button";
 import {
+  SPORT_META,
   formatDay,
   formatDistance,
   formatDuration,
   formatPace,
   formatSpeedKmh,
+  seedSessions,
   segmentMetrics,
   segmentsFromEvents,
   sessionMetrics,
-} from "@/lib/afterlap/engine";
-import { seedSessions } from "@/lib/afterlap/seed";
-import { useAfterlap } from "@/lib/afterlap/store";
-import { SPORT_META } from "@/lib/afterlap/types";
+} from "@bricklap/engine";
+import { SportIcon } from "@/components/bricklap/icons";
+import { SegmentTape } from "@/components/bricklap/segment-tape";
+import { AppShell } from "@/components/bricklap/shell";
+import { TrackMap } from "@/components/bricklap/track-map";
+import { Button } from "@/components/ui/button";
+import { useBricklap } from "@/lib/store";
 
 export function SummaryView({ id }: { id: string }) {
   const navigate = useNavigate();
-  const stored = useAfterlap((s) => s.byId(id));
-  const deleteSession = useAfterlap((s) => s.deleteSession);
+  const stored = useBricklap((s) => s.byId(id));
+  const deleteSession = useBricklap((s) => s.deleteSession);
   const session = stored ?? seedSessions().find((s) => s.id === id);
 
   if (!session) {
     return (
       <AppShell>
-        <p className="font-display text-lg tracking-[0.22em] uppercase">Afterlap</p>
+        <p className="font-display text-lg tracking-[0.22em] uppercase">Bricklap</p>
         <p className="mt-16 text-sm text-muted-foreground">Session not on this device.</p>
         <Button className="mt-6" onClick={() => void navigate({ to: "/" })}>
           Home
@@ -50,7 +50,7 @@ export function SummaryView({ id }: { id: string }) {
         >
           <ArrowLeft className="size-5" />
         </Link>
-        <p className="font-display text-sm tracking-[0.22em] uppercase">Afterlap</p>
+        <p className="font-display text-sm tracking-[0.22em] uppercase">Bricklap</p>
         <button
           type="button"
           className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-danger"

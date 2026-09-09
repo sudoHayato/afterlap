@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { SiteFooter } from "@/components/afterlap/footer";
-import { Mark } from "@/components/afterlap/mark";
+import { SiteFooter } from "@/components/bricklap/footer";
+import { Mark } from "@/components/bricklap/mark";
 import { cn } from "@/lib/utils";
 
 export function AppShell({
@@ -41,7 +41,7 @@ export function Wordmark({
     <div className={cn("flex items-center justify-between gap-3", className)}>
       <div className="flex items-center gap-2.5 text-foreground">
         <Mark className="size-5" />
-        <p className="font-display text-lg tracking-[0.22em] uppercase">Afterlap</p>
+        <p className="font-display text-lg tracking-[0.22em] uppercase">Bricklap</p>
       </div>
       {kicker ? (
         <p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">

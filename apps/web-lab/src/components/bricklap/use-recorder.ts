@@ -1,19 +1,19 @@
 import { useEffect, useRef } from "react";
-import { currentSport } from "@/lib/afterlap/engine";
 import {
   createSim,
+  currentSport,
   sampleFromGps,
   sampleFromSim,
   stepSim,
+  type Session,
   type SimState,
-} from "@/lib/afterlap/geo";
-import { useAfterlap } from "@/lib/afterlap/store";
-import type { Session } from "@/lib/afterlap/types";
+} from "@bricklap/engine";
+import { useBricklap } from "@/lib/store";
 
 const TICK_MS = 1000;
 
 export function useRecorder(session: Session | null, useGps: boolean) {
-  const pushSample = useAfterlap((s) => s.pushSample);
+  const pushSample = useBricklap((s) => s.pushSample);
   const sim = useRef<SimState>(createSim());
   const lastTick = useRef<number>(Date.now());
   const watchId = useRef<number | null>(null);
@@ -22,7 +22,7 @@ export function useRecorder(session: Session | null, useGps: boolean) {
 
   useEffect(() => {
     if (!sessionId || !live) return;
-    const current = useAfterlap.getState().byId(sessionId);
+    const current = useBricklap.getState().byId(sessionId);
     const last = current?.samples.at(-1);
     if (last) {
       sim.current = { lat: last.lat, lng: last.lng, heading: Math.PI * 0.15 };
@@ -60,7 +60,7 @@ export function useRecorder(session: Session | null, useGps: boolean) {
     if (!sessionId || !live || useGps) return;
 
     const id = window.setInterval(() => {
-      const liveNow = useAfterlap.getState().live();
+      const liveNow = useBricklap.getState().live();
       if (!liveNow) return;
       const sport = currentSport(liveNow.events);
       if (!sport) return;

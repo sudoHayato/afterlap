@@ -1,25 +1,26 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { AppShell } from "@/components/afterlap/shell";
-import { useClock } from "@/components/afterlap/use-clock";
-import { useRecorder } from "@/components/afterlap/use-recorder";
-import { Button } from "@/components/ui/button";
 import {
+  SPORT_META,
   currentSport,
   durationMs,
   formatDistance,
   formatDuration,
-  sessionMetrics,
+  nextSport,
   segmentsFromEvents,
-} from "@/lib/afterlap/engine";
-import { useAfterlap } from "@/lib/afterlap/store";
-import { SPORT_META, nextSport } from "@/lib/afterlap/types";
+  sessionMetrics,
+} from "@bricklap/engine";
+import { AppShell } from "@/components/bricklap/shell";
+import { useClock } from "@/components/bricklap/use-clock";
+import { useRecorder } from "@/components/bricklap/use-recorder";
+import { Button } from "@/components/ui/button";
+import { useBricklap } from "@/lib/store";
 
 export function WatchView() {
   const navigate = useNavigate();
-  const live = useAfterlap((s) => s.live());
-  const start = useAfterlap((s) => s.start);
-  const changeSport = useAfterlap((s) => s.changeSport);
-  const stop = useAfterlap((s) => s.stop);
+  const live = useBricklap((s) => s.live());
+  const start = useBricklap((s) => s.start);
+  const changeSport = useBricklap((s) => s.changeSport);
+  const stop = useBricklap((s) => s.stop);
   const now = useClock(Boolean(live));
 
   useRecorder(live, false);
@@ -53,7 +54,7 @@ export function WatchView() {
         <div className="absolute inset-[9px] overflow-hidden rounded-full bg-watch text-foreground">
           <div className="flex h-full flex-col items-center px-8 pt-10 pb-8">
             <p className="font-display text-xs tracking-[0.28em] text-muted-foreground uppercase">
-              Afterlap
+              Bricklap
             </p>
 
             {live ? (

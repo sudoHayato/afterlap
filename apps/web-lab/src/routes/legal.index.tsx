@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LegalDoc } from "@/components/afterlap/legal-doc";
+import { LegalDoc } from "@/components/bricklap/legal-doc";
 import { LEGAL, identityComplete } from "@/lib/legal/config";
 
 export const Route = createFileRoute("/legal/")({ component: LegalIndex });
@@ -8,7 +8,7 @@ function LegalIndex() {
   return (
     <LegalDoc title="Informação legal">
       <p>
-        O Afterlap está em pré-lançamento. Destina-se a pessoas em{" "}
+        O Bricklap está em pré-lançamento. Destina-se a pessoas em{" "}
         {LEGAL.country} e na União Europeia. Estes textos seguem o RGPD, a Lei
         n.º 58/2019 e a legislação portuguesa aplicável. Não substituem aconselhamento
         jurídico.

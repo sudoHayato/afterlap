@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LiveView } from "@/components/afterlap/live-view";
-import { AppShell, Wordmark } from "@/components/afterlap/shell";
-import { useAfterlap } from "@/lib/afterlap/store";
+import { LiveView } from "@/components/bricklap/live-view";
+import { AppShell, Wordmark } from "@/components/bricklap/shell";
+import { useBricklap } from "@/lib/store";
 
 export const Route = createFileRoute("/record")({ component: RecordPage });
 
 function RecordPage() {
-  const ready = useAfterlap((s) => s.ready);
+  const ready = useBricklap((s) => s.ready);
   if (!ready) {
     return (
       <AppShell>

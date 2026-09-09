@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LegalDoc } from "@/components/afterlap/legal-doc";
+import { LegalDoc } from "@/components/bricklap/legal-doc";
 import { LEGAL } from "@/lib/legal/config";
 
 export const Route = createFileRoute("/legal/termos")({ component: Termos });
@@ -60,7 +60,7 @@ function Termos() {
 
       <h2>5. Propriedade intelectual</h2>
       <p>
-        O software, o nome Afterlap e a identidade visual estão reservados.
+        O software, o nome Bricklap e a identidade visual estão reservados.
         Detalhe em <Link to="/legal/direitos-autor">Direitos de autor</Link>.
         Os dados do teu treino (o conteúdo que geras) pertencem-te.
       </p>

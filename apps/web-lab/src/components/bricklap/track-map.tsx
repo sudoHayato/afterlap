@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Sample } from "@/lib/afterlap/types";
+import type { Sample } from "@bricklap/engine";
 import { cn } from "@/lib/utils";
 
 export function TrackMap({

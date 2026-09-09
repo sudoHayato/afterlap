@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { AppShell, Wordmark } from "@/components/afterlap/shell";
+import { AppShell, Wordmark } from "@/components/bricklap/shell";
 import { LEGAL } from "@/lib/legal/config";
 
 export function LegalDoc({

@@ -1,5 +1,5 @@
 import { Bike, Footprints, PersonStanding, Shuffle } from "lucide-react";
-import type { Sport } from "@/lib/afterlap/types";
+import type { Sport } from "@bricklap/engine";
 
 export function SportIcon({
   sport,

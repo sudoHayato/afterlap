@@ -1,5 +1,5 @@
-import { SportIcon } from "@/components/afterlap/icons";
-import { SPORT_META, SPORTS, type Sport } from "@/lib/afterlap/types";
+import { SPORT_META, SPORTS, type Sport } from "@bricklap/engine";
+import { SportIcon } from "@/components/bricklap/icons";
 import { cn } from "@/lib/utils";
 
 export function SportPicker({

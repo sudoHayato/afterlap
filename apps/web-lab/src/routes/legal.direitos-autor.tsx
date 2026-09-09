@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LegalDoc } from "@/components/afterlap/legal-doc";
+import { LegalDoc } from "@/components/bricklap/legal-doc";
 import { LEGAL } from "@/lib/legal/config";
 
 export const Route = createFileRoute("/legal/direitos-autor")({
@@ -18,7 +18,7 @@ function DireitosAutor() {
       <h2>Titular</h2>
       <p>
         © {new Date().getFullYear()} {LEGAL.controllerName}. A denominação{" "}
-        <strong>Afterlap</strong>, o símbolo da pista/volta e a interface são
+        <strong>Bricklap</strong>, o símbolo da pista/volta e a interface são
         criações originais deste projeto. Proibida a reprodução, distribuição ou
         comunicação ao público para fins comerciais sem autorização.
       </p>

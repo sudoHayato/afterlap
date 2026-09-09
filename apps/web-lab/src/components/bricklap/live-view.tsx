@@ -1,15 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Square, Watch } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { SportIcon } from "@/components/afterlap/icons";
-import { SegmentTape } from "@/components/afterlap/segment-tape";
-import { AppShell, Wordmark } from "@/components/afterlap/shell";
-import { SportPicker } from "@/components/afterlap/sport-picker";
-import { TrackMap } from "@/components/afterlap/track-map";
-import { useClock } from "@/components/afterlap/use-clock";
-import { useRecorder } from "@/components/afterlap/use-recorder";
-import { Button } from "@/components/ui/button";
 import {
+  SPORT_META,
   currentSport,
   durationMs,
   formatDistance,
@@ -19,16 +12,24 @@ import {
   segmentMetrics,
   segmentsFromEvents,
   sessionMetrics,
-} from "@/lib/afterlap/engine";
-import { useAfterlap } from "@/lib/afterlap/store";
-import { SPORT_META, type Sport } from "@/lib/afterlap/types";
+  type Sport,
+} from "@bricklap/engine";
+import { SportIcon } from "@/components/bricklap/icons";
+import { SegmentTape } from "@/components/bricklap/segment-tape";
+import { AppShell, Wordmark } from "@/components/bricklap/shell";
+import { SportPicker } from "@/components/bricklap/sport-picker";
+import { TrackMap } from "@/components/bricklap/track-map";
+import { useClock } from "@/components/bricklap/use-clock";
+import { useRecorder } from "@/components/bricklap/use-recorder";
+import { Button } from "@/components/ui/button";
+import { useBricklap } from "@/lib/store";
 
 export function LiveView() {
   const navigate = useNavigate();
-  const live = useAfterlap((s) => s.live());
-  const changeSport = useAfterlap((s) => s.changeSport);
-  const stop = useAfterlap((s) => s.stop);
-  const discardLive = useAfterlap((s) => s.discardLive);
+  const live = useBricklap((s) => s.live());
+  const changeSport = useBricklap((s) => s.changeSport);
+  const stop = useBricklap((s) => s.stop);
+  const discardLive = useBricklap((s) => s.discardLive);
   const now = useClock(Boolean(live));
   const [picking, setPicking] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
