@@ -57,9 +57,14 @@ Não precisa de Android SDK nem de JDK locais.
 
 ```sh
 npx eas-cli login
-npx eas-cli build:configure            # cria eas.json e associa um projeto EAS (uma vez)
+npx eas-cli build:configure            # associa um projeto EAS (uma vez); eas.json já existe no repo
 npx eas-cli build --platform android --profile development
 ```
+
+`eas.json` já está no repositório com o perfil `development`
+(`developmentClient: true`, `distribution: "internal"`,
+`android.buildType: "apk"`). `build:configure` só precisa de ligar o projeto a
+uma conta EAS (`extra.eas.projectId` em `app.json`) — não apaga o perfil.
 
 No fim, o EAS mostra um link/QR code; abre-o no telemóvel e instala o APK
 (é preciso permitir a instalação de apps de fontes desconhecidas).
@@ -102,8 +107,10 @@ ligado ao `adb` (USB ou Wi-Fi).
 ```
 apps/mobile/
   App.tsx        ecrã único: Iniciar / Mudar / Parar com GPS simulado
+  i18n.ts        locale do dispositivo (I18nManager) -> t() de @bricklap/i18n
   index.ts       registerRootComponent(App)
   app.json       configuração Expo (só Android)
+  eas.json       perfil "development" para o EAS Build (ver acima)
   tsconfig.json  extends expo/tsconfig.base + strict + noUncheckedIndexedAccess
   assets/        ícones do template (placeholders)
 ```
