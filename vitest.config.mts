@@ -1,0 +1,18 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    include: [
+      "packages/*/src/**/*.test.ts",
+      "packages/*/test/**/*.test.ts",
+      "apps/web-lab/src/**/*.test.ts",
+    ],
+    coverage: {
+      provider: "v8",
+      include: ["packages/*/src/**/*.ts"],
+      exclude: ["**/*.test.ts", "**/index.ts"],
+      reporter: ["text", "html"],
+      reportsDirectory: "coverage",
+    },
+  },
+});

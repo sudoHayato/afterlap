@@ -1,0 +1,26 @@
+{
+  "name": "@bricklap/engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bricklap session engine: events are the source of truth, segments and metrics are derived. Pure TypeScript, no platform APIs.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.11"
+  }
+}

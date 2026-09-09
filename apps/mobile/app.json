@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Bricklap",
+    "slug": "bricklap",
+    "scheme": "bricklap",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.bricklap.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#070708",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": ["expo-dev-client"]
+  }
+}
