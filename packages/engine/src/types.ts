@@ -57,14 +57,20 @@ export type SegmentMetrics = {
   avgSpeedMps: number;
 };
 
-export const SPORT_META: Record<
-  Sport,
-  { label: string; live: string; paceKind: "pace" | "speed" | "none" }
-> = {
-  run: { label: "Run", live: "Running", paceKind: "pace" },
-  bike: { label: "Bike", live: "Riding", paceKind: "speed" },
-  walk: { label: "Walk", live: "Walking", paceKind: "pace" },
-  transition: { label: "Transition", live: "Transition", paceKind: "none" },
+export type PaceKind = "pace" | "speed" | "none";
+
+/**
+ * Which split makes sense for each sport: a running/walking pace (min/km), a
+ * cycling speed (km/h), or neither (a transition has no meaningful rate).
+ * This is domain logic, not UI copy — display labels for each `Sport` live
+ * in `@bricklap/i18n` (keyed by the `Sport` string itself), not here. The
+ * engine stays free of any language-specific text.
+ */
+export const SPORT_PACE_KIND: Record<Sport, PaceKind> = {
+  run: "pace",
+  bike: "speed",
+  walk: "pace",
+  transition: "none",
 };
 
 export const SIM_SPEED_MPS: Record<Sport, number> = {

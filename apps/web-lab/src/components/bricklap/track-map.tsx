@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Sample } from "@bricklap/engine";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export function TrackMap({
@@ -44,7 +45,7 @@ export function TrackMap({
         viewBox="0 0 320 200"
         className="h-full w-full"
         role="img"
-        aria-label="Session track"
+        aria-label={t("trackMap.ariaLabel")}
       >
         <defs>
           <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -90,7 +91,7 @@ export function TrackMap({
               fontSize="11"
               fontFamily="var(--font-body)"
             >
-              Waiting for movement
+              {t("trackMap.waitingForMovement")}
             </text>
           </g>
         )}

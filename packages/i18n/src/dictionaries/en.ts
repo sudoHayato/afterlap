@@ -24,12 +24,22 @@ export const en: Dictionary = {
     phone: "Phone",
     live: "Live",
     openingSession: "Opening session…",
+    watch: "Watch",
+    close: "Close",
   },
   sport: {
     run: { label: "Run", live: "Running" },
     bike: { label: "Bike", live: "Riding" },
     walk: { label: "Walk", live: "Walking" },
     transition: { label: "Transition", live: "Transition" },
+  },
+  footer: {
+    preLaunch:
+      "Pre-launch. Training stays on this device. No accounts, no ads, no tracking cookies.",
+    privacy: "Privacy",
+    cookies: "Cookies",
+    terms: "Terms",
+    copyright: "Copyright",
   },
   home: {
     kicker: "Lab",
@@ -57,6 +67,7 @@ export const en: Dictionary = {
     notFound: "Session not on this device.",
     segmentsOne: "segment",
     segmentsOther: "segments",
+    deleteSession: "Delete session",
   },
   watch: {
     kicker: "Watch face",

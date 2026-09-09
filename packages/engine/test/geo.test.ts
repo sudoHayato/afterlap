@@ -7,7 +7,7 @@ import {
   sampleFromGps,
   sampleFromSim,
   SIM_SPEED_MPS,
-  SPORT_META,
+  SPORT_PACE_KIND,
   SPORTS,
   stepSim,
   typicalSpeed,
@@ -18,21 +18,19 @@ describe("sports metadata", () => {
     expect(SPORTS).toEqual(["run", "bike", "walk", "transition"]);
   });
 
-  it("every sport has metadata and a positive simulated speed", () => {
+  it("every sport has a pace kind and a positive simulated speed", () => {
     for (const sport of SPORTS) {
-      expect(SPORT_META[sport].label.length).toBeGreaterThan(0);
-      expect(SPORT_META[sport].live.length).toBeGreaterThan(0);
-      expect(["pace", "speed", "none"]).toContain(SPORT_META[sport].paceKind);
+      expect(["pace", "speed", "none"]).toContain(SPORT_PACE_KIND[sport]);
       expect(SIM_SPEED_MPS[sport]).toBeGreaterThan(0);
       expect(typicalSpeed(sport)).toBe(SIM_SPEED_MPS[sport]);
     }
   });
 
   it("pace for feet, speed for the bike, none for transitions", () => {
-    expect(SPORT_META.run.paceKind).toBe("pace");
-    expect(SPORT_META.walk.paceKind).toBe("pace");
-    expect(SPORT_META.bike.paceKind).toBe("speed");
-    expect(SPORT_META.transition.paceKind).toBe("none");
+    expect(SPORT_PACE_KIND.run).toBe("pace");
+    expect(SPORT_PACE_KIND.walk).toBe("pace");
+    expect(SPORT_PACE_KIND.bike).toBe("speed");
+    expect(SPORT_PACE_KIND.transition).toBe("none");
   });
 
   it("nextSport cycles and wraps", () => {

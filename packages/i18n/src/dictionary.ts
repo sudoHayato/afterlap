@@ -29,8 +29,17 @@ export type Dictionary = {
     phone: string;
     live: string;
     openingSession: string;
+    watch: string;
+    close: string;
   };
   sport: Record<Sport, { label: string; live: string }>;
+  footer: {
+    preLaunch: string;
+    privacy: string;
+    cookies: string;
+    terms: string;
+    copyright: string;
+  };
   home: {
     kicker: string;
     eyebrow: string;
@@ -57,6 +66,7 @@ export type Dictionary = {
     notFound: string;
     segmentsOne: string;
     segmentsOther: string;
+    deleteSession: string;
   };
   watch: {
     kicker: string;

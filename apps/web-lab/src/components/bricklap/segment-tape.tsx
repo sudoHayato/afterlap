@@ -1,4 +1,5 @@
-import { SPORT_META, segmentMetrics, type Segment, type Session } from "@bricklap/engine";
+import { segmentMetrics, type Segment, type Session } from "@bricklap/engine";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const TONE = ["bg-primary", "bg-primary/70", "bg-primary/45", "bg-primary/25"] as const;
@@ -27,7 +28,7 @@ export function SegmentTape({
       {segments.map((seg, i) => (
         <div
           key={seg.index}
-          title={SPORT_META[seg.sport].label}
+          title={t(`sport.${seg.sport}.label`)}
           className={TONE[i % TONE.length]}
           style={{ width: `${(widths[i]! / total) * 100}%` }}
         />

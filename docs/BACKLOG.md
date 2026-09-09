@@ -4,11 +4,9 @@ Prioridades: **P0** bloqueia a próxima sessão; **P1** próxima fase; **P2** qu
 
 ## P0 — Fase 1, fecho
 
-- [ ] **APK de desenvolvimento no telemóvel** (EAS Build ou build local com Android SDK na WSL 2). Opções com prós e contras no relatório da sessão 01.
-- [ ] **Conta/projeto EAS** (a decidir: quem é o dono; `projectId` em `app.json`).
 - [ ] **`android.package` definitivo** (a decidir; hoje `com.bricklap.app` placeholder; mudar depois de publicar é doloroso).
-- [ ] **Node 24 LTS e npm 11 na máquina de desenvolvimento** (`nvm install 24 && nvm use`, `npm i -g npm@11`).
-- [ ] Merge de `chore/monorepo-cleanup` em `main` (a decidir pelo CTO após revisão).
+- [ ] **Instalar o APK no telemóvel** a partir do link/QR do EAS Build da sessão 02 e validar o ecrã START/CHANGE/STOP com os três desportos e as duas línguas.
+- [ ] Decidir se `npm install --global eas-cli` fica na máquina, ou se se continua a invocar via `npx eas-cli@latest` (sessão 02 usou `npx`, sem instalação global).
 
 ## P1 — Fase 2
 
@@ -21,18 +19,20 @@ Prioridades: **P0** bloqueia a próxima sessão; **P1** próxima fase; **P2** qu
 - [ ] Tema escuro a nível de sistema (diálogos, teclado): exige `expo-system-ui`; hoje a app pinta as suas cores e o `userInterfaceStyle` foi retirado por não ter efeito sem esse módulo.
 - [ ] CI (GitHub Actions): `npm test`, `npm run typecheck`, `npm run build:web`, `expo export --platform android`.
 
+## P1 — i18n (sessão 02)
+
+- [ ] **Sistema de unidades imperial**: `UnitSystem` já declara `"imperial"`; `formatDistanceForUnit`/`formatSpeedForUnit`/`formatPaceForUnit` lançam em vez de o implementar. Implementar quando houver pedido real (milhas, pés, mph).
+- [ ] **Ecrã de definições** para escolher língua e sistema de unidades à mão — hoje é só deteção automática do dispositivo, uma vez, no arranque (sem troca em runtime).
+- [ ] Decidir se `pt-BR` deve continuar a cair em `pt-PT` (decisão desta sessão, ver `packages/i18n/README.md` e ADR 0004) ou passar a ter dicionário próprio quando houver utilizadores brasileiros reais.
+- [ ] Textos legais: quando a app nativa tiver as suas próprias páginas legais (Fase 4), decidir se continuam só pt-PT/UE ou se passam a ter tradução — hoje a decisão do CTO foi mantê-los fora do i18n.
+- [ ] `apps/web-lab/src/lib/i18n.ts` e `apps/mobile/i18n.ts` calculam o locale uma vez, no arranque do módulo — não reagem a uma mudança de língua do sistema operativo enquanto a app está aberta (aceitável sem ecrã de definições).
+
 ## P2 — Qualidade e dívida
 
 - [ ] Motor: `Segment.sampleStart`/`sampleEnd` duplicam `startAt`/`endAt` — simplificar ou dar-lhes significado (índices de amostras).
 - [ ] Motor: `newId()` usa `Math.random`; considerar `crypto.randomUUID` quando disponível nas duas plataformas.
-- [ ] Motor: `formatClock`/`formatDay` dependem do locale do runtime quando não recebem `locale`; as apps devem passar `"pt-PT"` explicitamente.
-- [ ] Motor: `SPORT_META` tem rótulos em inglês (usados pelo lab e pela app Android); decidir i18n mínima.
-- [ ] Lab: referência ao caminho antigo `src/lib/legal/config.ts` em `legal.index.tsx`, `LEGAL.md` e `LICENSE` (a decidir: atualizar para `apps/web-lab/src/lib/legal/config.ts`).
-- [ ] `NOTICE`: lista TanStack Start/Query/Table, que já não existem, e não lista Expo nem React Native (a decidir; texto legal — não alterado nesta sessão).
 - [ ] Lab: decidir ESLint/Prettier (hoje só `.prettierrc` como convenção de editor) e um smoke test e2e.
-- [ ] Lab: `formatDay`/`formatClock` sem locale explícito (ver item do motor).
 - [ ] Lab: `apps/mobile/.gitignore` ainda lista `/ios` e `web-build/` (inofensivo; limpar quando se mexer no ficheiro).
 - [ ] Mobile: insets calculados à mão (`StatusBar.currentHeight` em cima, 64 dp em baixo); substituir por `react-native-safe-area-context` quando houver mais ecrãs.
 - [ ] Mobile: "Nova sessão" fica desativado 700 ms depois de Parar para um toque duplo não apagar a sessão; substituir por confirmação quando houver persistência.
 - [ ] Badge de cobertura e relatório HTML publicado (opcional).
-- [ ] `npm install` avisa (EBADENGINE) porque Node 23 está fora de `engines` do vitest e do react-native; desaparece com Node 24.

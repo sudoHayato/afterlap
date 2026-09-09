@@ -10,10 +10,10 @@ Fases 0–6. As Fases 2–6 são **proposta a validar pelo CTO**; só a Fase 0 (
 
 ## Fase 1 — Base do produto e esqueleto Android (em curso)
 
-- **Objetivo**: repositório limpo, motor testado e reutilizável, app Android a arrancar.
-- **Entregáveis**: monorepo (`packages/engine`, `apps/web-lab`, `apps/mobile`), rename para Bricklap, testes do motor a 100%, app Expo com START/CHANGE/STOP em GPS simulado, documentação e ADRs.
+- **Objetivo**: repositório limpo, motor testado e reutilizável, app Android a arrancar, produto pronto para ser global.
+- **Entregáveis**: monorepo (`packages/engine`, `packages/i18n`, `apps/web-lab`, `apps/mobile`), rename para Bricklap, testes do motor a 100%, app Expo com START/CHANGE/STOP em GPS simulado, i18n mínimo (inglês base, pt-PT primeira tradução, sem strings cravadas nos componentes), primeiro APK de desenvolvimento, documentação e ADRs.
 - **Critério de saída**: `npm test`, `npm run typecheck`, `npm run build:web` e `expo export --platform android` verdes; APK de desenvolvimento instalado e a correr no telemóvel do CTO.
-- **Estado**: código e documentação feitos na sessão 01 (2026-09-09). Falta o APK no telemóvel (ver opções em `docs/reports/2026-09-09-sessao-01.md`).
+- **Estado**: código e documentação da sessão 01 (2026-09-09) em `main`. Sessão 02 (mesma data): i18n, correções aprovadas pelo CTO, ambiente em Node 24, primeiro APK via EAS Build. Ver `docs/reports/2026-09-09-sessao-01.md` e `docs/reports/2026-09-09-sessao-02.md`.
 
 ## Fase 2 — GPS real e persistência local (proposta)
 

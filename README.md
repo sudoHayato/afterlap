@@ -4,7 +4,7 @@
 
 O atleta carrega em START uma vez, muda de modalidade sem parar (CHANGE) e só no fim faz STOP. Os eventos são a fonte de verdade; segmentos e métricas derivam-se deles.
 
-Língua do projeto: português de Portugal (pt-PT). Jurisdição considerada: Portugal e União Europeia. Fase 1: **Android only**.
+Língua do produto: **inglês** é a língua-base; **pt-PT** é a primeira tradução, detetada automaticamente pelo dispositivo. Os textos legais são a exceção — continuam pt-PT, jurisdição Portugal e União Europeia, sem tradução. Fase 1: **Android only**.
 
 ## O que há neste repositório
 
@@ -12,8 +12,9 @@ Monorepo com npm workspaces:
 
 | Caminho | Pacote | O que é |
 |---|---|---|
-| `packages/engine` | `@bricklap/engine` | Motor de sessão. TypeScript puro: sem DOM, sem React Native, sem armazenamento. 124 testes, cobertura 100%. |
-| `apps/web-lab` | `@bricklap/web-lab` | Laboratório web (Vite + React + TanStack Router + Tailwind). GPS simulado. Inclui as páginas legais e 9 testes do store. **Não é o produto.** |
+| `packages/engine` | `@bricklap/engine` | Motor de sessão. TypeScript puro: sem DOM, sem React Native, sem armazenamento, sem texto de interface. 124 testes, cobertura 100%. |
+| `packages/i18n` | `@bricklap/i18n` | Dicionários de tradução (en base, pt-PT) tipados, e formatação por unidade (metric hoje, imperial declarado). 25 testes, cobertura 100%. |
+| `apps/web-lab` | `@bricklap/web-lab` | Laboratório web (Vite + React + TanStack Router + Tailwind). GPS simulado. Inclui as páginas legais (pt-PT, fora do i18n) e 9 testes do store. **Não é o produto.** |
 | `apps/mobile` | `@bricklap/mobile` | App Android (Expo SDK 57, dev client). Fase 1: um ecrã START/CHANGE/STOP com GPS simulado. |
 | `docs/` | — | ADRs, backlog, história, relatórios de sessão. |
 
@@ -59,8 +60,9 @@ O lab fica em http://localhost:8080. Para a app Android ver [apps/mobile/README.
 ```
 .
 ├── packages/engine/        motor (src/, test/)
+├── packages/i18n/          dicionários en/pt-PT + unidades (src/, test/)
 ├── apps/web-lab/           lab web (src/routes, src/components/bricklap, src/lib/legal, LEGAL.md)
-├── apps/mobile/            app Expo (App.tsx, app.json)
+├── apps/mobile/            app Expo (App.tsx, i18n.ts, app.json)
 ├── docs/
 │   ├── adr/                decisões de arquitetura
 │   ├── reports/            relatório por sessão de trabalho

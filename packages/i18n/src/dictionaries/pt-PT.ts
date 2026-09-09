@@ -24,12 +24,22 @@ export const ptPT: Dictionary = {
     phone: "Telemóvel",
     live: "Ao vivo",
     openingSession: "A abrir sessão…",
+    watch: "Relógio",
+    close: "Fechar",
   },
   sport: {
     run: { label: "Corrida", live: "A correr" },
     bike: { label: "Bicicleta", live: "De bicicleta" },
     walk: { label: "Caminhada", live: "A caminhar" },
     transition: { label: "Transição", live: "Transição" },
+  },
+  footer: {
+    preLaunch:
+      "Pré-lançamento. Os treinos ficam neste dispositivo. Sem contas, sem publicidade, sem cookies de rastreio.",
+    privacy: "Privacidade",
+    cookies: "Cookies",
+    terms: "Termos",
+    copyright: "Direitos de autor",
   },
   home: {
     kicker: "Laboratório",
@@ -57,6 +67,7 @@ export const ptPT: Dictionary = {
     notFound: "Sessão não está neste dispositivo.",
     segmentsOne: "segmento",
     segmentsOther: "segmentos",
+    deleteSession: "Eliminar sessão",
   },
   watch: {
     kicker: "Mostrador do relógio",
