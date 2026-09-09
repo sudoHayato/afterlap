@@ -19,7 +19,7 @@ Nesta fase:
 
 - O GPS é **simulado** (`createSim` / `stepSim` / `sampleFromSim`), uma amostra por segundo.
 - **Não há persistência** — a sessão perde-se ao fechar a app.
-- **Não há navegação** nem dependências extra: só `expo`, `expo-dev-client`, `expo-status-bar`, `react` e `react-native`.
+- **Não há navegação** nem dependências extra: só `expo`, `expo-dev-client`, `expo-status-bar`, `react`, `react-native` e os workspaces `@bricklap/engine` e `@bricklap/i18n`.
 - **Só Android.** Não existe configuração iOS nem web.
 
 ## Comandos

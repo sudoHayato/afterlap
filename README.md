@@ -49,7 +49,7 @@ O lab fica em http://localhost:8080. Para a app Android ver [apps/mobile/README.
 
 | Script | Faz |
 |---|---|
-| `npm test` / `npm run test:coverage` | Testes do motor e do store do lab (vitest); a cobertura em `coverage/` mede só o motor |
+| `npm test` / `npm run test:coverage` | Testes do motor, do i18n e do store do lab (vitest); a cobertura em `coverage/` mede motor + i18n |
 | `npm run typecheck` | `tsc` em todos os workspaces |
 | `npm run dev:web` / `npm run build:web` | Lab web: servidor de desenvolvimento / build para `apps/web-lab/dist` |
 | `npm run dev:mobile` | Metro para um dev client já instalado (`expo start --dev-client`) |

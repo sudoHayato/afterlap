@@ -6,14 +6,12 @@ import {
   currentSport,
   durationMs,
   formatDuration,
-  formatPace,
-  formatSpeedKmh,
   segmentMetrics,
   segmentsFromEvents,
   sessionMetrics,
   type Sport,
 } from "@bricklap/engine";
-import { formatDistanceForUnit } from "@bricklap/i18n";
+import { formatDistanceForUnit, formatPaceForUnit, formatSpeedForUnit } from "@bricklap/i18n";
 import { SportIcon } from "@/components/bricklap/icons";
 import { SegmentTape } from "@/components/bricklap/segment-tape";
 import { AppShell, Wordmark } from "@/components/bricklap/shell";
@@ -57,9 +55,9 @@ export function LiveView() {
   const paceKind = SPORT_PACE_KIND[sport];
   const splitValue =
     paceKind === "speed"
-      ? formatSpeedKmh(currentMetrics.avgSpeedMps)
+      ? formatSpeedForUnit(currentMetrics.avgSpeedMps)
       : paceKind === "pace"
-        ? formatPace(currentMetrics.distanceM, currentMetrics.durationMs)
+        ? formatPaceForUnit(currentMetrics.distanceM, currentMetrics.durationMs)
         : "—";
 
   function onStop() {

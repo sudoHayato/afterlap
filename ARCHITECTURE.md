@@ -47,12 +47,12 @@ Dicionários de tradução e formatação por sistema de unidades. TypeScript pu
 | Grupo | API |
 |---|---|
 | Tradução | `resolveLocale(candidates)`, `translatorFor(locale)` → `t(key, params?)`, `getDictionary(locale)`; `Locale` = `"en" \| "pt-PT"`, `SUPPORTED_LOCALES`, `DEFAULT_LOCALE` (`"en"`) |
-| Unidades | `formatDistanceForUnit`, `formatSpeedForUnit`, `formatPaceForUnit` (todas `(valor, unit?)`); `UnitSystem` = `"metric" \| "imperial"`, `DEFAULT_UNIT_SYSTEM` (`"metric"`) |
+| Unidades | `formatDistanceForUnit(meters, unit?)`, `formatSpeedForUnit(mps, unit?)`, `formatPaceForUnit(meters, durationMs, unit?)`; `UnitSystem` = `"metric" \| "imperial"`, `DEFAULT_UNIT_SYSTEM` (`"metric"`) |
 
 - `t(key)` é tipado a partir da forma de `Dictionary`: uma chave que não existe, ou que aponta para um objeto em vez de uma string, é erro de compilação. `en.ts` e `pt-PT.ts` são verificados contra o mesmo tipo — uma chave em falta num dos dois também não compila.
 - Cada app junta os seus próprios candidatos a locale (`navigator.languages` na web; `I18nManager.getConstants().localeIdentifier` no Android, normalizado de `"pt_PT"` para `"pt-PT"`) e chama `resolveLocale`. O pacote não sabe nada de DOM nem de React Native.
 - Métrico está implementado (delega nos formatadores do motor); imperial está **declarado no tipo `UnitSystem` mas não implementado** — as funções lançam em vez de rotular números métricos como milhas. Ver `docs/BACKLOG.md` e [docs/adr/0004-i18n-dicionario-proprio.md](docs/adr/0004-i18n-dicionario-proprio.md).
-- **Os textos legais não passam por este módulo.** `apps/web-lab/src/routes/legal.*.tsx`, `LEGAL.md` e `src/lib/legal/config.ts` continuam pt-PT/UE, escritos diretamente nas rotas.
+- **Os textos legais não passam por este módulo.** `apps/web-lab/src/routes/legal.*.tsx`, `LEGAL.md` e `apps/web-lab/src/lib/legal/config.ts` continuam pt-PT/UE, escritos diretamente nas rotas.
 
 ## Fronteiras entre pacotes
 

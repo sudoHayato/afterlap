@@ -4,14 +4,12 @@ import {
   SPORT_PACE_KIND,
   formatDay,
   formatDuration,
-  formatPace,
-  formatSpeedKmh,
   seedSessions,
   segmentMetrics,
   segmentsFromEvents,
   sessionMetrics,
 } from "@bricklap/engine";
-import { formatDistanceForUnit } from "@bricklap/i18n";
+import { formatDistanceForUnit, formatPaceForUnit, formatSpeedForUnit } from "@bricklap/i18n";
 import { SportIcon } from "@/components/bricklap/icons";
 import { SegmentTape } from "@/components/bricklap/segment-tape";
 import { AppShell } from "@/components/bricklap/shell";
@@ -88,9 +86,9 @@ export function SummaryView({ id }: { id: string }) {
           const paceKind = SPORT_PACE_KIND[seg.sport];
           const extra =
             paceKind === "speed"
-              ? formatSpeedKmh(m.avgSpeedMps)
+              ? formatSpeedForUnit(m.avgSpeedMps)
               : paceKind === "pace"
-                ? formatPace(m.distanceM, m.durationMs)
+                ? formatPaceForUnit(m.distanceM, m.durationMs)
                 : "";
           return (
             <li
