@@ -14,10 +14,15 @@ function synthTrack(legs: Leg[], startAt: number, origin = LISBON): Sample[] {
   let lng = origin.lng;
   let heading = 0.4;
   let t = startAt;
+  let legStart = startAt;
   const step = 8000;
 
   for (const leg of legs) {
-    const end = t + leg.durationMs;
+    // Leg ends are cumulative from startAt, not from the drifting sample clock:
+    // otherwise each leg boundary pushes the track up to `step` ms past the
+    // session's stopped event and the last samples fall outside the session.
+    const end = legStart + leg.durationMs;
+    legStart = end;
     const speed = SIM_SPEED_MPS[leg.sport];
     while (t <= end) {
       samples.push({ t, lat, lng, speedMps: speed, source: "sim" });
