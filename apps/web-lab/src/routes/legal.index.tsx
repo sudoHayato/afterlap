@@ -17,7 +17,7 @@ function LegalIndex() {
         <p>
           <strong>Atenção:</strong> o responsável pelo tratamento ainda não está
           identificado ({LEGAL.controllerName}). Preenche os campos em{" "}
-          <code className="text-foreground">src/lib/legal/config.ts</code> antes de
+          <code className="text-foreground">apps/web-lab/src/lib/legal/config.ts</code> antes de
           um lançamento público.
         </p>
       ) : null}

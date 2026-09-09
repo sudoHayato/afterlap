@@ -1,10 +1,13 @@
 Bricklap inclui software de terceiros. Licenças originais prevalecem.
 
 - React, React DOM — MIT, Meta
-- TanStack Router / Start / Query / Table — MIT
-- Zustand — MIT
+- React Native — MIT, Meta
+- Expo, expo-dev-client, expo-status-bar — MIT, 650 Industries
+- TanStack Router — MIT, Tanner Linsley
+- Zustand — MIT, Paul Henschel
 - Lucide React — ISC
-- class-variance-authority, clsx, tailwind-merge — MIT
+- clsx, tailwind-merge — MIT
+- class-variance-authority — Apache License 2.0
 - Radix UI Slot — MIT
 - Tailwind CSS — MIT
 - IBM Plex Sans / Mono — SIL Open Font License 1.1
