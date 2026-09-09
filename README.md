@@ -12,8 +12,8 @@ Monorepo com npm workspaces:
 
 | Caminho | Pacote | O que é |
 |---|---|---|
-| `packages/engine` | `@bricklap/engine` | Motor de sessão. TypeScript puro: sem DOM, sem React Native, sem armazenamento. 104 testes, cobertura 100%. |
-| `apps/web-lab` | `@bricklap/web-lab` | Laboratório web (Vite + React + TanStack Router + Tailwind). GPS simulado. Inclui as páginas legais. **Não é o produto.** |
+| `packages/engine` | `@bricklap/engine` | Motor de sessão. TypeScript puro: sem DOM, sem React Native, sem armazenamento. 124 testes, cobertura 100%. |
+| `apps/web-lab` | `@bricklap/web-lab` | Laboratório web (Vite + React + TanStack Router + Tailwind). GPS simulado. Inclui as páginas legais e 9 testes do store. **Não é o produto.** |
 | `apps/mobile` | `@bricklap/mobile` | App Android (Expo SDK 57, dev client). Fase 1: um ecrã START/CHANGE/STOP com GPS simulado. |
 | `docs/` | — | ADRs, backlog, história, relatórios de sessão. |
 
@@ -48,7 +48,7 @@ O lab fica em http://localhost:8080. Para a app Android ver [apps/mobile/README.
 
 | Script | Faz |
 |---|---|
-| `npm test` / `npm run test:coverage` | Testes do motor (vitest), com ou sem relatório de cobertura em `coverage/` |
+| `npm test` / `npm run test:coverage` | Testes do motor e do store do lab (vitest); a cobertura em `coverage/` mede só o motor |
 | `npm run typecheck` | `tsc` em todos os workspaces |
 | `npm run dev:web` / `npm run build:web` | Lab web: servidor de desenvolvimento / build para `apps/web-lab/dist` |
 | `npm run dev:mobile` | Metro para um dev client já instalado (`expo start --dev-client`) |
