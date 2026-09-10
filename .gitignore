@@ -32,3 +32,13 @@ apps/mobile/ios
 
 # Not ours: instruction files for other coding agents
 AGENTS.md
+
+# Dados pessoais de localização puxados do telemóvel para depuração (teste de
+# campo, sessão 04) — nunca entram no repositório, que é público. Ficam fora
+# do repo (ex.: ~/bricklap-campo/); estas regras são só um cinto de segurança
+# contra um `git add .` distraído.
+*.db
+*.db-wal
+*.db-shm
+*.geojson
+gps-raw*

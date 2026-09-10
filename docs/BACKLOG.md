@@ -8,9 +8,9 @@ Prioridades: **P0** bloqueia a próxima sessão; **P1** próxima fase; **P2** qu
 
 Decidido pelo fundador na sessão 02, já não é backlog: `android.package` = `com.bricklap.app` é **definitivo**; **EAS abandonado** (sem conta Expo) — o caminho é build local, ver `docs/adr/0005-build-local-android.md`.
 
-## P1 — Fase 2
+## P1 — Fase 2 (concluída em 2026-09-10)
 
-Feito na sessão 03 (ADR 0006): adaptador de persistência SQLite append-only e `recovered` real ao reabrir a app. Feito na sessão 04 (ADR 0007): `expo-location` em primeiro plano, textos de permissão en + pt-PT, ecrã ligado enquanto grava, registo bruto `gps-raw.jsonl`, exportação GeoJSON. **Falta o teste de campo do fundador** (relatório da sessão 04 §6) para fechar a Fase 2. Fica por fazer:
+Feito na sessão 03 (ADR 0006): adaptador de persistência SQLite append-only e `recovered` real ao reabrir a app. Feito na sessão 04 (ADR 0007): `expo-location` em primeiro plano, textos de permissão en + pt-PT, ecrã ligado enquanto grava, registo bruto `gps-raw.jsonl`, exportação GeoJSON. **Teste de campo do fundador feito** (relatório da sessão 04 §6): 18:37, 1097 amostras a ≈ 1 Hz, um buraco (o fecho/reabertura deliberado), `recovered` na base. Fase 2 fechada pelo CTO. Fica por fazer, sem bloquear nada:
 
 - [ ] Ícones e cor de fundo definitivos (hoje assets do template Expo); splash com `expo-splash-screen` (não configurado; `assets/splash-icon.png` está por usar).
 - [ ] Decidir `newArchEnabled` explícito em `app.json` (SDK 57 já usa a nova arquitetura por defeito; deixar explícito evita surpresas).
@@ -20,7 +20,8 @@ Feito na sessão 03 (ADR 0006): adaptador de persistência SQLite append-only e 
 
 ## P1 — Fase 3 (herdado da sessão 04)
 
-- [ ] **Cadência de amostras: 1 Hz pedido, 1 fix a cada 4–6 s entregue com o telemóvel imóvel** (relatório da sessão 04 §4.5). O pedido registado no sistema está certo (`ProviderRequest[@+1s0ms, HIGH_ACCURACY]`); a supressão parece ser da pilha da Samsung para um aparelho parado (`Location Change Trigger`). Se o teste de campo mostrar que a caminhada também não dá ≈ 1 Hz, as opções são: subscrever o provedor `gps` puro em vez do fused, juntar um `getCurrentPositionAsync` de 1 em 1 s ao watcher, ou rever o critério "sem perda de amostras" do ROADMAP. **Primeiro item da Fase 3 se o teste de campo falhar por aqui.**
+- [x] ~~**Cadência de amostras**~~ — **resolvido pelo teste de campo** (sessão 04 §6): em movimento a app entrega ≈ 1 Hz (58,9 amostras/min em 18:37). Os 4–6 s medidos com o telemóvel parado eram supressão de fixes repetidos pelo sistema (`Location Change Trigger`), não um defeito. Nada a fazer.
+- [ ] **Ritmo em caminhada mal calibrado** (nota do fundador, sessão 04 §6.1): em corrida pareceu-lhe bem, a caminhar não. Hipótese do CTO: o ruído do GPS é proporcionalmente maior a velocidades baixas — a ~1,4 m/s um erro de 3 m entre fixes consecutivos a 1 Hz é uma fração enorme do deslocamento real, e o ritmo, sendo o inverso da velocidade, amplifica-o. A atacar com o filtro/suavização da Fase 3, sobre os dados crus que `gps-raw.jsonl` já grava (não inventar médias no motor sem olhar primeiro para os dados). **Candidato a primeiro item da Fase 3.**
 - [ ] **Exportação de dentro da app**, para não depender de `run-as` (que não funciona no APK de release — sessão 04 §4.5) nem da troca debug↔release: um botão que copie `files/SQLite/bricklap.db*` e `files/gps-raw.jsonl` para uma pasta alcançável (`Android/data/com.bricklap.app/files/`, que o `adb pull` lê sem build depurável) ou para a partilha do sistema. ~30 linhas, sem tocar na persistência. Enquanto não existir, o procedimento de duas instalações está no README.
 - [ ] **Precisão junto da amostra**: migração v2 (`samples.accuracy REAL NULL`) quando a Fase 3 decidir filtros; hoje a precisão e a marca "fraco" (> 30 m) vivem só no registo bruto `files/gps-raw.jsonl` (ADR 0007 §5, relatório da sessão 04 §5). A decidir com o CTO no arranque da Fase 3.
 - [ ] **Registo bruto cresce sem limite** (≈ 230 bytes por fix; ≈ 400 KB por 30 min). Rodar por sessão ou apagar quando o filtro estiver decidido.
