@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Data**: 2026-09-09 · **Branch**: `feat/i18n-e-primeiro-apk` (sessão 02; sessão 01 já em `main`) · **Fase**: 1 em curso
+**Data**: 2026-09-10 · **Branch**: `feat/i18n-e-primeiro-apk` (sessão 02; sessão 01 já em `main`) · **Fase**: 1 em curso
 
 ## Por pacote
 
@@ -17,8 +17,8 @@
 - Rename Afterlap → Bricklap completo (sessão 01).
 - **i18n mínimo (sessão 02)**: inglês como língua-base, pt-PT como primeira tradução, deteção automática pelo dispositivo com fallback para inglês. Nenhuma string de interface cravada nos componentes do lab ou da app — tudo via `t()`. Os textos legais continuam pt-PT/UE, fora do i18n (exceção pedida pelo CTO).
 - Camada de unidades (`@bricklap/i18n/units`): métrico implementado hoje; imperial declarado no tipo, não implementado (lança em vez de adivinhar).
-- Ambiente de desenvolvimento em Node 24.21.0 LTS / npm 11.19.0 (instalado via nvm nesta sessão).
-- Documentação: README, ARCHITECTURE, ROADMAP, STATUS, CLAUDE.md, `docs/adr/0001–0004`, `docs/BACKLOG.md`, `docs/HISTORY.md`, `docs/reports/`.
+- Ambiente de desenvolvimento em Node 24.21.0 LTS / npm 11.19.0 e toolchain Android local (JDK 17 + SDK 36), tudo instalado nesta sessão.
+- Documentação: README, ARCHITECTURE, ROADMAP, STATUS, CLAUDE.md, `docs/adr/0001–0005`, `docs/BACKLOG.md`, `docs/HISTORY.md`, `docs/reports/`.
 
 ## Limitações conhecidas
 
@@ -40,4 +40,4 @@
 
 ## Próximo passo
 
-Desbloquear o telemóvel e percorrer START/CHANGE/STOP com os quatro desportos, confirmando a interface em português. Detalhe do setup e dos problemas: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10.
+Validar uma sessão longa com o telemóvel no bolso (a app ainda não grava em segundo plano). Setup, problemas e validação funcional: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10.

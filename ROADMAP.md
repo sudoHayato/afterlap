@@ -13,7 +13,7 @@ Fases 0–6. As Fases 2–6 são **proposta a validar pelo CTO**; só a Fase 0 (
 - **Objetivo**: repositório limpo, motor testado e reutilizável, app Android a arrancar, produto pronto para ser global.
 - **Entregáveis**: monorepo (`packages/engine`, `packages/i18n`, `apps/web-lab`, `apps/mobile`), rename para Bricklap, testes do motor a 100%, app Expo com START/CHANGE/STOP em GPS simulado, i18n mínimo (inglês base, pt-PT primeira tradução, sem strings cravadas nos componentes), primeiro APK de desenvolvimento, documentação e ADRs.
 - **Critério de saída**: `npm test`, `npm run typecheck`, `npm run build:web` e `expo export --platform android` verdes; APK de desenvolvimento **compilado localmente** (sem EAS), instalado e a correr no telemóvel do CTO, com o Metro a servir o bundle.
-- **Estado**: código e documentação da sessão 01 (2026-09-09) em `main`. Sessão 02: i18n, correções aprovadas, ambiente em Node 24, toolchain Android local, **APK instalado no telemóvel e Metro a ligar**. Falta só a validação visual à mão (telemóvel bloqueado no fim da sessão). Ver `docs/reports/2026-09-09-sessao-02.md`.
+- **Estado**: código e documentação da sessão 01 (2026-09-09) em `main`. Sessão 02: i18n, correções aprovadas, ambiente em Node 24, toolchain Android local, **APK instalado no telemóvel e Metro a ligar**. START/CHANGE/STOP validado no dispositivo, em português, com a soma dos segmentos a fechar exatamente com o total. Ver `docs/reports/2026-09-09-sessao-02.md`.
 
 ## Fase 2 — GPS real e persistência local (proposta)
 
