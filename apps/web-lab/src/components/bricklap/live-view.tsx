@@ -2,18 +2,16 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Square, Watch } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import {
-  SPORT_META,
+  SPORT_PACE_KIND,
   currentSport,
   durationMs,
-  formatDistance,
   formatDuration,
-  formatPace,
-  formatSpeedKmh,
   segmentMetrics,
   segmentsFromEvents,
   sessionMetrics,
   type Sport,
 } from "@bricklap/engine";
+import { formatDistanceForUnit, formatPaceForUnit, formatSpeedForUnit } from "@bricklap/i18n";
 import { SportIcon } from "@/components/bricklap/icons";
 import { SegmentTape } from "@/components/bricklap/segment-tape";
 import { AppShell, Wordmark } from "@/components/bricklap/shell";
@@ -22,6 +20,7 @@ import { TrackMap } from "@/components/bricklap/track-map";
 import { useClock } from "@/components/bricklap/use-clock";
 import { useRecorder } from "@/components/bricklap/use-recorder";
 import { Button } from "@/components/ui/button";
+import { t } from "@/lib/i18n";
 import { useBricklap } from "@/lib/store";
 
 export function LiveView() {
@@ -40,9 +39,9 @@ export function LiveView() {
     return (
       <AppShell>
         <Wordmark />
-        <p className="mt-16 text-sm text-muted-foreground">No live session.</p>
+        <p className="mt-16 text-sm text-muted-foreground">{t("live.noLiveSession")}</p>
         <Button className="mt-6" onClick={() => void navigate({ to: "/" })}>
-          Back
+          {t("common.back")}
         </Button>
       </AppShell>
     );
@@ -53,12 +52,12 @@ export function LiveView() {
   const current = segs[segs.length - 1]!;
   const total = sessionMetrics(live, now);
   const currentMetrics = segmentMetrics(live, current, now);
-  const paceKind = SPORT_META[sport].paceKind;
+  const paceKind = SPORT_PACE_KIND[sport];
   const splitValue =
     paceKind === "speed"
-      ? formatSpeedKmh(currentMetrics.avgSpeedMps)
+      ? formatSpeedForUnit(currentMetrics.avgSpeedMps)
       : paceKind === "pace"
-        ? formatPace(currentMetrics.distanceM, currentMetrics.durationMs)
+        ? formatPaceForUnit(currentMetrics.distanceM, currentMetrics.durationMs)
         : "—";
 
   function onStop() {
@@ -73,7 +72,7 @@ export function LiveView() {
 
   return (
     <AppShell showFooter={false}>
-      <Wordmark kicker="Phone" />
+      <Wordmark kicker={t("common.phone")} />
 
       <div className="mt-10 text-center">
         <p className="font-display text-8xl leading-none tracking-tight tabular-nums text-foreground">
@@ -83,15 +82,18 @@ export function LiveView() {
           <span className="size-1.5 rounded-full bg-primary pulse-dot" />
           <SportIcon sport={sport} className="size-3.5" />
           <span className="text-xs font-medium tracking-[0.14em] uppercase">
-            {SPORT_META[sport].live}
+            {t(`sport.${sport}.live`)}
           </span>
         </div>
       </div>
 
       <dl className="mt-8 grid grid-cols-3 gap-2">
-        <Stat label="Distance" value={formatDistance(total.distanceM)} />
-        <Stat label="Segment" value={formatDuration(currentMetrics.durationMs)} />
-        <Stat label={paceKind === "speed" ? "Speed" : "Pace"} value={splitValue} />
+        <Stat label={t("common.distance")} value={formatDistanceForUnit(total.distanceM)} />
+        <Stat label={t("live.segment")} value={formatDuration(currentMetrics.durationMs)} />
+        <Stat
+          label={paceKind === "speed" ? t("common.speed") : t("common.pace")}
+          value={splitValue}
+        />
       </dl>
 
       <TrackMap
@@ -113,7 +115,7 @@ export function LiveView() {
                   : "rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground"
               }
             >
-              {SPORT_META[seg.sport].label} {formatDuration(m.durationMs)}
+              {t(`sport.${seg.sport}.label`)} {formatDuration(m.durationMs)}
             </li>
           );
         })}
@@ -121,17 +123,17 @@ export function LiveView() {
 
       <div className="mt-auto space-y-2.5 pt-8">
         <Button size="xl" className="w-full rounded-2xl" onClick={() => setPicking(true)}>
-          Change
+          {t("common.change")}
         </Button>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" size="lg" onClick={() => setConfirmStop(true)}>
             <Square className="size-3.5 fill-current" />
-            Stop
+            {t("common.stop")}
           </Button>
           <Button variant="ghost" size="lg" asChild>
             <Link to="/watch">
               <Watch className="size-4" />
-              Watch
+              {t("common.watch")}
             </Link>
           </Button>
         </div>
@@ -139,8 +141,8 @@ export function LiveView() {
 
       {picking ? (
         <Overlay
-          title="Next sport"
-          copy="Session stays open. Only the segment changes."
+          title={t("live.nextSportTitle")}
+          copy={t("live.nextSportCopy")}
           onClose={() => setPicking(false)}
         >
           <SportPicker exclude={sport} onChange={onChange} size="lg" />
@@ -149,13 +151,13 @@ export function LiveView() {
 
       {confirmStop ? (
         <Overlay
-          title="End session?"
-          copy="Every segment stays on the tape."
+          title={t("live.endSessionTitle")}
+          copy={t("live.endSessionCopy")}
           onClose={() => setConfirmStop(false)}
         >
           <div className="grid gap-2">
             <Button size="lg" className="w-full rounded-xl" onClick={onStop}>
-              End session
+              {t("live.endSessionConfirm")}
             </Button>
             <Button
               variant="ghost"
@@ -166,7 +168,7 @@ export function LiveView() {
                 void navigate({ to: "/" });
               }}
             >
-              Discard
+              {t("common.discard")}
             </Button>
           </div>
         </Overlay>
@@ -204,7 +206,7 @@ function Overlay({
       <button
         type="button"
         className="absolute inset-0 cursor-pointer"
-        aria-label="Close"
+        aria-label={t("common.close")}
         onClick={onClose}
       />
       <div className="relative z-10 w-full max-w-md rounded-t-3xl border border-border bg-elevated p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:rounded-3xl">

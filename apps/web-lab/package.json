@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@bricklap/engine": "*",
+    "@bricklap/i18n": "*",
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-router": "^1.170.33",
     "class-variance-authority": "^0.7.1",

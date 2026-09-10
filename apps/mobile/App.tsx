@@ -3,7 +3,8 @@
  *
  * Um único ecrã: INICIAR uma vez, MUDAR de desporto sem parar, PARAR no fim.
  * Todo o estado da sessão vive em @bricklap/engine (os eventos são a fonte de
- * verdade; segmentos e métricas são derivados).
+ * verdade; segmentos e métricas são derivados). Todo o texto vem de
+ * @bricklap/i18n (o dispositivo escolhe a língua; ver ./i18n.ts).
  *
  * Nesta fase o GPS é SIMULADO (createSim / stepSim / sampleFromSim): não há
  * fornecedor de localização real, não há persistência e não há biblioteca de
@@ -21,7 +22,7 @@ import {
 } from "react-native";
 import {
   SPORTS,
-  SPORT_META,
+  SPORT_PACE_KIND,
   appendSample,
   applyChange,
   applyStop,
@@ -29,10 +30,7 @@ import {
   createSim,
   currentSport,
   durationMs,
-  formatDistance,
   formatDuration,
-  formatPace,
-  formatSpeedKmh,
   sampleFromSim,
   segmentMetrics,
   segmentsFromEvents,
@@ -44,6 +42,8 @@ import {
   type SimState,
   type Sport,
 } from "@bricklap/engine";
+import { formatDistanceForUnit, formatPaceForUnit, formatSpeedForUnit } from "@bricklap/i18n";
+import { t } from "./i18n";
 
 const COLORS = {
   background: "#070708",
@@ -69,9 +69,9 @@ function useArmedAfter(ms: number): boolean {
 }
 
 function paceOrSpeed(sport: Sport, m: SegmentMetrics): string | null {
-  const kind = SPORT_META[sport].paceKind;
-  if (kind === "pace") return formatPace(m.distanceM, m.durationMs);
-  if (kind === "speed") return formatSpeedKmh(m.avgSpeedMps);
+  const kind = SPORT_PACE_KIND[sport];
+  if (kind === "pace") return formatPaceForUnit(m.distanceM, m.durationMs);
+  if (kind === "speed") return formatSpeedForUnit(m.avgSpeedMps);
   return null;
 }
 
@@ -102,11 +102,11 @@ export default function App() {
     if (!s || s.status !== "live") return null;
     const sport = currentSport(s.events);
     if (!sport) return null;
-    const t = Date.now();
-    const dt = Math.max(0, t - lastTickRef.current);
-    lastTickRef.current = t;
+    const ts = Date.now();
+    const dt = Math.max(0, ts - lastTickRef.current);
+    lastTickRef.current = ts;
     simRef.current = stepSim(simRef.current, sport, dt);
-    return sampleFromSim(simRef.current, sport, t);
+    return sampleFromSim(simRef.current, sport, ts);
   }, []);
 
   useEffect(() => {
@@ -127,14 +127,14 @@ export default function App() {
   }, [live, tickSim]);
 
   const start = useCallback((sport: Sport) => {
-    const t = Date.now();
+    const ts = Date.now();
     simRef.current = createSim();
-    lastTickRef.current = t;
-    const first = sampleFromSim(simRef.current, sport, t);
-    const s = appendSample(createLiveSession(sport, t), first);
+    lastTickRef.current = ts;
+    const first = sampleFromSim(simRef.current, sport, ts);
+    const s = appendSample(createLiveSession(sport, ts), first);
     sessionRef.current = s;
     setPickerOpen(false);
-    setNow(t);
+    setNow(ts);
     setSession(s);
   }, []);
 
@@ -172,7 +172,7 @@ export default function App() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Bricklap</Text>
-          <Text style={styles.kicker}>Android · GPS simulado</Text>
+          <Text style={styles.kicker}>{t("mobile.kicker")}</Text>
         </View>
 
         {session === null ? (
@@ -209,13 +209,10 @@ function IdleScreen(props: {
 }) {
   return (
     <View style={styles.stack}>
-      <Text style={styles.sectionLabel}>Desporto inicial</Text>
+      <Text style={styles.sectionLabel}>{t("mobile.initialSport")}</Text>
       <SportPicker selected={props.sport} onPick={props.onPick} />
-      <Button label="Iniciar" kind="primary" big onPress={props.onStart} />
-      <Text style={styles.hint}>
-        Carrega em Iniciar uma vez. Depois podes Mudar de desporto sem parar o
-        relógio e Parar apenas no fim.
-      </Text>
+      <Button label={t("common.start")} kind="primary" big onPress={props.onStart} />
+      <Text style={styles.hint}>{t("mobile.idleHint")}</Text>
     </View>
   );
 }
@@ -239,24 +236,24 @@ function LiveScreen(props: {
   return (
     <View style={styles.stack}>
       <View style={styles.card}>
-        <Text style={styles.liveSport}>{SPORT_META[sport].live}</Text>
+        <Text style={styles.liveSport}>{t(`sport.${sport}.live`)}</Text>
         <Text style={styles.bigClock}>
           {formatDuration(durationMs(session, now))}
         </Text>
         <Text style={styles.stat}>
-          Distância total · {formatDistance(total.distanceM)}
+          {t("mobile.totalDistanceLabel")} · {formatDistanceForUnit(total.distanceM)}
         </Text>
       </View>
 
       {currentM ? (
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>Segmento atual</Text>
+          <Text style={styles.sectionLabel}>{t("mobile.currentSegment")}</Text>
           <View style={styles.row}>
-            <Metric label="Tempo" value={formatDuration(currentM.durationMs)} />
-            <Metric label="Distância" value={formatDistance(currentM.distanceM)} />
+            <Metric label={t("common.time")} value={formatDuration(currentM.durationMs)} />
+            <Metric label={t("common.distance")} value={formatDistanceForUnit(currentM.distanceM)} />
             {rate ? (
               <Metric
-                label={SPORT_META[sport].paceKind === "pace" ? "Ritmo" : "Velocidade"}
+                label={SPORT_PACE_KIND[sport] === "pace" ? t("common.pace") : t("common.speed")}
                 value={rate}
               />
             ) : null}
@@ -268,19 +265,19 @@ function LiveScreen(props: {
 
       {props.pickerOpen ? (
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>Mudar para…</Text>
+          <Text style={styles.sectionLabel}>{t("mobile.changeTo")}</Text>
           <SportPicker
             selected={sport}
             exclude={sport}
             onPick={props.onChange}
           />
-          <Button label="Cancelar" kind="ghost" onPress={props.onTogglePicker} />
+          <Button label={t("common.cancel")} kind="ghost" onPress={props.onTogglePicker} />
         </View>
       ) : (
-        <Button label="Mudar" kind="secondary" big onPress={props.onTogglePicker} />
+        <Button label={t("common.change")} kind="secondary" big onPress={props.onTogglePicker} />
       )}
 
-      <Button label="Parar" kind="danger" big onPress={props.onStop} />
+      <Button label={t("common.stop")} kind="danger" big onPress={props.onStop} />
     </View>
   );
 }
@@ -297,18 +294,24 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
   return (
     <View style={styles.stack}>
       <View style={styles.card}>
-        <Text style={styles.sectionLabel}>Resumo</Text>
+        <Text style={styles.sectionLabel}>{t("common.summary")}</Text>
         <Text style={styles.bigClock}>{formatDuration(durationMs(session))}</Text>
         <View style={styles.row}>
-          <Metric label="Distância" value={formatDistance(total.distanceM)} />
-          <Metric label="Segmentos" value={String(segments.length)} />
-          <Metric label="Amostras" value={String(session.samples.length)} />
+          <Metric label={t("common.distance")} value={formatDistanceForUnit(total.distanceM)} />
+          <Metric label={t("common.segments")} value={String(segments.length)} />
+          <Metric label={t("mobile.samples")} value={String(session.samples.length)} />
         </View>
       </View>
 
       <SegmentList session={session} now={Date.now()} />
 
-      <Button label="Nova sessão" kind="primary" big disabled={!armed} onPress={props.onReset} />
+      <Button
+        label={t("mobile.newSession")}
+        kind="primary"
+        big
+        disabled={!armed}
+        onPress={props.onReset}
+      />
     </View>
   );
 }
@@ -322,18 +325,18 @@ function SegmentList(props: { session: Session; now: number }) {
   const segments = segmentsFromEvents(session.events);
   return (
     <View style={styles.card}>
-      <Text style={styles.sectionLabel}>Segmentos</Text>
+      <Text style={styles.sectionLabel}>{t("common.segments")}</Text>
       {segments.map((seg) => {
         const m = segmentMetrics(session, seg, now);
         const rate = paceOrSpeed(seg.sport, m);
         return (
           <View key={seg.index} style={styles.segmentRow}>
             <Text style={styles.segmentLabel}>
-              {seg.index + 1}. {SPORT_META[seg.sport].label}
-              {seg.endAt === null ? " · ao vivo" : ""}
+              {seg.index + 1}. {t(`sport.${seg.sport}.label`)}
+              {seg.endAt === null ? t("mobile.liveSuffix") : ""}
             </Text>
             <Text style={styles.segmentValue}>
-              {formatDuration(m.durationMs)} · {formatDistance(m.distanceM)}
+              {formatDuration(m.durationMs)} · {formatDistanceForUnit(m.distanceM)}
               {rate ? ` · ${rate}` : ""}
             </Text>
           </View>
@@ -365,7 +368,7 @@ function SportPicker(props: {
             ]}
           >
             <Text style={[styles.chipText, active && styles.chipTextActive]}>
-              {SPORT_META[s].label}
+              {t(`sport.${s}.label`)}
             </Text>
           </Pressable>
         );

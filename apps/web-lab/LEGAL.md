@@ -1,6 +1,6 @@
 # Notas legais do laboratório (Portugal / UE)
 
-Textos do lab redigidos pelo **Grok / Grok Build**. Não são parecer jurídico. Identidade do responsável ainda é placeholder (`src/lib/legal/config.ts`).
+Textos do lab redigidos pelo **Grok / Grok Build**. Não são parecer jurídico. Identidade do responsável ainda é placeholder (`apps/web-lab/src/lib/legal/config.ts`).
 
 Língua: português de Portugal (pt-PT). Jurisdição considerada: Portugal e União Europeia. O Grok não aplicou lei brasileira (LGPD).
 

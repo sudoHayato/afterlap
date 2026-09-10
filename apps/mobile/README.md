@@ -19,7 +19,7 @@ Nesta fase:
 
 - O GPS é **simulado** (`createSim` / `stepSim` / `sampleFromSim`), uma amostra por segundo.
 - **Não há persistência** — a sessão perde-se ao fechar a app.
-- **Não há navegação** nem dependências extra: só `expo`, `expo-dev-client`, `expo-status-bar`, `react` e `react-native`.
+- **Não há navegação** nem dependências extra: só `expo`, `expo-dev-client`, `expo-status-bar`, `react`, `react-native` e os workspaces `@bricklap/engine` e `@bricklap/i18n`.
 - **Só Android.** Não existe configuração iOS nem web.
 
 ## Comandos
@@ -49,61 +49,108 @@ A app usa `expo-dev-client`, por isso **não corre no Expo Go**: é preciso um
 build de desenvolvimento (APK) instalado no telemóvel. O Metro (`npm run start`)
 serve apenas o JavaScript; o binário nativo tem de existir primeiro.
 
-Há duas formas de obter o APK a partir do WSL 2:
+**O caminho é o build local.** O EAS Build (nuvem da Expo) foi abandonado por
+decisão do fundador — sem conta Expo. Ver
+[docs/adr/0005-build-local-android.md](../../docs/adr/0005-build-local-android.md).
 
-### (a) EAS Build na cloud
+### Toolchain (uma vez)
 
-Não precisa de Android SDK nem de JDK locais.
+Instalada em modo utilizador, sem `root` (o `sudo` desta máquina pede
+palavra-passe):
+
+| Componente | Versão | Onde |
+| --- | --- | --- |
+| JDK (Temurin) | 17 | `~/opt/jdk-17` |
+| Android command-line tools | build 16111833 | `~/Android/Sdk/cmdline-tools/latest` |
+| platform-tools (`adb`) | 37.0.1 | `~/Android/Sdk/platform-tools` |
+| Plataforma | `android-36` | `~/Android/Sdk/platforms` |
+| build-tools | 36.0.0 | `~/Android/Sdk/build-tools` |
+
+As versões são as que o `expo prebuild` do SDK 57 pede (Gradle 9.3.1,
+`compileSdk`/`targetSdk` 36). `JAVA_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT` e
+`PATH` estão fixados num bloco marcado no `~/.bashrc`.
+
+### Ligar o telemóvel (depuração sem fios)
+
+USB em WSL 2 exigiria `usbipd-win` e privilégios de administrador, e tira o
+telemóvel ao Windows enquanto estiver anexado. Por Wi-Fi não é preciso nada
+disso — a WSL fala com a rede local sem configuração.
+
+No telemóvel (Android 11+): Opções de programador → *Depuração sem fios* →
+*Emparelhar dispositivo com código*. Esse diálogo mostra um IP:porta e um código
+de 6 dígitos, **e tem de ficar aberto** enquanto corres o `adb pair`.
 
 ```sh
-npx eas-cli login
-npx eas-cli build:configure            # cria eas.json e associa um projeto EAS (uma vez)
-npx eas-cli build --platform android --profile development
+adb pair <IP>:<PORTA-DE-EMPARELHAMENTO> <CODIGO>
+adb connect <IP>:<PORTA-DE-LIGACAO>   # porta diferente, no ecrã principal
+adb devices -l
 ```
 
-No fim, o EAS mostra um link/QR code; abre-o no telemóvel e instala o APK
-(é preciso permitir a instalação de apps de fontes desconhecidas).
+Notas aprendidas à força:
 
-### (b) Build local no WSL 2
+- A **porta de ligação não é a de emparelhamento** e muda a cada arranque da
+  depuração sem fios.
+- `adb mdns services` **não descobre nada** a partir da WSL (o multicast não
+  atravessa a NAT da WSL 2), nem do Windows quando o diálogo está fechado.
+- Se o ecrã principal não estiver à mão, as portas abertas do telemóvel podem
+  ser encontradas por varrimento (30000–49999); só uma aceita o `adb connect`,
+  as outras entram como `offline` e limpam-se com `adb disconnect`.
 
-Precisa de **JDK 17** e do **Android SDK** (command-line tools, platform-tools,
-build-tools e platform da versão alvo) instalados dentro do WSL 2, com
-`ANDROID_HOME` e `JAVA_HOME` definidos.
+### Compilar e instalar
 
 ```sh
-npx expo run:android          # compila e instala no dispositivo visto pelo adb
+npx expo run:android
 ```
 
-Para o `adb` do WSL 2 ver o telemóvel:
-
-- **USB via `usbipd-win`** (no Windows): `usbipd list`, `usbipd bind --busid <id>`,
-  `usbipd attach --wsl --busid <id>`; depois `adb devices` no WSL.
-- **Wi-Fi (sem passagem de USB)**, Android 11+: no telemóvel activa
-  *Depuração sem fios* em Opções de programador, escolhe *Emparelhar com código*
-  e no WSL corre `adb pair <ip>:<porta-de-emparelhamento>` seguido de
-  `adb connect <ip>:<porta>`. Evita completamente o USB.
+Com um único dispositivo ligado, **não passes `--device <serial>`**: esse flag
+espera um *nome* de dispositivo e falha com `Could not find device with name`.
 
 ## Metro tem de ser alcançável pelo telemóvel
 
-Depois de instalar o dev client, corre `npm run start` e abre a app. O telemóvel
-tem de conseguir chegar ao Metro:
+Estar na mesma rede Wi-Fi **não chega** em WSL 2: a WSL tem um IP interno
+(172.x) que o telemóvel não alcança, e o Expo aponta a app para esse IP.
 
-- **Mesma rede Wi-Fi** — normalmente basta; no WSL 2 pode ser necessário
-  reencaminhar a porta 8081 do Windows para o WSL (`netsh interface portproxy`)
-  ou usar o modo de rede *mirrored* do WSL.
-- **`npx expo start --dev-client --tunnel`** — atravessa NAT/firewall sem
-  configurar nada na rede (mais lento).
+**O que funciona, e é o caminho normal:**
 
-Também é possível usar `adb reverse tcp:8081 tcp:8081` quando o dispositivo está
-ligado ao `adb` (USB ou Wi-Fi).
+```sh
+adb reverse tcp:8081 tcp:8081
+npm run dev:mobile
+```
+
+O `adb reverse` faz o `localhost:8081` do telemóvel apontar para o Metro dentro
+da WSL, através da própria ligação `adb` — sem encaminhamento de portas nem
+serviços externos. O Expo CLI costuma fazê-lo sozinho quando há um dispositivo
+ligado. Para confirmar do lado do telemóvel:
+
+```sh
+adb shell curl -s http://localhost:8081/status   # -> packager-status:running
+```
+
+Se a app tiver sido aberta a apontar para o IP da WSL, relança-a já com o
+`localhost`:
+
+```sh
+adb shell am start -a android.intent.action.VIEW \
+  -d "exp+bricklap://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+```
+
+Alternativas, por ordem de preferência:
+
+- **`npx expo start --dev-client --tunnel`** — atravessa NAT e firewall sem
+  configurar nada, mas é mais lento. Recurso se o `adb reverse` falhar.
+- **Modo de rede *mirrored* da WSL** (`.wslconfig` com `networkingMode=mirrored`)
+  — **não é opção nesta máquina**: exige Windows 11 22H2+, e esta é Windows 10
+  Home 22H2.
 
 ## Estrutura
 
 ```
 apps/mobile/
   App.tsx        ecrã único: Iniciar / Mudar / Parar com GPS simulado
+  i18n.ts        locale do dispositivo (I18nManager) -> t() de @bricklap/i18n
   index.ts       registerRootComponent(App)
-  app.json       configuração Expo (só Android)
+  app.json       configuração Expo (só Android; package com.bricklap.app)
   tsconfig.json  extends expo/tsconfig.base + strict + noUncheckedIndexedAccess
   assets/        ícones do template (placeholders)
+  android/       gerada por `expo prebuild`, ignorada pelo git
 ```

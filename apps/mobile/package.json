@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@bricklap/engine": "*",
+    "@bricklap/i18n": "*",
     "expo": "~57.0.21",
     "expo-dev-client": "~57.0.18",
     "expo-status-bar": "~57.0.1",

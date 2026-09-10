@@ -1,5 +1,6 @@
-import { SPORT_META, SPORTS, type Sport } from "@bricklap/engine";
+import { SPORTS, type Sport } from "@bricklap/engine";
 import { SportIcon } from "@/components/bricklap/icons";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export function SportPicker({
@@ -31,7 +32,7 @@ export function SportPicker({
             )}
           >
             <SportIcon sport={sport} className="size-4 shrink-0" />
-            <span className="text-sm font-medium">{SPORT_META[sport].label}</span>
+            <span className="text-sm font-medium">{t(`sport.${sport}.label`)}</span>
           </button>
         );
       })}
