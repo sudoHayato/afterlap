@@ -1,6 +1,6 @@
 # Roadmap
 
-Fases 0–6. As Fases 2–6 são **proposta a validar pelo fundador**; só a Fase 0 (concluída) e a Fase 1 (em curso) estão decididas.
+Fases 0–6. As Fases 2–6 são **proposta a validar pelo fundador**; as Fases 0 e 1 estão concluídas.
 
 ## Fase 0 — Laboratório web (concluída)
 
@@ -8,12 +8,12 @@ Fases 0–6. As Fases 2–6 são **proposta a validar pelo fundador**; só a Fas
 - **Entregáveis**: motor (eventos → segmentos → métricas), app web START/CHANGE/STOP, ecrã `/watch`, textos legais pt-PT/UE.
 - **Estado**: feito pelo Grok / Grok Build em setembro de 2026 (nome Afterlap). Ver [docs/HISTORY.md](docs/HISTORY.md).
 
-## Fase 1 — Base do produto e esqueleto Android (em curso)
+## Fase 1 — Base do produto e esqueleto Android (concluída em 2026-09-10)
 
 - **Objetivo**: repositório limpo, motor testado e reutilizável, app Android a arrancar, produto pronto para ser global.
 - **Entregáveis**: monorepo (`packages/engine`, `packages/i18n`, `apps/web-lab`, `apps/mobile`), rename para Bricklap, testes do motor a 100%, app Expo com START/CHANGE/STOP em GPS simulado, i18n mínimo (inglês base, pt-PT primeira tradução, sem strings cravadas nos componentes), primeiro APK de desenvolvimento, documentação e ADRs.
 - **Critério de saída**: `npm test`, `npm run typecheck`, `npm run build:web` e `expo export --platform android` verdes; APK de desenvolvimento **compilado localmente** (sem EAS), instalado e a correr no telemóvel do fundador, com o Metro a servir o bundle.
-- **Estado**: código e documentação da sessão 01 (2026-09-09) em `main`. Sessão 02: i18n, correções aprovadas, ambiente em Node 24, toolchain Android local, **APK instalado no telemóvel e Metro a ligar**. START/CHANGE/STOP validado no dispositivo, em português, com a soma dos segmentos a fechar exatamente com o total. Ver `docs/reports/2026-09-09-sessao-02.md`.
+- **Estado**: **concluída em 2026-09-10**, com o critério de saída cumprido de ponta a ponta. Código e documentação da sessão 01 (2026-09-09) em `main`. Sessão 02: i18n, correções aprovadas, ambiente em Node 24, toolchain Android local, **APK instalado no telemóvel e Metro a ligar**. START/CHANGE/STOP validado no dispositivo, em português, com a soma dos segmentos a fechar exatamente com o total. Ver `docs/reports/2026-09-09-sessao-02.md`.
 
 ## Fase 2 — GPS real e persistência local (proposta)
 
