@@ -8,6 +8,8 @@
  * foreground app short of pulling the battery — every event is still on disk,
  * at most a few seconds of samples are missing, and the state the app rebuilds
  * at boot is exactly the replay of the database pulled off the phone.
+ * It records with the simulator (dev switch on the idle screen) so it runs
+ * indoors; the real GPS is validated by the field test in the session 04 report.
  *
  * Driving the UI: every screen the test touches (idle, resume, history) is
  * read with `uiautomator dump` and its buttons tapped by their accessible
@@ -186,6 +188,9 @@ describe("recovery on the device", () => {
     // timing out mid-test (a locked screen answers no input at all).
     shell("svc power stayon true");
     shell("input keyevent KEYCODE_WAKEUP");
+    // A screen that timed out before the run sits behind the keyguard, and
+    // every tap below would land on the lock screen. Only works without a PIN.
+    shell("wm dismiss-keyguard");
     forceStop();
   }, 30_000);
 
@@ -210,6 +215,10 @@ describe("recovery on the device", () => {
       r = await launch();
     }
     expect(r.liveId, "a clean start: nothing live on disk").toBeNull();
+    // Dev-only switch (App.tsx): this test proves persistence, not the GPS,
+    // and must pass indoors. A resumed session keeps the source of its last
+    // sample, so the switch survives every kill below.
+    await tapText("Simulado");
     await tapText("Iniciar");
     // Two flush intervals plus slack: at least one batch has certainly landed.
     await sleep(DEFAULT_FLUSH_INTERVAL_MS * 2 + 1_500);

@@ -1,6 +1,6 @@
 # @bricklap/mobile
 
-Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 1 — esqueleto.**
+Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 2 — GPS real e persistência local.**
 
 ## O que é
 
@@ -17,10 +17,52 @@ segmentos e métricas são derivados.
 
 Nesta fase:
 
-- O GPS é **simulado** (`createSim` / `stepSim` / `sampleFromSim`), uma amostra por segundo.
-- **Não há persistência** — a sessão perde-se ao fechar a app.
-- **Não há navegação** nem dependências extra: só `expo`, `expo-dev-client`, `expo-status-bar`, `react`, `react-native` e os workspaces `@bricklap/engine` e `@bricklap/i18n`.
+- **GPS real em primeiro plano** (`expo-location`, 1 Hz, precisão máxima, só
+  `ACCESS_FINE_LOCATION`; nada de segundo plano — ver
+  [ADR 0007](../../docs/adr/0007-gps-primeiro-plano.md)). O ecrã fica ligado
+  enquanto grava (`expo-keep-awake`). O simulador (`createSim` / `stepSim` /
+  `sampleFromSim`) continua disponível por um interruptor no ecrã inicial,
+  **só em builds de desenvolvimento**; uma sessão retomada segue a fonte da sua
+  última amostra.
+- **Persistência local** em SQLite append-only (`persistence/`,
+  [ADR 0006](../../docs/adr/0006-persistencia-sqlite-append-only.md)); a sessão
+  sobrevive a fechar ou matar a app. Cada fix vai também para um registo bruto
+  `files/gps-raw.jsonl` com a precisão (ver *Exportar o traçado*).
+- **Não há navegação** nem mapa. Dependências: `expo`, `expo-dev-client`,
+  `expo-file-system`, `expo-keep-awake`, `expo-location`, `expo-sqlite`,
+  `expo-status-bar`, `react`, `react-native` e os workspaces `@bricklap/engine`
+  e `@bricklap/i18n`.
 - **Só Android.** Não existe configuração iOS nem web.
+
+## Exportar o traçado (depuração)
+
+A app não mostra mapa. Para ver o que gravou, puxa-se a base e o registo bruto
+do telemóvel e converte-se em GeoJSON, que qualquer visualizador abre
+(geojson.io, QGIS, …). `adb` abaixo é o `adb` da WSL ou o `adb.exe` do Windows,
+conforme a ligação (ver mais abaixo).
+
+```sh
+mkdir -p /tmp/bricklap-pull && cd /tmp/bricklap-pull
+for x in "" -wal -shm; do
+  adb exec-out "run-as com.bricklap.app cat files/SQLite/bricklap.db$x" > "bricklap.db$x"
+done
+adb exec-out "run-as com.bricklap.app cat files/gps-raw.jsonl" > gps-raw.jsonl
+node <repo>/apps/mobile/scripts/geojson.mjs bricklap.db gps-raw.jsonl > traçado.geojson
+```
+
+Os ficheiros `-wal` e `-shm` **fazem parte da base** (modo WAL): sem eles faltam
+os últimos commits. O registo bruto é opcional; sem ele o script não sabe a
+precisão dos fixes. O `-shm` pode não existir se a base já foi consolidada.
+
+O script escreve o GeoJSON no `stdout` (uma `LineString` por segmento, com o
+desporto; um `Point` por fix fraco — precisão > 30 m ou desconhecida) e, no
+`stderr`, um resumo por sessão: duração, amostras, distância, buracos
+superiores a 5 s (quantos e o maior), fixes fracos. `--session <id>` limita a uma
+sessão. É esse resumo que a secção "Teste de campo" do relatório pede.
+
+O script é autónomo (`node:sqlite`, sem dependências) e reimplementa o corte de
+segmentos por `sport_changed` / `stopped` — se essa regra mudar no motor, muda
+aqui também.
 
 ## Comandos
 
@@ -116,6 +158,14 @@ A WSL 2 não vê USB, mas o **adb do Windows** vê — e corre a partir da WSL:
 4. `adb.exe reverse tcp:8081 tcp:8081`. O `localhost:8081` do telemóvel passa a
    ser o `localhost:8081` **do Windows**, que a WSL 2 encaminha para o Metro —
    confirma com `curl.exe http://localhost:8081/status` no Windows.
+
+   **Se `adb.exe shell curl localhost:8081/status` falhar com `exit=52`** e o
+   `curl.exe` do Windows funcionar: a WSL só expôs o Metro em `[::1]:8081`
+   (IPv6) — vê-se com `netstat.exe -an | findstr 8081` — e o túnel do `adb`
+   liga-se por IPv4. Um relé IPv4 na WSL resolve (`socat`, ou um `net.createServer`
+   em Node a encaminhar `0.0.0.0:8082 → 127.0.0.1:8081`), seguido de
+   `adb.exe reverse tcp:8081 tcp:8082`. Nesta máquina já existe um relé em
+   `8082` (sessão 04).
 5. Teste de recuperação: `BRICKLAP_ADB=/mnt/c/Users/<utilizador>/platform-tools/adb.exe npm run test:device`.
 
 O que **não** funciona nesta máquina: apontar o `adb` da WSL ao servidor do
@@ -175,11 +225,35 @@ Alternativas, por ordem de preferência:
 
 ```
 apps/mobile/
-  App.tsx        ecrã único: Iniciar / Mudar / Parar com GPS simulado
-  i18n.ts        locale do dispositivo (I18nManager) -> t() de @bricklap/i18n
-  index.ts       registerRootComponent(App)
-  app.json       configuração Expo (só Android; package com.bricklap.app)
-  tsconfig.json  extends expo/tsconfig.base + strict + noUncheckedIndexedAccess
-  assets/        ícones do template (placeholders)
-  android/       gerada por `expo prebuild`, ignorada pelo git
+  App.tsx          ecrãs: início / ao vivo / resumo / retomar / histórico
+  store.ts         uma instância do adaptador de persistência por processo
+  i18n.ts          locale do dispositivo (I18nManager) -> t() de @bricklap/i18n
+  index.ts         registerRootComponent(App)
+  gps/             expo-location (permissão, watcher a 1 Hz) e o registo bruto gps-raw.jsonl
+  persistence/     SQLite append-only: esquema, replay, store (ADR 0006)
+  device/          teste de recuperação num telemóvel real (npm run test:device)
+  scripts/         geojson.mjs — base + registo bruto -> GeoJSON e resumo
+  test/            testes em Node (node:sqlite) do adaptador
+  app.json         configuração Expo (só Android; package com.bricklap.app; plugin expo-location sem segundo plano)
+  tsconfig.json    extends expo/tsconfig.base + strict + noUncheckedIndexedAccess
+  assets/          ícones do template (placeholders)
+  android/         gerada por `expo prebuild`, ignorada pelo git
 ```
+
+## Build de release para um treino a sério
+
+O dev client carrega o JavaScript do Metro, e o Metro fica em casa. Para uma
+caminhada de 30 min a app tem de levar o bundle consigo: build de **release**
+(assinado com a chave de debug que o `expo prebuild` gera — serve para instalar
+no telemóvel, não para distribuir).
+
+```sh
+cd apps/mobile
+npx expo prebuild --platform android --clean --no-install
+cd android && ./gradlew assembleRelease
+# APK em app/build/outputs/apk/release/app-release.apk
+```
+
+Instalar por cima do build de debug mantém os dados (mesmo package, mesma
+chave). Para voltar ao desenvolvimento com Metro, instala-se outra vez o
+`assembleDebug` — também sem perder a base.
