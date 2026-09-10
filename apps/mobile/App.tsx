@@ -296,10 +296,10 @@ function IdleScreen(props: {
   return (
     <View style={styles.stack}>
       <Text style={styles.sectionLabel}>{t("mobile.initialSport")}</Text>
-      <SportPicker selected={props.sport} onPick={props.onPick} />
-      <Button label={t("common.start")} kind="primary" big onPress={props.onStart} />
+      <SportPicker testIDPrefix="start-sport" selected={props.sport} onPick={props.onPick} />
+      <Button testID="btn-start" label={t("common.start")} kind="primary" big onPress={props.onStart} />
       <Text style={styles.hint}>{t("mobile.idleHint")}</Text>
-      <Button label={t("mobile.history")} kind="secondary" onPress={props.onHistory} />
+      <Button testID="btn-history" label={t("mobile.history")} kind="secondary" onPress={props.onHistory} />
     </View>
   );
 }
@@ -319,8 +319,8 @@ function ResumeScreen(props: {
         <Text style={styles.hint}>{t("mobile.resumeCopy")}</Text>
       </View>
       <SegmentList session={session} now={now} />
-      <Button label={t("common.continue")} kind="primary" big onPress={props.onContinue} />
-      <Button label={t("common.discard")} kind="danger" onPress={props.onDiscard} />
+      <Button testID="btn-continue" label={t("common.continue")} kind="primary" big onPress={props.onContinue} />
+      <Button testID="btn-discard" label={t("common.discard")} kind="danger" onPress={props.onDiscard} />
     </View>
   );
 }
@@ -375,17 +375,18 @@ function LiveScreen(props: {
         <View style={styles.card}>
           <Text style={styles.sectionLabel}>{t("mobile.changeTo")}</Text>
           <SportPicker
+            testIDPrefix="change-to"
             selected={sport}
             exclude={sport}
             onPick={props.onChange}
           />
-          <Button label={t("common.cancel")} kind="ghost" onPress={props.onTogglePicker} />
+          <Button testID="btn-cancel-change" label={t("common.cancel")} kind="ghost" onPress={props.onTogglePicker} />
         </View>
       ) : (
-        <Button label={t("common.change")} kind="secondary" big onPress={props.onTogglePicker} />
+        <Button testID="btn-change" label={t("common.change")} kind="secondary" big onPress={props.onTogglePicker} />
       )}
 
-      <Button label={t("common.stop")} kind="danger" big onPress={props.onStop} />
+      <Button testID="btn-stop" label={t("common.stop")} kind="danger" big onPress={props.onStop} />
     </View>
   );
 }
@@ -414,6 +415,7 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
       <SegmentList session={session} now={Date.now()} />
 
       <Button
+        testID="btn-new-session"
         label={t("mobile.newSession")}
         kind="primary"
         big
@@ -453,7 +455,7 @@ function HistoryScreen(props: { sessions: SessionSummary[]; now: number; onBack:
           );
         })}
       </View>
-      <Button label={t("common.back")} kind="secondary" big onPress={props.onBack} />
+      <Button testID="btn-history-back" label={t("common.back")} kind="secondary" big onPress={props.onBack} />
     </View>
   );
 }
@@ -492,14 +494,19 @@ function SportPicker(props: {
   selected: Sport;
   exclude?: Sport;
   onPick: (s: Sport) => void;
+  /** Distinguishes the initial-sport picker from the mid-session change-to picker in the UI tree. */
+  testIDPrefix?: string;
 }) {
   return (
     <View style={styles.pickerRow}>
       {SPORTS.filter((s) => s !== props.exclude).map((s) => {
         const active = s === props.selected && !props.exclude;
+        const label = t(`sport.${s}.label`);
         return (
           <Pressable
             key={s}
+            testID={props.testIDPrefix ? `${props.testIDPrefix}-${s}` : `sport-chip-${s}`}
+            accessibilityLabel={label}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             onPress={() => props.onPick(s)}
@@ -509,9 +516,7 @@ function SportPicker(props: {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={[styles.chipText, active && styles.chipTextActive]}>
-              {t(`sport.${s}.label`)}
-            </Text>
+            <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
           </Pressable>
         );
       })}
@@ -536,6 +541,7 @@ function Button(props: {
   big?: boolean;
   disabled?: boolean;
   onPress: () => void;
+  testID?: string;
 }) {
   const box =
     props.kind === "primary"
@@ -549,6 +555,8 @@ function Button(props: {
     props.kind === "primary" ? styles.btnTextOnPrimary : styles.btnText;
   return (
     <Pressable
+      testID={props.testID}
+      accessibilityLabel={props.label}
       accessibilityRole="button"
       accessibilityState={{ disabled: props.disabled === true }}
       disabled={props.disabled}

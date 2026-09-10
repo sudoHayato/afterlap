@@ -10,7 +10,7 @@
     "export:android": "expo export --platform android --output-dir dist",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "doctor": "expo-doctor",
-    "test:device": "vitest run --root ../.. --config ../../vitest.config.mts --dir apps/mobile/device apps/mobile/device/recovery.device.test.ts"
+    "test:device": "vitest run --config vitest.device.config.mts"
   },
   "dependencies": {
     "@bricklap/engine": "*",

@@ -9,11 +9,19 @@
  * at most a few seconds of samples are missing, and the state the app rebuilds
  * at boot is exactly the replay of the database pulled off the phone.
  *
- * Driving the UI: static screens (idle, resume, history) are read with
- * `uiautomator dump` and buttons tapped by their text. The live screen
- * re-renders four times a second, which keeps uiautomator from ever seeing
- * an idle state, so there the Parar button is located by the colour of its
- * border in a raw screenshot and Mudar by its known offset above it.
+ * Driving the UI: every screen the test touches (idle, resume, history) is
+ * read with `uiautomator dump` and its buttons tapped by their accessible
+ * label — never by pixel colour or screen geometry. All buttons and sport
+ * chips carry `testID` + `accessibilityLabel` (App.tsx) for this.
+ *
+ * The live screen (recording) is deliberately never dumped or tapped here:
+ * it re-renders four times a second (the running clock), and on this RN
+ * build `uiautomator dump` does not degrade gracefully under that — it fails
+ * outright with "could not get idle state" on every attempt, `testID`
+ * included (confirmed on-device; `testID` also doesn't surface as
+ * `resource-id` on this RN/Android renderer — see the session report). So
+ * CHANGE, which can only be exercised while live, stays out of this test.
+ * It is covered by the engine's unit tests instead; see the session report.
  */
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
@@ -30,8 +38,6 @@ const DEV_CLIENT_URL = "exp+bricklap://expo-development-client/?url=http%3A%2F%2
 /** Documented ceiling on samples lost to a hard kill. */
 const MAX_SAMPLE_LOSS_MS = 5_000;
 const GPS_TICK_MS = 1_000;
-/** Parar's border colour in App.tsx (btnDanger). */
-const DANGER_RGB = [0xc0, 0x46, 0x3f] as const;
 
 // -- adb ---------------------------------------------------------------------
 
@@ -43,7 +49,8 @@ const DANGER_RGB = [0xc0, 0x46, 0x3f] as const;
 const ADB = process.env["BRICKLAP_ADB"] ?? "adb";
 
 function adb(...args: string[]): string {
-  return execFileSync(ADB, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  // adb.exe on Windows ends lines with \r\n; keep every regex below Unix-only.
+  return execFileSync(ADB, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).replace(/\r/g, "");
 }
 
 function adbBytes(...args: string[]): Buffer {
@@ -104,64 +111,6 @@ async function waitForText(text: string, timeoutMs = 20_000): Promise<Node> {
 async function tapText(text: string): Promise<void> {
   const [l, t, r, b] = (await waitForText(text)).bounds;
   tap((l + r) / 2, (t + b) / 2);
-}
-
-// -- UI: live screen via raw screenshot ---------------------------------------
-
-type Screenshot = { width: number; height: number; px: Buffer; offset: number };
-
-function screenshot(): Screenshot {
-  const buf = adbBytes("exec-out", "screencap");
-  const width = buf.readUInt32LE(0);
-  const height = buf.readUInt32LE(4);
-  // Header is 12 bytes (w, h, format) on old Androids, 16 (+ colour space) since 8.0.
-  const offset = buf.length - width * height * 4;
-  if (offset !== 12 && offset !== 16) throw new Error(`unexpected screencap layout: ${buf.length} bytes for ${width}x${height}`);
-  return { width, height, px: buf, offset };
-}
-
-function findColourBox(shot: Screenshot, rgb: readonly [number, number, number], tolerance = 24) {
-  let minX = Infinity, minY = Infinity, maxX = -1, maxY = -1;
-  const { width, height, px, offset } = shot;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = offset + (y * width + x) * 4;
-      if (
-        Math.abs(px[i]! - rgb[0]) <= tolerance &&
-        Math.abs(px[i + 1]! - rgb[1]) <= tolerance &&
-        Math.abs(px[i + 2]! - rgb[2]) <= tolerance
-      ) {
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-    }
-  }
-  if (maxX < 0) return null;
-  return { left: minX, top: minY, right: maxX, bottom: maxY };
-}
-
-function dpToPx(dp: number): number {
-  const m = /(\d+)/.exec(shell("wm density"));
-  const dpi = m ? Number(m[1]) : 160;
-  return Math.round((dp * dpi) / 160);
-}
-
-/** Centre of Parar (red border) and of Mudar, the same-sized button 16dp above it. */
-async function liveButtons(): Promise<{ parar: [number, number]; mudar: [number, number] }> {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const box = findColourBox(screenshot(), DANGER_RGB);
-    if (box) {
-      const cx = (box.left + box.right) / 2;
-      const h = box.bottom - box.top;
-      const parar: [number, number] = [cx, (box.top + box.bottom) / 2];
-      const mudar: [number, number] = [cx, box.top - dpToPx(16) - h / 2];
-      return { parar, mudar };
-    }
-    await sleep(500);
-  }
-  throw new Error("Parar button (red border) not found in screenshot");
 }
 
 // -- app lifecycle ------------------------------------------------------------
@@ -233,10 +182,15 @@ describe("recovery on the device", () => {
   beforeAll(async () => {
     expect(adb("devices").split("\n").some((l) => /\tdevice$/.test(l)), "a device on adb").toBe(true);
     expect(shell("curl -s http://localhost:8081/status"), "Metro through adb reverse").toContain("packager-status:running");
+    // The phone is on USB, so "stay on while charging" keeps the screen from
+    // timing out mid-test (a locked screen answers no input at all).
+    shell("svc power stayon true");
+    shell("input keyevent KEYCODE_WAKEUP");
     forceStop();
   }, 30_000);
 
   afterAll(() => {
+    shell("svc power stayon false");
     allTimings.push(...timings());
     const byKind = (k: string) => allTimings.filter((t) => t.kind === k).map((t) => t.ms).sort((a, b) => a - b);
     const stats = (v: number[]) =>
@@ -246,7 +200,15 @@ describe("recovery on the device", () => {
   });
 
   it("starts a session and lets samples settle on disk", async () => {
-    const r = await launch();
+    let r = await launch();
+    if (r.liveId !== null) {
+      // A previous run (or a manual session) left something live: discard it
+      // through the UI, which is the only way this adapter ever closes one.
+      await tapText("Descartar");
+      await waitForText("Iniciar");
+      forceStop();
+      r = await launch();
+    }
     expect(r.liveId, "a clean start: nothing live on disk").toBeNull();
     await tapText("Iniciar");
     // Two flush intervals plus slack: at least one batch has certainly landed.
@@ -278,7 +240,8 @@ describe("recovery on the device", () => {
     recovery = await launch();
     const expected = afterKill.find((s) => s.session.id === sessionId)!.session;
     expect(recovery.liveId).toBe(sessionId);
-    expect(recovery.events).toBe(expected.events.length);
+    // hydrate() appends `recovered` before the app logs, so one more event than the pull.
+    expect(recovery.events).toBe(expected.events.length + 1);
     expect(recovery.samples).toBe(expected.samples.length);
     expect(recovery.segments).toBe(segmentsFromEvents(expected.events).length);
     expect(recovery.lastSampleT).toBe(expected.samples.at(-1)!.t);
@@ -291,43 +254,19 @@ describe("recovery on the device", () => {
     expect(isLive(now.session)).toBe(true);
   }, 60_000);
 
-  it("continues into the same session and records a sport change", async () => {
+  it("continues into the same session after reopening", async () => {
+    // CHANGE is not exercised here: it can only be tapped on the live screen,
+    // and `uiautomator dump` cannot read that screen at all on this RN build
+    // (confirmed on-device: it fails with "could not get idle state" on every
+    // attempt, testID included). CHANGE is covered by the engine's unit tests.
     await tapText("Continuar");
-    await sleep(GPS_TICK_MS * 2 + 500);
-    const { mudar } = await liveButtons();
-    tap(...mudar);
-    await sleep(800);
-    // The picker keeps the live screen ticking, but the chips do not move:
-    // find "Bicicleta" through a screenshot-free route — the picker card
-    // replaces the Mudar button, and its first chip sits at a fixed offset.
-    // Simpler and honest: try uiautomator a few times; it sometimes catches an
-    // idle window between renders. Fall back to the offset if it never does.
-    let tapped = false;
-    for (let i = 0; i < 6 && !tapped; i++) {
-      try {
-        const hit = dumpUi().find((n) => n.text === "Bicicleta");
-        if (hit) {
-          tap((hit.bounds[0] + hit.bounds[2]) / 2, (hit.bounds[1] + hit.bounds[3]) / 2);
-          tapped = true;
-        }
-      } catch {
-        await sleep(300);
-      }
-    }
-    if (!tapped) {
-      // Card padding 16dp + label line ~16dp + gap 10dp + half a chip (~20dp) below the card's top,
-      // first chip centred ~48dp in from the card's left edge (20dp screen + 16dp card padding + 12dp).
-      const { parar } = await liveButtons();
-      const cardTop = parar[1] - dpToPx(16) - dpToPx(16) - dpToPx(62) - dpToPx(46);
-      tap(dpToPx(20 + 16 + 48), cardTop + dpToPx(62));
-    }
-    await sleep(GPS_TICK_MS * 3 + 500);
-    const stored = pullAndReplay("after-change").find((s) => s.session.id === sessionId)!;
-    const types = stored.session.events.map((e) => e.type);
-    expect(types).toEqual(["started", "recovered", "sport_changed"]);
-    expect(stored.session.events.at(-1)).toMatchObject({ sport: "bike" });
+    // Generous margin: the tap itself and the screen transition eat into the
+    // window before the GPS interval starts ticking again.
+    await sleep(GPS_TICK_MS * 4 + 1_000);
+    const stored = pullAndReplay("after-continue").find((s) => s.session.id === sessionId)!;
+    expect(stored.session.events.map((e) => e.type)).toEqual(["started", "recovered"]);
     expect(stored.session.samples.length).toBeGreaterThan(recovery.samples!);
-  }, 90_000);
+  }, 60_000);
 
   it("survives a kill in the middle of a sample batch, then discards with a flagged STOP", async () => {
     // Land somewhere inside a flush interval on purpose: not on a boundary.
@@ -353,7 +292,6 @@ describe("recovery on the device", () => {
     expect(final.session.events.map((e) => e.type)).toEqual([
       "started",
       "recovered",
-      "sport_changed",
       "recovered",
       "stopped",
     ]);
