@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Data**: 2026-09-10 · **Branch**: `feat/i18n-e-primeiro-apk` (sessão 02; sessão 01 já em `main`) · **Fase**: 1 em curso
+**Data**: 2026-09-10 · **Branch**: `main` · **Fase**: **1 concluída em 2026-09-10**; Fase 2 por iniciar
 
 ## Por pacote
 
@@ -40,4 +40,6 @@
 
 ## Próximo passo
 
-Validar uma sessão longa com o telemóvel no bolso (a app ainda não grava em segundo plano). Setup, problemas e validação funcional: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10.
+**Fase 2 — GPS real e persistência local**, ainda por iniciar: `expo-location` em primeiro plano, adaptador de persistência na app (mesma semântica de eventos, esquema versionado) e `recovered` real ao reabrir. Ver [ROADMAP.md](ROADMAP.md).
+
+Antes disso, uma validação que falta e não exige código novo: uma sessão longa com o telemóvel no bolso, sabendo que a app ainda não grava em segundo plano. Setup, problemas e validação funcional da Fase 1: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10 e §11.
