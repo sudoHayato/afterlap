@@ -4,7 +4,7 @@
 
 ## Contexto
 
-O Grok sugeriu portar o motor para Dart/Flutter. O motor existe em TypeScript, está testado a 100% e é puro. O CTO desenvolve em Windows/WSL 2, sem macOS, e o telemóvel-alvo é Android.
+O Grok sugeriu portar o motor para Dart/Flutter. O motor existe em TypeScript, está testado a 100% e é puro. O fundador desenvolve em Windows/WSL 2, sem macOS, e o telemóvel-alvo é Android.
 
 ## Decisão
 

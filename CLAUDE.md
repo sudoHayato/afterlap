@@ -2,6 +2,14 @@
 
 Bricklap: uma sessão de treino é uma sequência de desportos. START uma vez, CHANGE sem parar, STOP no fim. Eventos são a fonte de verdade; segmentos e métricas derivam-se.
 
+## Papéis
+
+- **O fundador** (também "o CEO") — decide. Produto, prioridades, legal, dinheiro, hardware. Nunca referido pelo nome em ficheiros do repositório.
+- **O CTO** — o Claude do chat: revê o trabalho, levanta as dúvidas e escreve os briefs de cada sessão.
+- **Tu (Claude Code)** — a equipa de desenvolvimento: executas o brief e reportas.
+
+Na documentação, decisões e aprovações são "do fundador"; orientação de sessão, revisão e dúvidas são "para o CTO".
+
 ## Ler primeiro
 
 1. `README.md` → `STATUS.md` → `ARCHITECTURE.md` → `ROADMAP.md`.
@@ -51,12 +59,12 @@ Uma tarefa só está feita quando:
 4. `npm run export:android -w @bricklap/mobile` verde (Metro resolve o monorepo).
 5. `STATUS.md` atualizado e relatório da sessão em `docs/reports/AAAA-MM-DD-sessao-NN.md` (feito, por fazer, decisões, dúvidas para o CTO, próximos passos).
 6. Nenhuma dependência nova sem justificação escrita.
-7. Textos legais intocados (salvo pedido explícito do CTO).
+7. Textos legais intocados (salvo pedido explícito do fundador).
 8. **Branch de trabalho publicado no remoto** (`git push -u origin <branch>`), com o commit local confirmado igual ao remoto. Regra permanente: nenhuma sessão termina sem este push.
 
 ## Nunca
 
-- Nunca alterar a redação dos textos legais (`apps/web-lab/LEGAL.md`, `src/lib/legal/`, `src/routes/legal.*.tsx`, `LICENSE`, `NOTICE`) sem pedido explícito do CTO. Só nome do produto, chave de armazenamento e caminhos de import.
+- Nunca alterar a redação dos textos legais (`apps/web-lab/LEGAL.md`, `src/lib/legal/`, `src/routes/legal.*.tsx`, `LICENSE`, `NOTICE`) sem pedido explícito do fundador. Só nome do produto, chave de armazenamento e caminhos de import.
 - Nunca configurar iOS na Fase 1 (sem bloco `ios` em `app.json`, sem scripts iOS, sem Xcode).
 - Nunca importar zustand, `localStorage`, `AsyncStorage`, DOM ou React Native em `packages/engine`.
 - Nunca fazer commit de `apps/mobile/android`, `apps/mobile/ios`, `dist/`, `coverage/`, `.expo/`.
@@ -64,8 +72,8 @@ Uma tarefa só está feita quando:
 - Nunca fazer push para `main`, nunca `push --force`, nunca reescrever histórico já publicado.
 - Nunca apagar ou reescrever relatórios em `docs/reports/`.
 - Nunca guardar segredos (tokens EAS, keystores) no repositório.
-- **Nunca escrever dados pessoais identificáveis do fundador em ficheiros do repositório** (nome próprio, apelidos, morada, telefone, NIF, email pessoal, entidade empregadora). Em relatórios, documentação, comentários e mensagens de commit, referir sempre **"o CTO"** ou **"o fundador"** — nunca por nome. O campo de responsável pelo tratamento nos textos legais (`controllerName`, `address`, `nif`, `email` em `apps/web-lab/src/lib/legal/config.ts`) fica **por preencher** até haver decisão explícita do CTO.
-- Nunca mudar `android.package`, o nome da app ou a slug sem decisão do CTO.
+- **Nunca escrever dados pessoais identificáveis do fundador em ficheiros do repositório** (nome próprio, apelidos, morada, telefone, NIF, email pessoal, entidade empregadora). Em relatórios, documentação, comentários e mensagens de commit, referir sempre **"o fundador"** ou **"o CEO"** — nunca por nome. O campo de responsável pelo tratamento nos textos legais (`controllerName`, `address`, `nif`, `email` em `apps/web-lab/src/lib/legal/config.ts`) fica **por preencher** até haver decisão explícita do fundador.
+- Nunca mudar `android.package`, o nome da app ou a slug sem decisão do fundador.
 - Nunca guardar segmentos/métricas derivados como estado persistido.
 
 ## Dúvidas para o CTO

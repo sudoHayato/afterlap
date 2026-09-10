@@ -4,7 +4,7 @@
 
 ## Contexto
 
-O telemóvel do CTO é Android. A máquina de desenvolvimento é Windows com WSL 2: não há Xcode, e builds iOS exigem macOS (local ou na nuvem). A validação do produto precisa de treinos reais no telemóvel de quem decide.
+O telemóvel do fundador é Android. A máquina de desenvolvimento é Windows com WSL 2: não há Xcode, e builds iOS exigem macOS (local ou na nuvem). A validação do produto precisa de treinos reais no telemóvel de quem decide.
 
 ## Decisão
 
@@ -22,4 +22,4 @@ O telemóvel do CTO é Android. A máquina de desenvolvimento é Windows com WSL
 ## Alternativas consideradas
 
 - **Ambas as plataformas desde já**: duplica o custo de teste e exige macOS/EAS iOS antes de haver produto validado.
-- **iOS primeiro**: o CTO não tem iPhone nem Mac; sem sentido.
+- **iOS primeiro**: o fundador não tem iPhone nem Mac; sem sentido.

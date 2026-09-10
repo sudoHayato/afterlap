@@ -4,9 +4,9 @@
 
 ## Contexto
 
-A sessão 01 deixou duas opções para pôr a app no telemóvel a partir de uma máquina Windows com WSL 2: (a) EAS Build, o serviço de compilação na nuvem da Expo, e (b) build local com JDK e Android SDK dentro da WSL. A sessão 02 preparou a opção (a) até ao ponto em que exigia autenticação: `apps/mobile/eas.json` com o perfil `development`, e um pedido ao CTO para correr `eas login`.
+A sessão 01 deixou duas opções para pôr a app no telemóvel a partir de uma máquina Windows com WSL 2: (a) EAS Build, o serviço de compilação na nuvem da Expo, e (b) build local com JDK e Android SDK dentro da WSL. A sessão 02 preparou a opção (a) até ao ponto em que exigia autenticação: `apps/mobile/eas.json` com o perfil `development`, e um pedido ao fundador para correr `eas login`.
 
-O CTO decidiu **não abrir conta Expo**. Isso elimina a opção (a): o EAS Build exige conta, e sem ela nem o `build:configure` nem o `build` funcionam.
+O fundador decidiu **não abrir conta Expo**. Isso elimina a opção (a): o EAS Build exige conta, e sem ela nem o `build:configure` nem o `build` funcionam.
 
 ## Decisão
 
@@ -31,7 +31,7 @@ O CTO decidiu **não abrir conta Expo**. Isso elimina a opção (a): o EAS Build
 
 ## Alternativas consideradas
 
-- **EAS Build**: descartado por decisão do CTO (sem conta Expo).
+- **EAS Build**: descartado por decisão do fundador (sem conta Expo).
 - **`apt install openjdk-17-jdk`**: exigiria a palavra-passe de `sudo`. O tarball do Temurin em `$HOME` faz o mesmo trabalho sem privilégios.
 - **USB com `usbipd-win`**: mais peças móveis (serviço no Windows, `bind` como administrador, regras `udev`), e desliga o telemóvel do Windows enquanto anexado. O Wi-Fi dá o mesmo resultado com menos atrito.
 - **Compilar no Windows** (Android Studio no Windows, repositório em `\\wsl$`): o I/O entre os dois sistemas de ficheiros torna o build muito mais lento, e passaria a haver duas toolchains a manter. Há um SDK Android no Windows (`C:\Android`), que fica por usar.

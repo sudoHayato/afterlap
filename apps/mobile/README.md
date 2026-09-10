@@ -50,7 +50,7 @@ build de desenvolvimento (APK) instalado no telemóvel. O Metro (`npm run start`
 serve apenas o JavaScript; o binário nativo tem de existir primeiro.
 
 **O caminho é o build local.** O EAS Build (nuvem da Expo) foi abandonado por
-decisão do CTO — sem conta Expo. Ver
+decisão do fundador — sem conta Expo. Ver
 [docs/adr/0005-build-local-android.md](../../docs/adr/0005-build-local-android.md).
 
 ### Toolchain (uma vez)
