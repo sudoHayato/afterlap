@@ -84,7 +84,7 @@ export const ptPT: Dictionary = {
     waitingForMovement: "À espera de movimento",
   },
   mobile: {
-    kicker: "Android · GPS simulado",
+    kicker: "Android · GPS",
     initialSport: "Desporto inicial",
     idleHint:
       "Carrega em Iniciar uma vez. Depois podes Mudar de desporto sem parar o relógio e Parar apenas no fim.",
@@ -102,6 +102,22 @@ export const ptPT: Dictionary = {
       "A app foi fechada com esta sessão a decorrer. Continua de onde ficaste, ou descarta-a.",
     inProgress: "Em curso",
     discarded: "Descartada",
+    kickerSim: "Android · GPS simulado",
+    gpsSource: "Fonte do GPS (dev)",
+    gpsReal: "GPS real",
+    gpsSim: "Simulado",
+    gpsWaiting: "À espera de GPS…",
+    gpsWeak: "sinal fraco",
+    gpsUnavailable: "GPS indisponível",
+    samplesSaved: "amostras guardadas",
+    locationRationale:
+      "O Bricklap usa a tua localização apenas enquanto uma sessão está a gravar, para medir distância e ritmo. Nada sai do telemóvel.",
+    locationDenied:
+      "A permissão de localização foi recusada. Sem ela o Bricklap não consegue gravar — toca em Iniciar para pedir outra vez.",
+    locationBlocked:
+      "A permissão de localização está bloqueada. Autoriza-a para o Bricklap nas definições do sistema e volta.",
+    locationServicesOff: "A localização está desligada neste telemóvel. Liga-a e toca em Iniciar outra vez.",
+    openSettings: "Abrir definições",
   },
   meta: {
     title: "Bricklap",

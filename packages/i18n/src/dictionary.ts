@@ -98,6 +98,19 @@ export type Dictionary = {
     resumeCopy: string;
     inProgress: string;
     discarded: string;
+    kickerSim: string;
+    gpsSource: string;
+    gpsReal: string;
+    gpsSim: string;
+    gpsWaiting: string;
+    gpsWeak: string;
+    gpsUnavailable: string;
+    samplesSaved: string;
+    locationRationale: string;
+    locationDenied: string;
+    locationBlocked: string;
+    locationServicesOff: string;
+    openSettings: string;
   };
   meta: {
     title: string;

@@ -59,7 +59,7 @@ Dicionários de tradução e formatação por sistema de unidades. TypeScript pu
 - **`packages/engine`** não importa DOM, React, React Native, zustand nem armazenamento. Recebe tempos (`at`) e aleatoriedade (`rng`) por parâmetro, o que torna os testes determinísticos. Também não tem texto de interface — só `SPORT_PACE_KIND` (lógica), nunca rótulos.
 - **`packages/i18n`** depende só do motor (tipo `Sport` + formatadores). Não importa DOM nem React Native.
 - **Adaptadores vivem nas apps.** O lab web tem `apps/web-lab/src/lib/store.ts` (zustand + `localStorage`, chave `bricklap.v1`, migração única de `afterlap.v1`; a leitura está isolada em `loadFrom(storage)` e testada com um storage em memória) e `apps/web-lab/src/lib/i18n.ts` (deteção de locale via `navigator`). A app Android, na Fase 1, guarda a sessão apenas em memória (`useState` em `App.tsx`) e tem `apps/mobile/i18n.ts` para a deteção via `I18nManager`.
-- Cada app tem o seu próprio "relógio" e o seu próprio fornecedor de amostras (simulador hoje; GPS real na Fase 2), e limita-se a chamar as funções puras do motor.
+- Cada app tem o seu próprio "relógio" e o seu próprio fornecedor de amostras (o lab web usa o simulador; a app Android usa `expo-location` em primeiro plano, com o simulador por interruptor só em desenvolvimento — ADR 0007), e limita-se a chamar as funções puras do motor.
 
 ## Mecânica do monorepo
 
