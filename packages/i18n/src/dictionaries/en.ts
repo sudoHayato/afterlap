@@ -33,6 +33,10 @@ export const en: Dictionary = {
     bike: { label: "Bike", live: "Riding" },
     walk: { label: "Walk", live: "Walking" },
     transition: { label: "Transition", live: "Transition" },
+    strength: { label: "Strength", live: "Strength" },
+    rowing_indoor: { label: "Indoor rowing", live: "Rowing" },
+    treadmill: { label: "Treadmill", live: "On the treadmill" },
+    swimming_pool: { label: "Pool swimming", live: "Swimming" },
   },
   footer: {
     preLaunch:
@@ -118,6 +122,10 @@ export const en: Dictionary = {
       "Location permission is blocked. Allow it for Bricklap in the system settings, then come back.",
     locationServicesOff: "Location is turned off on this phone. Turn it on and tap Start again.",
     openSettings: "Open settings",
+    sportGroupOutdoor: "Outdoors",
+    sportGroupIndoor: "Gym / Pool",
+    gpsNoPermission: "no location permission",
+    gpsServicesOff: "location is off",
   },
   meta: {
     title: "Bricklap",

@@ -1,21 +1,28 @@
 /**
- * Bricklap — Android app, Fase 2 (parte 2: GPS real em primeiro plano).
+ * Bricklap — Android app, Fase 3 (parte 1: desportos sem GPS).
  *
  * INICIAR uma vez, MUDAR de desporto sem parar, PARAR no fim. Todo o estado da
  * sessão vive em @bricklap/engine (os eventos são a fonte de verdade;
  * segmentos e métricas são derivados) e todo o texto vem de @bricklap/i18n.
  *
- * Persistência (parte 1): cada evento é escrito de forma síncrona numa base
- * SQLite append-only (./persistence) antes de o ecrã reagir; as amostras vão
- * em lotes curtos. Ao arrancar, a app repõe a sessão que estava a decorrer
- * (evento `recovered`) e pergunta se continua ou descarta.
+ * Persistência (Fase 2, parte 1): cada evento é escrito de forma síncrona
+ * numa base SQLite append-only (./persistence) antes de o ecrã reagir; as
+ * amostras vão em lotes curtos. Ao arrancar, a app repõe a sessão que estava
+ * a decorrer (evento `recovered`) e pergunta se continua ou descarta.
  *
- * GPS (parte 2): expo-location em primeiro plano a 1 Hz (./gps), com o ecrã
- * mantido ligado enquanto grava. Cada fix vira uma amostra `gps` na base e
- * uma linha no registo bruto (gps-raw.jsonl) com a precisão. O simulador
- * (createSim / stepSim / sampleFromSim) continua disponível por um
+ * GPS (Fase 2, parte 2): expo-location em primeiro plano a 1 Hz (./gps), com
+ * o ecrã mantido ligado enquanto grava. Cada fix vira uma amostra `gps` na
+ * base e uma linha no registo bruto (gps-raw.jsonl) com a precisão. O
+ * simulador (createSim / stepSim / sampleFromSim) continua disponível por um
  * interruptor só em desenvolvimento; uma sessão retomada segue a fonte da
  * sua última amostra. Sem biblioteca de navegação: um `screen` discriminado.
+ *
+ * Desportos sem GPS (Fase 3, parte 1, ADR 0008): força, remo indoor,
+ * passadeira e natação em piscina são só tempo. O watcher de posição segue o
+ * segmento: existe enquanto o desporto atual tiver GPS e mais nada; a
+ * permissão de localização só se pede na primeira vez que faz falta. Um
+ * segmento sem GPS não tem amostras, distância nem ritmo — o motor garante-o,
+ * o ecrã limita-se a não os mostrar.
  */
 import { useKeepAwake } from "expo-keep-awake";
 import { StatusBar } from "expo-status-bar";
@@ -39,11 +46,13 @@ import {
   formatClock,
   formatDay,
   formatDuration,
+  hasGpsSegment,
   sampleFromGps,
   sampleFromSim,
   segmentMetrics,
   segmentsFromEvents,
   sessionMetrics,
+  sportHasGps,
   stepSim,
   type Sample,
   type SegmentMetrics,
@@ -160,17 +169,22 @@ export default function App() {
   }, []);
 
   const recording = screen.kind === "live";
+  // The position feed lives and dies with the current segment (ADR 0008): it
+  // exists only while the sport being recorded has GPS. Derived from the
+  // render cache so a CHANGE re-runs the feed effect at once.
+  const liveSport = recording && session ? currentSport(session.events) : null;
+  const feedWanted = liveSport !== null && sportHasGps(liveSport);
 
   /**
    * Advance the simulated GPS by the time elapsed since the last tick, using
    * the sport that is live right now, and return the resulting sample.
-   * Returns null when there is no live session.
+   * Returns null when there is no live session or the sport has no GPS.
    */
   const tickSim = useCallback((): Sample | null => {
     const s = sessionRef.current;
     if (!s || s.status !== "live") return null;
     const sport = currentSport(s.events);
-    if (!sport) return null;
+    if (!sport || !sportHasGps(sport)) return null;
     const ts = Date.now();
     const dt = Math.max(0, ts - lastTickRef.current);
     lastTickRef.current = ts;
@@ -187,77 +201,104 @@ export default function App() {
     setNow(sample.t);
   }, []);
 
+  // The clock runs for the whole recording, GPS or not.
   useEffect(() => {
     if (!recording) return;
-    lastTickRef.current = Date.now();
     const clock = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+    return () => clearInterval(clock);
+  }, [recording]);
+
+  // The feed: a simulator interval or a real subscription, only while the
+  // current segment wants one. Changing to a sport without GPS tears it
+  // down; changing back brings it up again, asking for permission if it was
+  // never granted (the first GPS segment of a session that started in the
+  // gym is the first time it is needed).
+  useEffect(() => {
+    if (!feedWanted) return;
+    lastTickRef.current = Date.now();
 
     if (simEnabled) {
       const sim = setInterval(() => {
         const sample = tickSim();
         if (sample) record(sample);
       }, GPS_TICK_MS);
-      return () => {
-        clearInterval(clock);
-        clearInterval(sim);
-      };
+      return () => clearInterval(sim);
     }
 
-    // Real GPS: the subscription is async, and the screen may already have
-    // left by the time it lands — then it is dropped on arrival.
+    // Real GPS: permission and subscription are async, and the segment may
+    // already have changed by the time they land — then they are dropped.
     let stop: (() => void) | null = null;
     let cancelled = false;
     setGps({ kind: "waiting" });
-    watchFixes(
-      (fix) => {
-        const s = sessionRef.current;
-        if (!s || s.status !== "live") return;
-        const at = Date.now();
-        lastFixRef.current = fix;
-        record(sampleFromGps(fix.coords, at));
-        appendRawFix(rawFixLine(s.id, at, fix));
+    (async () => {
+      const outcome = await requestForegroundLocation();
+      if (cancelled) return;
+      setPermission(outcome);
+      if (outcome !== "granted") {
         setGps({
-          kind: "fix",
-          lat: fix.coords.latitude,
-          lng: fix.coords.longitude,
-          accuracyM: fix.coords.accuracy,
-          weak: isWeak(fix),
+          kind: "error",
+          message: t(outcome === "services_off" ? "mobile.gpsServicesOff" : "mobile.gpsNoPermission"),
         });
-      },
-      (message) => setGps({ kind: "error", message }),
-    ).then(
-      (unsubscribe) => {
-        if (cancelled) unsubscribe();
-        else stop = unsubscribe;
-      },
-      (e: unknown) => setGps({ kind: "error", message: String(e) }),
-    );
+        return;
+      }
+      const unsubscribe = await watchFixes(
+        (fix) => {
+          const s = sessionRef.current;
+          if (!s || s.status !== "live") return;
+          const at = Date.now();
+          lastFixRef.current = fix;
+          record(sampleFromGps(fix.coords, at));
+          appendRawFix(rawFixLine(s.id, at, fix));
+          setGps({
+            kind: "fix",
+            lat: fix.coords.latitude,
+            lng: fix.coords.longitude,
+            accuracyM: fix.coords.accuracy,
+            weak: isWeak(fix),
+          });
+        },
+        (message) => setGps({ kind: "error", message }),
+      );
+      if (cancelled) unsubscribe();
+      else stop = unsubscribe;
+    })().catch((e: unknown) => {
+      if (!cancelled) setGps({ kind: "error", message: String(e) });
+    });
     return () => {
       cancelled = true;
       stop?.();
-      clearInterval(clock);
+      // The next GPS segment starts from a fresh fix, never from a stale one.
+      lastFixRef.current = null;
       setGps({ kind: "off" });
     };
-  }, [recording, simEnabled, tickSim, record]);
+  }, [feedWanted, simEnabled, tickSim, record]);
 
   /**
    * A sample exactly on a CHANGE / STOP boundary keeps distance continuous
    * between the segment that ends and the one that starts. From the
    * simulator it is one more step; from the GPS it is the newest fix stamped
-   * now. Null when there is nothing to stamp (no fix yet): the event still
-   * goes through, the boundary just has no sample.
+   * now. Null when there is nothing to stamp — no fix yet, or the segment
+   * that ends has no GPS: the event still goes through, the boundary just
+   * has no sample.
    */
   const boundarySample = useCallback((): Sample | null => {
-    if (simEnabled) return tickSim();
     const s = sessionRef.current;
+    if (!s || s.status !== "live") return null;
+    const sport = currentSport(s.events);
+    if (!sport || !sportHasGps(sport)) return null;
+    if (simEnabled) return tickSim();
     const fix = lastFixRef.current;
-    if (!s || s.status !== "live" || !fix) return null;
+    if (!fix) return null;
     return sampleFromGps(fix.coords, Date.now());
   }, [simEnabled, tickSim]);
 
   const start = useCallback(
     async (sport: Sport) => {
-      if (!simEnabled) {
+      // Permission is asked for when it is first needed: a session that
+      // starts in the gym asks nothing (the feed effect asks later, if a GPS
+      // segment ever comes). Starting outdoors asks up front so a refusal is
+      // handled here, on the idle screen, instead of one segment in.
+      if (!simEnabled && sportHasGps(sport)) {
         const outcome = await requestForegroundLocation();
         setPermission(outcome);
         if (outcome !== "granted") return;
@@ -268,7 +309,7 @@ export default function App() {
       simRef.current = createSim();
       lastTickRef.current = ts;
       lastFixRef.current = null;
-      if (simEnabled) store.pushSample(sampleFromSim(simRef.current, sport, ts));
+      if (simEnabled && sportHasGps(sport)) store.pushSample(sampleFromSim(simRef.current, sport, ts));
       const live = store.live();
       sessionRef.current = live;
       setPickerOpen(false);
@@ -388,8 +429,9 @@ function IdleScreen(props: {
   onSimEnabled: (v: boolean) => void;
   permission: PermissionOutcome | null;
 }) {
+  const wantsGps = sportHasGps(props.sport);
   const problem =
-    props.simEnabled || props.permission === null || props.permission === "granted"
+    props.simEnabled || !wantsGps || props.permission === null || props.permission === "granted"
       ? null
       : props.permission === "denied"
         ? t("mobile.locationDenied")
@@ -436,7 +478,7 @@ function IdleScreen(props: {
         </View>
       ) : null}
       <Text style={styles.hint}>{t("mobile.idleHint")}</Text>
-      {props.simEnabled ? null : <Text style={styles.hint}>{t("mobile.locationRationale")}</Text>}
+      {props.simEnabled || !wantsGps ? null : <Text style={styles.hint}>{t("mobile.locationRationale")}</Text>}
       <Button testID="btn-history" label={t("mobile.history")} kind="secondary" onPress={props.onHistory} />
     </View>
   );
@@ -478,10 +520,17 @@ function LiveScreen(props: {
   const { session, now } = props;
   const segments = segmentsFromEvents(session.events);
   const sport = currentSport(session.events) ?? "run";
+  // A segment without GPS has no distance, pace or coordinates of its own
+  // (ADR 0008). The session's total distance is another matter: it stays on
+  // screen while a gym segment is recorded, as long as the session already
+  // has an outdoor segment — the kilometres already run do not disappear
+  // because the founder moved to the rowing machine.
+  const hasGps = sportHasGps(sport);
+  const anyGps = hasGpsSegment(session.events);
   const total = sessionMetrics(session, now);
   const current = segments[segments.length - 1];
   const currentM = current ? segmentMetrics(session, current, now) : null;
-  const rate = currentM ? paceOrSpeed(sport, currentM) : null;
+  const rate = currentM && hasGps ? paceOrSpeed(sport, currentM) : null;
 
   return (
     <View style={styles.stack}>
@@ -490,10 +539,12 @@ function LiveScreen(props: {
         <Text style={styles.bigClock}>
           {formatDuration(durationMs(session, now))}
         </Text>
-        <Text style={styles.stat}>
-          {t("mobile.totalDistanceLabel")} · {formatDistanceForUnit(total.distanceM)}
-        </Text>
-        <GpsLine gps={props.gps} samples={session.samples.length} />
+        {anyGps ? (
+          <Text style={styles.stat}>
+            {t("mobile.totalDistanceLabel")} · {formatDistanceForUnit(total.distanceM)}
+          </Text>
+        ) : null}
+        {hasGps ? <GpsLine gps={props.gps} samples={session.samples.length} /> : null}
       </View>
 
       {currentM ? (
@@ -501,7 +552,9 @@ function LiveScreen(props: {
           <Text style={styles.sectionLabel}>{t("mobile.currentSegment")}</Text>
           <View style={styles.row}>
             <Metric label={t("common.time")} value={formatDuration(currentM.durationMs)} />
-            <Metric label={t("common.distance")} value={formatDistanceForUnit(currentM.distanceM)} />
+            {hasGps ? (
+              <Metric label={t("common.distance")} value={formatDistanceForUnit(currentM.distanceM)} />
+            ) : null}
             {rate ? (
               <Metric
                 label={SPORT_PACE_KIND[sport] === "pace" ? t("common.pace") : t("common.speed")}
@@ -538,6 +591,9 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
   const { session } = props;
   const total = sessionMetrics(session);
   const segments = segmentsFromEvents(session.events);
+  // The total distance is the sum of the GPS segments; a session with none
+  // (a gym circuit) has no distance to show at all, not "0 m".
+  const anyGps = hasGpsSegment(session.events);
   // "Parar" and "Nova sessão" can occupy the same screen rect across the
   // live → summary re-render. The session is already on disk, so a double
   // tap loses nothing now — it would only skip past this summary.
@@ -549,7 +605,9 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
         <Text style={styles.sectionLabel}>{t("common.summary")}</Text>
         <Text style={styles.bigClock}>{formatDuration(durationMs(session))}</Text>
         <View style={styles.row}>
-          <Metric label={t("common.distance")} value={formatDistanceForUnit(total.distanceM)} />
+          {anyGps ? (
+            <Metric label={t("common.distance")} value={formatDistanceForUnit(total.distanceM)} />
+          ) : null}
           <Metric label={t("common.segments")} value={String(segments.length)} />
           <Metric label={t("mobile.samples")} value={String(session.samples.length)} />
         </View>
@@ -616,16 +674,18 @@ function SegmentList(props: { session: Session; now: number }) {
       {segments.map((seg) => {
         const m = segmentMetrics(session, seg, now);
         const rate = paceOrSpeed(seg.sport, m);
+        // Time only for a segment without GPS; the engine already made its
+        // distance 0, this just keeps "0 m" off the screen.
+        const value = sportHasGps(seg.sport)
+          ? `${formatDuration(m.durationMs)} · ${formatDistanceForUnit(m.distanceM)}${rate ? ` · ${rate}` : ""}`
+          : formatDuration(m.durationMs);
         return (
           <View key={seg.index} style={styles.segmentRow}>
             <Text style={styles.segmentLabel}>
               {seg.index + 1}. {t(`sport.${seg.sport}.label`)}
               {seg.endAt === null ? t("mobile.liveSuffix") : ""}
             </Text>
-            <Text style={styles.segmentValue}>
-              {formatDuration(m.durationMs)} · {formatDistanceForUnit(m.distanceM)}
-              {rate ? ` · ${rate}` : ""}
-            </Text>
+            <Text style={styles.segmentValue}>{value}</Text>
           </View>
         );
       })}
@@ -658,6 +718,11 @@ function GpsLine(props: { gps: GpsStatus | null; samples: number }) {
   );
 }
 
+/**
+ * Eight chips in two labelled rows — outdoors (with GPS) and gym / pool
+ * (time only). Still one tap to pick; the grouping is only so eight chips
+ * read at a glance. Real design is Fase 4.
+ */
 function SportPicker(props: {
   selected: Sport;
   exclude?: Sport;
@@ -665,16 +730,29 @@ function SportPicker(props: {
   /** Distinguishes the initial-sport picker from the mid-session change-to picker in the UI tree. */
   testIDPrefix?: string;
 }) {
+  const groups: { label: string; sports: Sport[] }[] = [
+    { label: t("mobile.sportGroupOutdoor"), sports: SPORTS.filter((s) => sportHasGps(s)) },
+    { label: t("mobile.sportGroupIndoor"), sports: SPORTS.filter((s) => !sportHasGps(s)) },
+  ];
   return (
-    <View style={styles.pickerRow}>
-      {SPORTS.filter((s) => s !== props.exclude).map((s) => (
-        <Chip
-          key={s}
-          testID={props.testIDPrefix ? `${props.testIDPrefix}-${s}` : `sport-chip-${s}`}
-          label={t(`sport.${s}.label`)}
-          active={s === props.selected && !props.exclude}
-          onPress={() => props.onPick(s)}
-        />
+    <View style={styles.pickerGroups}>
+      {groups.map((g) => (
+        <View key={g.label} style={styles.pickerGroup}>
+          <Text style={styles.groupLabel}>{g.label}</Text>
+          <View style={styles.pickerRow}>
+            {g.sports
+              .filter((s) => s !== props.exclude)
+              .map((s) => (
+                <Chip
+                  key={s}
+                  testID={props.testIDPrefix ? `${props.testIDPrefix}-${s}` : `sport-chip-${s}`}
+                  label={t(`sport.${s}.label`)}
+                  active={s === props.selected && !props.exclude}
+                  onPress={() => props.onPick(s)}
+                />
+              ))}
+          </View>
+        </View>
       ))}
     </View>
   );
@@ -819,6 +897,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontVariant: ["tabular-nums"],
   },
+  pickerGroups: { gap: 12 },
+  pickerGroup: { gap: 6 },
+  groupLabel: { color: COLORS.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 },
   pickerRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     paddingVertical: 10,

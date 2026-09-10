@@ -111,6 +111,12 @@ export type Dictionary = {
     locationBlocked: string;
     locationServicesOff: string;
     openSettings: string;
+    /** Picker headings: sports recorded with GPS vs. time-only ones (ADR 0008). */
+    sportGroupOutdoor: string;
+    sportGroupIndoor: string;
+    /** Short GPS-line reasons when a GPS segment cannot get fixes mid-session. */
+    gpsNoPermission: string;
+    gpsServicesOff: string;
   };
   meta: {
     title: string;

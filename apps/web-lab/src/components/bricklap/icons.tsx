@@ -1,4 +1,4 @@
-import { Bike, Footprints, PersonStanding, Shuffle } from "lucide-react";
+import { Bike, Dumbbell, Footprints, Gauge, PersonStanding, Sailboat, Shuffle, Waves } from "lucide-react";
 import type { Sport } from "@bricklap/engine";
 
 export function SportIcon({
@@ -18,5 +18,13 @@ export function SportIcon({
       return <PersonStanding {...props} />;
     case "transition":
       return <Shuffle {...props} />;
+    case "strength":
+      return <Dumbbell {...props} />;
+    case "rowing_indoor":
+      return <Sailboat {...props} />;
+    case "treadmill":
+      return <Gauge {...props} />;
+    case "swimming_pool":
+      return <Waves {...props} />;
   }
 }

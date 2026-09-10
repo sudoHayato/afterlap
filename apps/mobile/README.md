@@ -1,15 +1,15 @@
 # @bricklap/mobile
 
-Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 2 — GPS real e persistência local.**
+Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 3, parte 1 — desportos sem GPS** (sobre a Fase 2: GPS real e persistência local).
 
 ## O que é
 
 Um único ecrã que percorre a ideia central do produto: uma sessão de treino é uma
 **sequência** de desportos, não um só desporto.
 
-- **Iniciar** uma vez (escolhendo o desporto inicial).
-- **Mudar** de desporto quantas vezes quiseres, sem parar o relógio.
-- **Parar** no fim e ver o resumo (tempo total, distância, segmentos).
+- **Iniciar** uma vez (escolhendo o desporto inicial — oito chips em duas linhas: **Rua** com corrida, bicicleta, caminhada e transição; **Ginásio / Piscina** com força, remo indoor, passadeira e natação).
+- **Mudar** de desporto quantas vezes quiseres, sem parar o relógio — também entre a rua e o ginásio.
+- **Parar** no fim e ver o resumo (tempo total, distância dos segmentos com GPS, segmentos).
 
 Toda a lógica vem de `@bricklap/engine` (workspace do monorepo, consumido como
 fonte TypeScript, sem passo de build): os eventos são a fonte de verdade,
@@ -17,6 +17,7 @@ segmentos e métricas são derivados.
 
 Nesta fase:
 
+- **Desportos sem GPS** ([ADR 0008](../../docs/adr/0008-desportos-sem-gps.md)): força, remo indoor, passadeira e natação em piscina são só tempo. O watcher de posição existe apenas enquanto o segmento atual for de um desporto com GPS; a permissão de localização só se pede na primeira vez que faz falta (uma sessão que começa no ginásio não pede nada). Num segmento sem GPS o ecrã mostra o cronómetro do segmento e o total, sem distância, ritmo nem coordenadas.
 - **GPS real em primeiro plano** (`expo-location`, 1 Hz, precisão máxima, só
   `ACCESS_FINE_LOCATION`; nada de segundo plano — ver
   [ADR 0007](../../docs/adr/0007-gps-primeiro-plano.md)). O ecrã fica ligado

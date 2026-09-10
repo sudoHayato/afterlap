@@ -7,37 +7,71 @@ import {
   sampleFromGps,
   sampleFromSim,
   SIM_SPEED_MPS,
+  SPORT_HAS_GPS,
   SPORT_PACE_KIND,
   SPORTS,
+  sportHasGps,
   stepSim,
   typicalSpeed,
 } from "../src";
 
 describe("sports metadata", () => {
-  it("SPORTS lists run, bike, walk, transition in that order", () => {
-    expect(SPORTS).toEqual(["run", "bike", "walk", "transition"]);
+  it("SPORTS lists the four outdoor sports first, then the four without GPS (ADR 0008)", () => {
+    expect(SPORTS).toEqual([
+      "run",
+      "bike",
+      "walk",
+      "transition",
+      "strength",
+      "rowing_indoor",
+      "treadmill",
+      "swimming_pool",
+    ]);
   });
 
-  it("every sport has a pace kind and a positive simulated speed", () => {
+  it("every sport has a pace kind; simulated speed is positive with GPS and zero without", () => {
     for (const sport of SPORTS) {
       expect(["pace", "speed", "none"]).toContain(SPORT_PACE_KIND[sport]);
-      expect(SIM_SPEED_MPS[sport]).toBeGreaterThan(0);
       expect(typicalSpeed(sport)).toBe(SIM_SPEED_MPS[sport]);
+      if (sportHasGps(sport)) expect(SIM_SPEED_MPS[sport]).toBeGreaterThan(0);
+      else expect(SIM_SPEED_MPS[sport]).toBe(0);
     }
   });
 
-  it("pace for feet, speed for the bike, none for transitions", () => {
+  it("pace for feet, speed for the bike, none for transitions and for every sport without GPS", () => {
     expect(SPORT_PACE_KIND.run).toBe("pace");
     expect(SPORT_PACE_KIND.walk).toBe("pace");
     expect(SPORT_PACE_KIND.bike).toBe("speed");
     expect(SPORT_PACE_KIND.transition).toBe("none");
+    for (const sport of ["strength", "rowing_indoor", "treadmill", "swimming_pool"] as const) {
+      expect(SPORT_PACE_KIND[sport]).toBe("none");
+    }
   });
 
-  it("nextSport cycles and wraps", () => {
+  it("SPORT_HAS_GPS / sportHasGps: outdoor yes, gym and pool no", () => {
+    expect(SPORTS.filter(sportHasGps)).toEqual(["run", "bike", "walk", "transition"]);
+    expect(SPORTS.filter((s) => !sportHasGps(s))).toEqual(["strength", "rowing_indoor", "treadmill", "swimming_pool"]);
+    for (const sport of SPORTS) expect(sportHasGps(sport)).toBe(SPORT_HAS_GPS[sport]);
+  });
+
+  it("nextSport cycles through all eight and wraps", () => {
     expect(nextSport("run")).toBe("bike");
     expect(nextSport("bike")).toBe("walk");
     expect(nextSport("walk")).toBe("transition");
-    expect(nextSport("transition")).toBe("run");
+    expect(nextSport("transition")).toBe("strength");
+    expect(nextSport("strength")).toBe("rowing_indoor");
+    expect(nextSport("rowing_indoor")).toBe("treadmill");
+    expect(nextSport("treadmill")).toBe("swimming_pool");
+    expect(nextSport("swimming_pool")).toBe("run");
+  });
+
+  it("the simulator does not move for a sport without GPS", () => {
+    const start = createSim();
+    for (const sport of ["strength", "rowing_indoor", "treadmill", "swimming_pool"] as const) {
+      const next = stepSim(start, sport, 60_000, () => 0.5);
+      expect(haversineMeters(start, next)).toBeCloseTo(0, 6);
+      expect(sampleFromSim(next, sport, 1).speedMps).toBe(0);
+    }
   });
 });
 

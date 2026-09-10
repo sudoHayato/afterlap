@@ -115,6 +115,34 @@ async function tapText(text: string): Promise<void> {
   tap((l + r) / 2, (t + b) / 2);
 }
 
+/**
+ * Bring `text` into view, then return it. `uiautomator dump` only reports
+ * what is rendered, so a button below the fold does not exist as far as it
+ * is concerned — and the history screen grows by one row per stored session,
+ * so "Voltar" sinks out of sight as the phone accumulates test sessions.
+ * Swipes the content up a few times, checking after each swipe.
+ */
+async function scrollToText(text: string, swipes = 8): Promise<Node> {
+  const size = shell("wm size");
+  const [w, h] = (size.match(/(\d+)x(\d+)\s*$/) ?? ["", "1080", "2340"]).slice(1).map(Number) as [number, number];
+  for (let i = 0; i < swipes; i++) {
+    try {
+      const hit = dumpUi().find((n) => n.text === text);
+      if (hit) return hit;
+    } catch {
+      // Screen not idle yet; the swipe below settles it.
+    }
+    shell(`input swipe ${Math.round(w / 2)} ${Math.round(h * 0.7)} ${Math.round(w / 2)} ${Math.round(h * 0.25)} 250`);
+    await sleep(600);
+  }
+  return waitForText(text, 5_000);
+}
+
+async function scrollToAndTap(text: string): Promise<void> {
+  const [l, t, r, b] = (await scrollToText(text)).bounds;
+  tap((l + r) / 2, (t + b) / 2);
+}
+
 // -- app lifecycle ------------------------------------------------------------
 
 type Recovery = {
@@ -310,9 +338,11 @@ describe("recovery on the device", () => {
 
   it("lists the discarded session in the history and comes back clean after a restart", async () => {
     await tapText("Histórico");
-    const nodes = (await waitForText("Voltar"), dumpUi());
+    // Read the rows before scrolling: the newest session is at the top, and
+    // "Voltar" is at the bottom, past however many sessions the phone holds.
+    const nodes = (await waitForText("HISTÓRICO"), dumpUi());
     expect(nodes.some((n) => n.text.includes("Descartada"))).toBe(true);
-    await tapText("Voltar");
+    await scrollToAndTap("Voltar");
     forceStop();
     const r = await launch();
     expect(r.liveId).toBeNull();
