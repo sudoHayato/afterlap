@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Data**: 2026-09-10 · **Branch**: `main` · **Fase**: 1 concluída; **Fase 2, parte 1 (persistência local) concluída**; parte 2 (GPS real) por iniciar
+**Data**: 2026-09-10 · **Branch**: `feat/gps-real` (a partir de `main` em `5755fcb`) · **Fase**: 1 concluída; **Fase 2 implementada** (parte 1 persistência, parte 2 GPS real) — **à espera do teste de campo do fundador** para fechar
 
 ## Por pacote
 
@@ -9,7 +9,7 @@
 | `@bricklap/engine` | Motor puro, API estável, sem dependências de runtime, sem texto de interface (`SPORT_PACE_KIND` é lógica, não rótulo). Não mudou nesta sessão | `npm test`: cobertura 100%; `tsc` limpo; limiares verificados por mutação |
 | `@bricklap/i18n` | Dicionários `en` (base) e `pt-PT`, tipados; `t(key)` tipado; unidades metric/imperial (imperial declarado, não implementado) | cobertura 100%; `tsc` limpo |
 | `@bricklap/web-lab` | SPA Vite + TanStack Router; consome motor + i18n; chave `bricklap.v1` com migração de `afterlap.v1`; toda a cópia via `t()` | `tsc` limpo; `vite build` ok |
-| `@bricklap/mobile` | Expo SDK 57, dev client, `platforms: ["android"]`; ecrãs START/CHANGE/STOP + resumo/histórico com GPS simulado; toda a cópia via `t()`; **persistência local SQLite append-only (ADR 0006), recuperação real ao reabrir** | `tsc` limpo; `expo export --platform android` ok; testes de unidade do adaptador em `apps/mobile/test/persistence.test.ts` (18 testes, `node:sqlite`); **teste de recuperação no dispositivo real (`npm run test:device -w @bricklap/mobile`) 6/6 a passar** no Galaxy S24 Ultra — ver `docs/reports/2026-09-10-sessao-03.md` §5 |
+| `@bricklap/mobile` | Expo SDK 57, dev client, `platforms: ["android"]`; ecrãs START/CHANGE/STOP + resumo/histórico; toda a cópia via `t()`; **persistência local SQLite append-only (ADR 0006), recuperação real ao reabrir; GPS real em primeiro plano a 1 Hz com ecrã ligado (ADR 0007)**, simulador só por interruptor de dev; registo bruto `gps-raw.jsonl` e script GeoJSON | `tsc` limpo; `expo export --platform android` ok; 18 testes do adaptador em Node; **teste de recuperação no dispositivo 6/6** com o build novo; **GPS real validado à mão no telemóvel** (permissão recusada/aceite/localização desligada tratadas; 121 fixes a 1 Hz, kill → retoma → descarta) — ver `docs/reports/2026-09-10-sessao-04.md` §4. **Build de release instalado no Galaxy S24 Ultra para o teste de campo** |
 
 ## O que existe
 
@@ -23,7 +23,9 @@
 
 ## Limitações conhecidas
 
-- GPS simulado em ambas as apps; sem GPS real.
+- GPS real só em **primeiro plano, com o ecrã ligado** (a app trata de o manter ligado); em segundo plano ou com o ecrã desligado não grava — Fase 3. O lab web continua com GPS simulado.
+- A precisão de cada fix (e a marca "fraco" > 30 m) só existe no registo bruto `gps-raw.jsonl`, não na base (ADR 0007 §5); a migração v2 fica para a Fase 3.
+- **Fase 2 ainda não fechada**: falta o teste de campo de 30 min pelo fundador (relatório da sessão 04 §6).
 - CHANGE (mudar de desporto) não tem cobertura automatizada no teste de dispositivo Android: `uiautomator dump` não consegue ler o ecrã ao vivo desta app (confirmado, não depende de `testID`/`resource-id`). Cobertura fica pelos testes de unidade do motor e do adaptador; procedimento manual documentado no relatório da sessão 03 §5.2.
 - Os ícones são os do template Expo; não há splash configurado (o Android mostra o ícone por defeito). (`android.package` = `com.bricklap.app` ficou **decidido** pelo fundador na sessão 02.)
 - Identidade do responsável pelo tratamento continua por preencher (`apps/web-lab/src/lib/legal/config.ts`).
@@ -41,6 +43,4 @@
 
 ## Próximo passo
 
-**Fase 2, parte 2 — GPS real**: trocar `sampleFromSim` por `sampleFromGps` (`expo-location` em primeiro plano); a persistência não muda (ADR 0006). Ver [ROADMAP.md](ROADMAP.md) e o relatório da sessão 03.
-
-Antes disso, uma validação que falta e não exige código novo: uma sessão longa com o telemóvel no bolso, sabendo que a app ainda não grava em segundo plano. Setup, problemas e validação funcional da Fase 1: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10 e §11.
+**Teste de campo do fundador** — caminhada de 30 min com o build de release instalado, ecrã ligado, fechar/reabrir a meio; depois puxar a base e o registo bruto e correr `scripts/geojson.mjs`. Procedimento e tabela em [docs/reports/2026-09-10-sessao-04.md](docs/reports/2026-09-10-sessao-04.md) §6. Se passar, a Fase 2 fecha e segue-se a **Fase 3** (segundo plano e fiabilidade) — ver [ROADMAP.md](ROADMAP.md) e o BACKLOG.

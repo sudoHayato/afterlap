@@ -10,14 +10,20 @@ Decidido pelo fundador na sessão 02, já não é backlog: `android.package` = `
 
 ## P1 — Fase 2
 
-Feito na sessão 03 (`feat/persistencia-local`, ver ADR 0006 e o relatório da sessão): adaptador de persistência SQLite append-only e `recovered` real ao reabrir a app. Fica por fazer:
+Feito na sessão 03 (ADR 0006): adaptador de persistência SQLite append-only e `recovered` real ao reabrir a app. Feito na sessão 04 (ADR 0007): `expo-location` em primeiro plano, textos de permissão en + pt-PT, ecrã ligado enquanto grava, registo bruto `gps-raw.jsonl`, exportação GeoJSON. **Falta o teste de campo do fundador** (relatório da sessão 04 §6) para fechar a Fase 2. Fica por fazer:
 
-- [ ] `expo-location` em primeiro plano; textos de permissão em pt-PT; `sampleFromGps` já aceita `LocationObjectCoords`.
 - [ ] Ícones e cor de fundo definitivos (hoje assets do template Expo); splash com `expo-splash-screen` (não configurado; `assets/splash-icon.png` está por usar).
 - [ ] Decidir `newArchEnabled` explícito em `app.json` (SDK 57 já usa a nova arquitetura por defeito; deixar explícito evita surpresas).
 - [ ] Antes de distribuir: `android.blockedPermissions` para `READ/WRITE_EXTERNAL_STORAGE` (e `INTERNET` enquanto não for usada) — vêm do template do Expo, não do `app.json`.
 - [ ] Tema escuro a nível de sistema (diálogos, teclado): exige `expo-system-ui`; hoje a app pinta as suas cores e o `userInterfaceStyle` foi retirado por não ter efeito sem esse módulo.
 - [ ] CI (GitHub Actions): `npm test`, `npm run typecheck`, `npm run build:web`, `expo export --platform android`.
+
+## P1 — Fase 3 (herdado da sessão 04)
+
+- [ ] **Precisão junto da amostra**: migração v2 (`samples.accuracy REAL NULL`) quando a Fase 3 decidir filtros; hoje a precisão e a marca "fraco" (> 30 m) vivem só no registo bruto `files/gps-raw.jsonl` (ADR 0007 §5, relatório da sessão 04 §5). A decidir com o CTO no arranque da Fase 3.
+- [ ] **Registo bruto cresce sem limite** (≈ 230 bytes por fix; ≈ 400 KB por 30 min). Rodar por sessão ou apagar quando o filtro estiver decidido.
+- [ ] Filtro de amostras (precisão, saltos) decidido sobre `gps-raw.jsonl` de treinos reais — já era Fase 3 no ROADMAP.
+- [ ] `t` da amostra = hora de chegada; `fixAt` do provider fica no registo bruto. Rever se a Fase 3 preferir o timestamp do fix (uma linha em `App.tsx`).
 
 ## P1 — i18n (sessão 02)
 
