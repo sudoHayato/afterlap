@@ -96,6 +96,35 @@ Notas aprendidas à força:
   ser encontradas por varrimento (30000–49999); só uma aceita o `adb connect`,
   as outras entram como `offline` e limpam-se com `adb disconnect`.
 
+### Ligar o telemóvel por USB (sem Wi-Fi)
+
+A depuração sem fios exige Wi-Fi: num *hotspot* móvel o Android desliga-a.
+A WSL 2 não vê USB, mas o **adb do Windows** vê — e corre a partir da WSL:
+
+1. `platform-tools` para Windows (zip, sem instalador, sem admin) em
+   `/mnt/c/Users/<utilizador>/platform-tools`.
+2. Cabo ligado, *Depuração USB* ativa, aceitar o pop-up no telemóvel:
+   ```sh
+   /mnt/c/Users/<utilizador>/platform-tools/adb.exe devices -l
+   ```
+3. Instalar o APK compilado na WSL (o ficheiro está em `/mnt/c`? não — o
+   `adb.exe` lê caminhos WSL via `\\wsl$`; mais simples é copiar):
+   ```sh
+   cp android/app/build/outputs/apk/debug/app-debug.apk /mnt/c/Users/<utilizador>/bricklap-debug.apk
+   adb.exe install -r "C:\Users\<utilizador>\bricklap-debug.apk"
+   ```
+4. `adb.exe reverse tcp:8081 tcp:8081`. O `localhost:8081` do telemóvel passa a
+   ser o `localhost:8081` **do Windows**, que a WSL 2 encaminha para o Metro —
+   confirma com `curl.exe http://localhost:8081/status` no Windows.
+5. Teste de recuperação: `BRICKLAP_ADB=/mnt/c/Users/<utilizador>/platform-tools/adb.exe npm run test:device`.
+
+O que **não** funciona nesta máquina: apontar o `adb` da WSL ao servidor do
+Windows (`adb.exe -a nodaemon server` + `ADB_SERVER_SOCKET=tcp:<ip-host>:5037`).
+O servidor arranca em `0.0.0.0:5037`, mas a firewall do Windows (perfil público)
+bloqueia a ligação vinda da WSL, e abrir a porta exige administrador. Por isso
+o `expo run:android` (que usa o `adb` da WSL) não vê o telemóvel por USB —
+compila-se com `./gradlew assembleDebug` e instala-se com o `adb.exe`.
+
 ### Compilar e instalar
 
 ```sh

@@ -35,3 +35,10 @@ O fundador decidiu **não abrir conta Expo**. Isso elimina a opção (a): o EAS 
 - **`apt install openjdk-17-jdk`**: exigiria a palavra-passe de `sudo`. O tarball do Temurin em `$HOME` faz o mesmo trabalho sem privilégios.
 - **USB com `usbipd-win`**: mais peças móveis (serviço no Windows, `bind` como administrador, regras `udev`), e desliga o telemóvel do Windows enquanto anexado. O Wi-Fi dá o mesmo resultado com menos atrito.
 - **Compilar no Windows** (Android Studio no Windows, repositório em `\\wsl$`): o I/O entre os dois sistemas de ficheiros torna o build muito mais lento, e passaria a haver duas toolchains a manter. Há um SDK Android no Windows (`C:\Android`), que fica por usar.
+
+## Adenda (sessão 03) — USB como alternativa à ligação sem fios
+
+Sem Wi-Fi (o fundador em *hotspot* móvel), o Android desativa a depuração sem fios. O caminho USB funciona **sem tocar em nada da WSL**: o `platform-tools` para Windows, descompactado em `/mnt/c/Users/<utilizador>/platform-tools` sem instalador nem administrador, e o `adb.exe` chamado diretamente a partir da WSL. O APK compila-se na WSL (`./gradlew assembleDebug`) e instala-se com o `adb.exe`; o `adb.exe reverse tcp:8081 tcp:8081` chega ao Metro porque a WSL 2 encaminha o `localhost` do Windows para a distribuição.
+
+Tentou-se primeiro a ponte "um só servidor": `adb.exe -a nodaemon server` no Windows e `ADB_SERVER_SOCKET=tcp:<ip-do-host>:5037` na WSL, para o `expo run:android` e os testes usarem o `adb` da WSL sem alterações. O servidor escuta em `0.0.0.0:5037`, mas a firewall do Windows (perfil público) bloqueia a ligação vinda da WSL e abrir a porta exige administrador. Decisão: os helpers do teste de recuperação escolhem o binário por `BRICKLAP_ADB`; o `expo run:android` fica para a ligação sem fios. Registo no `apps/mobile/README.md`.
+

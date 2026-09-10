@@ -26,6 +26,7 @@ export const ptPT: Dictionary = {
     openingSession: "A abrir sessão…",
     watch: "Relógio",
     close: "Fechar",
+    continue: "Continuar",
   },
   sport: {
     run: { label: "Corrida", live: "A correr" },
@@ -93,6 +94,14 @@ export const ptPT: Dictionary = {
     newSession: "Nova sessão",
     samples: "Amostras",
     liveSuffix: " · ao vivo",
+    opening: "A abrir…",
+    history: "Histórico",
+    noSessions: "Ainda não há sessões guardadas.",
+    resumeTitle: "Sessão em curso",
+    resumeCopy:
+      "A app foi fechada com esta sessão a decorrer. Continua de onde ficaste, ou descarta-a.",
+    inProgress: "Em curso",
+    discarded: "Descartada",
   },
   meta: {
     title: "Bricklap",

@@ -1,18 +1,23 @@
 /**
- * Bricklap — Android app, Fase 1 (esqueleto).
+ * Bricklap — Android app, Fase 2 (parte 1: persistência local).
  *
- * Um único ecrã: INICIAR uma vez, MUDAR de desporto sem parar, PARAR no fim.
- * Todo o estado da sessão vive em @bricklap/engine (os eventos são a fonte de
- * verdade; segmentos e métricas são derivados). Todo o texto vem de
- * @bricklap/i18n (o dispositivo escolhe a língua; ver ./i18n.ts).
+ * INICIAR uma vez, MUDAR de desporto sem parar, PARAR no fim. Todo o estado da
+ * sessão vive em @bricklap/engine (os eventos são a fonte de verdade;
+ * segmentos e métricas são derivados) e todo o texto vem de @bricklap/i18n.
  *
- * Nesta fase o GPS é SIMULADO (createSim / stepSim / sampleFromSim): não há
- * fornecedor de localização real, não há persistência e não há biblioteca de
- * navegação. Apenas primitivas do react-native + expo-status-bar.
+ * O que muda face à Fase 1: cada evento é escrito de forma síncrona numa base
+ * SQLite append-only (./persistence) antes de o ecrã reagir; as amostras vão
+ * em lotes curtos. Ao arrancar, a app repõe a sessão que estava a decorrer
+ * (evento `recovered`) e pergunta se continua ou descarta — descartar é um
+ * STOP com uma marca, nunca um DELETE. O histórico lista o que está guardado.
+ *
+ * O GPS continua SIMULADO (createSim / stepSim / sampleFromSim); o GPS real é a
+ * parte 2 da Fase 2. Sem biblioteca de navegação: um `screen` discriminado.
  */
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AppState,
   Pressable,
   ScrollView,
   StatusBar as RNStatusBar,
@@ -23,13 +28,11 @@ import {
 import {
   SPORTS,
   SPORT_PACE_KIND,
-  appendSample,
-  applyChange,
-  applyStop,
-  createLiveSession,
   createSim,
   currentSport,
   durationMs,
+  formatClock,
+  formatDay,
   formatDuration,
   sampleFromSim,
   segmentMetrics,
@@ -43,7 +46,9 @@ import {
   type Sport,
 } from "@bricklap/engine";
 import { formatDistanceForUnit, formatPaceForUnit, formatSpeedForUnit } from "@bricklap/i18n";
-import { t } from "./i18n";
+import { locale, t } from "./i18n";
+import type { SessionSummary } from "./persistence";
+import { getStore, logRecovery } from "./store";
 
 const COLORS = {
   background: "#070708",
@@ -57,6 +62,14 @@ const COLORS = {
 const CLOCK_TICK_MS = 250;
 const GPS_TICK_MS = 1000;
 const RESET_GUARD_MS = 700;
+
+type Screen =
+  | { kind: "opening" }
+  | { kind: "idle" }
+  | { kind: "resume" }
+  | { kind: "live" }
+  | { kind: "summary"; session: Session }
+  | { kind: "history"; sessions: SessionSummary[] };
 
 /** True once `ms` have elapsed since mount. */
 function useArmedAfter(ms: number): boolean {
@@ -76,6 +89,8 @@ function paceOrSpeed(sport: Sport, m: SegmentMetrics): string | null {
 }
 
 export default function App() {
+  const [screen, setScreen] = useState<Screen>({ kind: "opening" });
+  // Render cache of the store's live session; the store is the truth.
   const [session, setSession] = useState<Session | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [startSport, setStartSport] = useState<Sport>("run");
@@ -90,7 +105,40 @@ export default function App() {
     sessionRef.current = session;
   }, [session]);
 
-  const live = session?.status === "live";
+  // Boot: open, migrate, replay. A live session on disk means the app died
+  // (or was killed) mid-session; ask before recording into it again.
+  useEffect(() => {
+    const store = getStore();
+    const live = store.hydrate();
+    if (live) {
+      const segments = segmentsFromEvents(live.events);
+      const metrics = sessionMetrics(live, live.samples.at(-1)?.t ?? live.createdAt);
+      logRecovery({
+        liveId: live.id,
+        events: live.events.length,
+        samples: live.samples.length,
+        segments: segments.length,
+        lastSampleT: live.samples.at(-1)?.t ?? null,
+        distanceM: Math.round(metrics.distanceM * 1000) / 1000,
+      });
+      setSession(live);
+      setScreen({ kind: "resume" });
+    } else {
+      logRecovery({ liveId: null });
+      setScreen({ kind: "idle" });
+    }
+  }, []);
+
+  // Going to the background is the moment a kill becomes likely: drain the
+  // sample buffer so the bounded loss applies only to a foreground kill.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") getStore().flush();
+    });
+    return () => sub.remove();
+  }, []);
+
+  const recording = screen.kind === "live";
 
   /**
    * Advance the simulated GPS by the time elapsed since the last tick, using
@@ -110,13 +158,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!live) return;
+    if (!recording) return;
     lastTickRef.current = Date.now();
     const clock = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
     const gps = setInterval(() => {
       const sample = tickSim();
       if (!sample) return;
-      setSession((prev) => (prev ? appendSample(prev, sample) : prev));
+      const store = getStore();
+      store.pushSample(sample);
+      setSession(store.live());
       // Keep `now` >= the newest sample so live metrics include it at once.
       setNow(sample.t);
     }, GPS_TICK_MS);
@@ -124,18 +174,21 @@ export default function App() {
       clearInterval(clock);
       clearInterval(gps);
     };
-  }, [live, tickSim]);
+  }, [recording, tickSim]);
 
   const start = useCallback((sport: Sport) => {
     const ts = Date.now();
+    const store = getStore();
+    store.start(sport, ts);
     simRef.current = createSim();
     lastTickRef.current = ts;
-    const first = sampleFromSim(simRef.current, sport, ts);
-    const s = appendSample(createLiveSession(sport, ts), first);
-    sessionRef.current = s;
+    store.pushSample(sampleFromSim(simRef.current, sport, ts));
+    const live = store.live();
+    sessionRef.current = live;
     setPickerOpen(false);
     setNow(ts);
-    setSession(s);
+    setSession(live);
+    setScreen({ kind: "live" });
   }, []);
 
   const change = useCallback(
@@ -145,9 +198,10 @@ export default function App() {
       const sample = tickSim();
       setPickerOpen(false);
       if (!sample) return;
-      setSession((prev) =>
-        prev ? applyChange(appendSample(prev, sample), sport, sample.t) : prev,
-      );
+      const store = getStore();
+      store.pushSample(sample);
+      store.changeSport(sport, sample.t);
+      setSession(store.live());
     },
     [tickSim],
   );
@@ -156,14 +210,38 @@ export default function App() {
     const sample = tickSim();
     setPickerOpen(false);
     if (!sample) return;
-    setSession((prev) =>
-      prev ? applyStop(appendSample(prev, sample), sample.t) : prev,
-    );
+    const store = getStore();
+    store.pushSample(sample);
+    const id = store.stop(sample.t);
+    setSession(null);
+    // The summary is replayed from disk on purpose: what you see is what was saved.
+    const stored = id ? store.byId(id) : undefined;
+    setScreen(stored ? { kind: "summary", session: stored } : { kind: "idle" });
   }, [tickSim]);
 
-  const reset = useCallback(() => {
-    setPickerOpen(false);
+  const resume = useCallback(() => {
+    const live = sessionRef.current;
+    if (!live) return;
+    // Pick the simulation up where the last fix was, not back in Lisbon.
+    const last = live.samples.at(-1);
+    simRef.current = last ? createSim({ lat: last.lat, lng: last.lng }) : createSim();
+    setNow(Date.now());
+    setScreen({ kind: "live" });
+  }, []);
+
+  const discard = useCallback(() => {
+    getStore().discardLive(Date.now());
     setSession(null);
+    setScreen({ kind: "idle" });
+  }, []);
+
+  const openHistory = useCallback(() => {
+    setScreen({ kind: "history", sessions: getStore().summaries() });
+  }, []);
+
+  const goIdle = useCallback(() => {
+    setPickerOpen(false);
+    setScreen({ kind: "idle" });
   }, []);
 
   return (
@@ -175,13 +253,18 @@ export default function App() {
           <Text style={styles.kicker}>{t("mobile.kicker")}</Text>
         </View>
 
-        {session === null ? (
+        {screen.kind === "opening" ? (
+          <Text style={styles.hint}>{t("mobile.opening")}</Text>
+        ) : screen.kind === "idle" ? (
           <IdleScreen
             sport={startSport}
             onPick={setStartSport}
             onStart={() => start(startSport)}
+            onHistory={openHistory}
           />
-        ) : session.status === "live" ? (
+        ) : screen.kind === "resume" && session ? (
+          <ResumeScreen session={session} now={now} onContinue={resume} onDiscard={discard} />
+        ) : screen.kind === "live" && session ? (
           <LiveScreen
             session={session}
             now={now}
@@ -190,9 +273,11 @@ export default function App() {
             onChange={change}
             onStop={stop}
           />
-        ) : (
-          <SummaryScreen session={session} onReset={reset} />
-        )}
+        ) : screen.kind === "summary" ? (
+          <SummaryScreen session={screen.session} onReset={goIdle} />
+        ) : screen.kind === "history" ? (
+          <HistoryScreen sessions={screen.sessions} now={now} onBack={goIdle} />
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -206,13 +291,36 @@ function IdleScreen(props: {
   sport: Sport;
   onPick: (s: Sport) => void;
   onStart: () => void;
+  onHistory: () => void;
 }) {
   return (
     <View style={styles.stack}>
       <Text style={styles.sectionLabel}>{t("mobile.initialSport")}</Text>
-      <SportPicker selected={props.sport} onPick={props.onPick} />
-      <Button label={t("common.start")} kind="primary" big onPress={props.onStart} />
+      <SportPicker testIDPrefix="start-sport" selected={props.sport} onPick={props.onPick} />
+      <Button testID="btn-start" label={t("common.start")} kind="primary" big onPress={props.onStart} />
       <Text style={styles.hint}>{t("mobile.idleHint")}</Text>
+      <Button testID="btn-history" label={t("mobile.history")} kind="secondary" onPress={props.onHistory} />
+    </View>
+  );
+}
+
+function ResumeScreen(props: {
+  session: Session;
+  now: number;
+  onContinue: () => void;
+  onDiscard: () => void;
+}) {
+  const { session, now } = props;
+  return (
+    <View style={styles.stack}>
+      <View style={styles.card}>
+        <Text style={styles.sectionLabel}>{t("mobile.resumeTitle")}</Text>
+        <Text style={styles.bigClock}>{formatDuration(durationMs(session, now))}</Text>
+        <Text style={styles.hint}>{t("mobile.resumeCopy")}</Text>
+      </View>
+      <SegmentList session={session} now={now} />
+      <Button testID="btn-continue" label={t("common.continue")} kind="primary" big onPress={props.onContinue} />
+      <Button testID="btn-discard" label={t("common.discard")} kind="danger" onPress={props.onDiscard} />
     </View>
   );
 }
@@ -267,17 +375,18 @@ function LiveScreen(props: {
         <View style={styles.card}>
           <Text style={styles.sectionLabel}>{t("mobile.changeTo")}</Text>
           <SportPicker
+            testIDPrefix="change-to"
             selected={sport}
             exclude={sport}
             onPick={props.onChange}
           />
-          <Button label={t("common.cancel")} kind="ghost" onPress={props.onTogglePicker} />
+          <Button testID="btn-cancel-change" label={t("common.cancel")} kind="ghost" onPress={props.onTogglePicker} />
         </View>
       ) : (
-        <Button label={t("common.change")} kind="secondary" big onPress={props.onTogglePicker} />
+        <Button testID="btn-change" label={t("common.change")} kind="secondary" big onPress={props.onTogglePicker} />
       )}
 
-      <Button label={t("common.stop")} kind="danger" big onPress={props.onStop} />
+      <Button testID="btn-stop" label={t("common.stop")} kind="danger" big onPress={props.onStop} />
     </View>
   );
 }
@@ -287,8 +396,8 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
   const total = sessionMetrics(session);
   const segments = segmentsFromEvents(session.events);
   // "Parar" and "Nova sessão" can occupy the same screen rect across the
-  // live → summary re-render; ignore taps for a moment so a double tap on
-  // Parar cannot discard the session (there is no persistence yet).
+  // live → summary re-render. The session is already on disk, so a double
+  // tap loses nothing now — it would only skip past this summary.
   const armed = useArmedAfter(RESET_GUARD_MS);
 
   return (
@@ -306,12 +415,47 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
       <SegmentList session={session} now={Date.now()} />
 
       <Button
+        testID="btn-new-session"
         label={t("mobile.newSession")}
         kind="primary"
         big
         disabled={!armed}
         onPress={props.onReset}
       />
+    </View>
+  );
+}
+
+/** Proof of persistence, nothing more: one row per stored session. Fase 4 owns the real summary. */
+function HistoryScreen(props: { sessions: SessionSummary[]; now: number; onBack: () => void }) {
+  const rows = [...props.sessions].reverse();
+  return (
+    <View style={styles.stack}>
+      <View style={styles.card}>
+        <Text style={styles.sectionLabel}>{t("mobile.history")}</Text>
+        {rows.length === 0 ? <Text style={styles.hint}>{t("mobile.noSessions")}</Text> : null}
+        {rows.map(({ session, discarded, sampleCount }) => {
+          const segments = segmentsFromEvents(session.events);
+          const status = discarded
+            ? t("mobile.discarded")
+            : session.status === "live"
+              ? t("mobile.inProgress")
+              : null;
+          return (
+            <View key={session.id} style={styles.segmentRow}>
+              <Text style={styles.segmentLabel}>
+                {formatDay(session.createdAt, locale)} · {formatClock(session.createdAt, locale)}
+                {status ? ` · ${status}` : ""}
+              </Text>
+              <Text style={styles.segmentValue}>
+                {formatDuration(durationMs(session, props.now))} · {segments.length}{" "}
+                {t("common.segments").toLowerCase()} · {sampleCount} {t("mobile.samples").toLowerCase()}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+      <Button testID="btn-history-back" label={t("common.back")} kind="secondary" big onPress={props.onBack} />
     </View>
   );
 }
@@ -350,14 +494,19 @@ function SportPicker(props: {
   selected: Sport;
   exclude?: Sport;
   onPick: (s: Sport) => void;
+  /** Distinguishes the initial-sport picker from the mid-session change-to picker in the UI tree. */
+  testIDPrefix?: string;
 }) {
   return (
     <View style={styles.pickerRow}>
       {SPORTS.filter((s) => s !== props.exclude).map((s) => {
         const active = s === props.selected && !props.exclude;
+        const label = t(`sport.${s}.label`);
         return (
           <Pressable
             key={s}
+            testID={props.testIDPrefix ? `${props.testIDPrefix}-${s}` : `sport-chip-${s}`}
+            accessibilityLabel={label}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             onPress={() => props.onPick(s)}
@@ -367,9 +516,7 @@ function SportPicker(props: {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={[styles.chipText, active && styles.chipTextActive]}>
-              {t(`sport.${s}.label`)}
-            </Text>
+            <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
           </Pressable>
         );
       })}
@@ -394,6 +541,7 @@ function Button(props: {
   big?: boolean;
   disabled?: boolean;
   onPress: () => void;
+  testID?: string;
 }) {
   const box =
     props.kind === "primary"
@@ -407,6 +555,8 @@ function Button(props: {
     props.kind === "primary" ? styles.btnTextOnPrimary : styles.btnText;
   return (
     <Pressable
+      testID={props.testID}
+      accessibilityLabel={props.label}
       accessibilityRole="button"
       accessibilityState={{ disabled: props.disabled === true }}
       disabled={props.disabled}

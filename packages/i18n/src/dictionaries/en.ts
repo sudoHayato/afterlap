@@ -26,6 +26,7 @@ export const en: Dictionary = {
     openingSession: "Opening session…",
     watch: "Watch",
     close: "Close",
+    continue: "Continue",
   },
   sport: {
     run: { label: "Run", live: "Running" },
@@ -93,6 +94,14 @@ export const en: Dictionary = {
     newSession: "New session",
     samples: "Samples",
     liveSuffix: " · live",
+    opening: "Opening…",
+    history: "History",
+    noSessions: "No sessions saved yet.",
+    resumeTitle: "Session in progress",
+    resumeCopy:
+      "The app was closed while this session was running. Continue where you left off, or discard it.",
+    inProgress: "In progress",
+    discarded: "Discarded",
   },
   meta: {
     title: "Bricklap",
