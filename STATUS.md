@@ -9,7 +9,7 @@
 | `@bricklap/engine` | Motor puro, API estável, sem dependências de runtime, sem texto de interface (`SPORT_PACE_KIND` é lógica, não rótulo) | `npm test`: 124 testes em 8 ficheiros; cobertura 100%; `tsc` limpo; limiares verificados por mutação |
 | `@bricklap/i18n` | Dicionários `en` (base) e `pt-PT`, tipados; `t(key)` tipado; unidades metric/imperial (imperial declarado, não implementado) | 25 testes em 4 ficheiros; cobertura 100%; `tsc` limpo |
 | `@bricklap/web-lab` | SPA Vite + TanStack Router; consome motor + i18n; chave `bricklap.v1` com migração de `afterlap.v1`; toda a cópia via `t()` | `tsc` limpo; 9 testes ao store; `vite build` ok; dev server responde em `/` e `/legal/privacidade` |
-| `@bricklap/mobile` | Expo SDK 57, dev client, `platforms: ["android"]`; um ecrã START/CHANGE/STOP com GPS simulado; toda a cópia via `t()`; sem persistência | `tsc` limpo; `expo export --platform android` ok (592 módulos, bundle Hermes 1.5 MB) |
+| `@bricklap/mobile` | Expo SDK 57, dev client, `platforms: ["android"]`; um ecrã START/CHANGE/STOP com GPS simulado; toda a cópia via `t()`; sem persistência | `tsc` limpo; `expo export --platform android` ok (592 módulos); **APK compilado localmente e instalado no telemóvel** (Galaxy S24 Ultra, Android 16), Metro a servir 720 módulos por `adb reverse` |
 
 ## O que existe
 
@@ -24,7 +24,7 @@
 
 - GPS simulado em ambas as apps; sem GPS real.
 - App Android sem persistência: a sessão perde-se ao fechar.
-- `android.package` é um placeholder (`com.bricklap.app`); os ícones são os do template Expo; não há splash configurado (o Android mostra o ícone por defeito).
+- Os ícones são os do template Expo; não há splash configurado (o Android mostra o ícone por defeito). (`android.package` = `com.bricklap.app` ficou **decidido** pelo CTO na sessão 02.)
 - Identidade do responsável pelo tratamento continua por preencher (`apps/web-lab/src/lib/legal/config.ts`).
 - Sistema de unidades imperial não implementado (só métrico).
 - Sem ecrã de definições: língua e unidades detetam-se uma vez no arranque, sem forma de o utilizador escolher à mão.
@@ -33,9 +33,11 @@
 
 ## Ambiente de desenvolvimento
 
-- Windows + WSL 2 (Ubuntu). **Node 24.21.0 LTS instalado via nvm nesta sessão** (`nvm install 24`, alias `default`); npm 11.19.0 (bundlado). `npm install` volta a funcionar sem o workaround `npx npm@11` da sessão 01.
-- Sem Android SDK/JDK na WSL; sem `adb`. Ver `docs/reports/2026-09-09-sessao-02.md` para o resultado do EAS Build.
+- Windows 10 Home 22H2 (build 19045) + WSL 2 (Ubuntu). **Node 24.21.0 LTS via nvm**, npm 11.19.0. `npm install` funciona sem o workaround `npx npm@11` da sessão 01.
+- **Toolchain Android instalada em modo utilizador** (sem `root`, porque `sudo` pede palavra-passe): JDK 17 Temurin em `~/opt/jdk-17`; Android SDK em `~/Android/Sdk` com `platform-tools` 37.0.1, `platforms;android-36` e `build-tools;36.0.0`. `JAVA_HOME`/`ANDROID_HOME`/`PATH` fixados no `~/.bashrc`.
+- **Sem EAS** (decisão do CTO, sem conta Expo): build local com `npx expo run:android`. Ver [docs/adr/0005-build-local-android.md](docs/adr/0005-build-local-android.md).
+- Telemóvel ligado por **depuração sem fios** (`adb pair` / `adb connect`); Metro alcançável por `adb reverse tcp:8081 tcp:8081`. O modo espelhado da WSL não é opção em Windows 10.
 
 ## Próximo passo
 
-Instalar o APK de desenvolvimento no telemóvel a partir do link do EAS Build e validar o ecrã START/CHANGE/STOP. Detalhe: [docs/reports/2026-09-09-sessao-01.md](docs/reports/2026-09-09-sessao-01.md) (opções) e o relatório desta sessão.
+Desbloquear o telemóvel e percorrer START/CHANGE/STOP com os quatro desportos, confirmando a interface em português. Detalhe do setup e dos problemas: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10.

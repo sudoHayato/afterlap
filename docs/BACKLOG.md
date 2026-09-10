@@ -4,10 +4,9 @@ Prioridades: **P0** bloqueia a próxima sessão; **P1** próxima fase; **P2** qu
 
 ## P0 — Fase 1, fecho
 
-- [ ] **`android.package` definitivo** (a decidir; hoje `com.bricklap.app` placeholder; mudar depois de publicar é doloroso).
-- [ ] **Login EAS + primeiro build** — bloqueado nesta sessão: precisa do CTO a correr `npx eas-cli login` na própria máquina (ver relatório da sessão 02). `apps/mobile/eas.json` já está pronto (perfil `development`, `developmentClient: true`, `distribution: "internal"`, `android.buildType: "apk"`); falta `eas build:configure` (liga o projeto à conta) e `eas build --platform android --profile development`.
-- [ ] **Instalar o APK no telemóvel** a partir do link/QR do EAS Build e validar o ecrã START/CHANGE/STOP com os três desportos e as duas línguas.
-- [ ] Decidir se `npm install --global eas-cli` fica na máquina, ou se se continua a invocar via `npx eas-cli@latest` (sessão 02 usou `npx`, sem instalação global).
+- [ ] **Instalar e correr o APK no telemóvel** (build local, `npx expo run:android --device`) e validar START/CHANGE/STOP com os quatro desportos e as duas línguas.
+
+Decidido pelo CTO na sessão 02, já não é backlog: `android.package` = `com.bricklap.app` é **definitivo**; **EAS abandonado** (sem conta Expo) — o caminho é build local, ver `docs/adr/0005-build-local-android.md`.
 
 ## P1 — Fase 2
 
@@ -24,7 +23,7 @@ Prioridades: **P0** bloqueia a próxima sessão; **P1** próxima fase; **P2** qu
 
 - [ ] **Sistema de unidades imperial**: `UnitSystem` já declara `"imperial"`; `formatDistanceForUnit`/`formatSpeedForUnit`/`formatPaceForUnit` lançam em vez de o implementar. Implementar quando houver pedido real (milhas, pés, mph).
 - [ ] **Ecrã de definições** para escolher língua e sistema de unidades à mão — hoje é só deteção automática do dispositivo, uma vez, no arranque (sem troca em runtime).
-- [ ] Decidir se `pt-BR` deve continuar a cair em `pt-PT` (decisão desta sessão, ver `packages/i18n/README.md` e ADR 0004) ou passar a ter dicionário próprio quando houver utilizadores brasileiros reais.
+- [ ] **Dicionário `pt-BR` próprio, se o Brasil vier a ser mercado.** O CTO aprovou que, por agora, `pt-BR` (e qualquer variante de português não listada) caia em `pt-PT` — é melhor do que inglês. Se o Brasil passar a ser mercado, merece dicionário próprio: vocabulário (ecrã/tela, telemóvel/celular, ficheiro/arquivo) e ortografia divergem o suficiente para soar estrangeiro.
 - [ ] Textos legais: quando a app nativa tiver as suas próprias páginas legais (Fase 4), decidir se continuam só pt-PT/UE ou se passam a ter tradução — hoje a decisão do CTO foi mantê-los fora do i18n.
 - [ ] `apps/web-lab/src/lib/i18n.ts` e `apps/mobile/i18n.ts` calculam o locale uma vez, no arranque do módulo — não reagem a uma mudança de língua do sistema operativo enquanto a app está aberta (aceitável sem ecrã de definições).
 
