@@ -1,5 +1,6 @@
 import {
   SIM_SPEED_MPS,
+  sportHasGps,
   type Sample,
   type Segment,
   type SegmentMetrics,
@@ -206,9 +207,41 @@ function segmentEnd(session: Session, segment: Segment, at: number): number {
   return segment.endAt ?? (isLive(session) ? at : sessionBounds(session).end);
 }
 
-/** Samples of a segment (see samplesBetween for the boundary rules). */
+/**
+ * The time span of the run of consecutive GPS segments that `segment` belongs
+ * to — from the start of the first one to the end of the last. Interpolation
+ * for a GPS segment only ever looks at samples inside this span, so a leg
+ * between the last fix before a gym segment and the first fix after it is
+ * never split into a boundary sample: a segment without GPS has no samples,
+ * and its neighbours must not borrow across it (ADR 0008).
+ */
+function gpsSpan(session: Session, segment: Segment): { start: number; end: number } {
+  const segments = segmentsFromEvents(session.events);
+  const i = segments.findIndex((s) => s.startAt === segment.startAt && s.sport === segment.sport);
+  // A segment the caller built by hand (not derived from these events): no fence.
+  if (i < 0) return { start: -Infinity, end: Infinity };
+  let first = i;
+  while (first > 0 && sportHasGps(segments[first - 1]!.sport)) first--;
+  let last = i;
+  while (last < segments.length - 1 && sportHasGps(segments[last + 1]!.sport)) last++;
+  // A fence only where a segment without GPS is the neighbour; otherwise the
+  // span stays open so a live segment can still interpolate up to `at`.
+  return {
+    start: first > 0 ? segments[first]!.startAt : -Infinity,
+    end: last < segments.length - 1 ? (segments[last]!.endAt ?? Infinity) : Infinity,
+  };
+}
+
+/**
+ * Samples of a segment (see samplesBetween for the boundary rules). A segment
+ * of a sport without GPS owns no samples at all, even if some were recorded
+ * during it or sit exactly on its bounds.
+ */
 export function samplesForSegment(session: Session, segment: Segment, at = nowMs()): Sample[] {
-  return samplesBetween(session.samples, segment.startAt, segmentEnd(session, segment, at));
+  if (!sportHasGps(segment.sport)) return [];
+  const span = gpsSpan(session, segment);
+  const pool = samplesInRange(session.samples, span.start, span.end);
+  return samplesBetween(pool, segment.startAt, segmentEnd(session, segment, at));
 }
 
 export function metricsFor(
@@ -223,13 +256,30 @@ export function metricsFor(
   return { durationMs, distanceM, avgSpeedMps };
 }
 
-export function sessionMetrics(session: Session, at = nowMs()) {
+/**
+ * Whole-session metrics. Duration spans start to stop (or to `at` while
+ * live); distance is the sum of the segments' distances, so only GPS
+ * segments contribute and the per-segment rules apply to the total too.
+ */
+export function sessionMetrics(session: Session, at = nowMs()): SegmentMetrics {
   const { start, end } = sessionBounds(session);
-  return metricsFor(session.samples, start, isLive(session) ? at : end);
+  const durationMs = Math.max(0, (isLive(session) ? at : end) - start);
+  const distanceM = segmentsFromEvents(session.events).reduce(
+    (sum, segment) => sum + segmentMetrics(session, segment, at).distanceM,
+    0,
+  );
+  const avgSpeedMps = durationMs > 0 ? distanceM / (durationMs / 1000) : 0;
+  return { durationMs, distanceM, avgSpeedMps };
 }
 
-export function segmentMetrics(session: Session, segment: Segment, at = nowMs()) {
-  return metricsFor(session.samples, segment.startAt, segmentEnd(session, segment, at));
+/** A segment without GPS is time only: distance 0, speed 0. */
+export function segmentMetrics(session: Session, segment: Segment, at = nowMs()): SegmentMetrics {
+  const end = segmentEnd(session, segment, at);
+  const durationMs = Math.max(0, end - segment.startAt);
+  if (!sportHasGps(segment.sport)) return { durationMs, distanceM: 0, avgSpeedMps: 0 };
+  const distanceM = distanceMeters(samplesForSegment(session, segment, at));
+  const avgSpeedMps = durationMs > 0 ? distanceM / (durationMs / 1000) : 0;
+  return { durationMs, distanceM, avgSpeedMps };
 }
 
 export function formatDuration(ms: number) {

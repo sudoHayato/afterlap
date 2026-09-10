@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SPORTS } from "@bricklap/engine";
 import { en } from "../src/dictionaries/en";
 import { ptPT } from "../src/dictionaries/pt-PT";
 
@@ -38,11 +39,23 @@ describe("en and pt-PT dictionaries — mesmo conjunto de chaves", () => {
     }
   });
 
-  it("covers the sport keys the engine actually defines", () => {
-    for (const sport of ["run", "bike", "walk", "transition"] as const) {
+  it("covers the sport keys the engine actually defines — all eight, gym and pool included", () => {
+    expect(SPORTS).toHaveLength(8);
+    for (const sport of SPORTS) {
       expect(enKeys).toContain(`sport.${sport}.label`);
       expect(enKeys).toContain(`sport.${sport}.live`);
     }
+  });
+
+  it("names the sports without GPS the way the founder asked (session 05)", () => {
+    expect(en.sport.strength.label).toBe("Strength");
+    expect(ptPT.sport.strength.label).toBe("Força");
+    expect(en.sport.rowing_indoor.label).toBe("Indoor rowing");
+    expect(ptPT.sport.rowing_indoor.label).toBe("Remo indoor");
+    expect(en.sport.treadmill.label).toBe("Treadmill");
+    expect(ptPT.sport.treadmill.label).toBe("Passadeira");
+    expect(en.sport.swimming_pool.label).toBe("Pool swimming");
+    expect(ptPT.sport.swimming_pool.label).toBe("Natação (piscina)");
   });
 
   it("spot-checks a key from every app surface extracted this session", () => {

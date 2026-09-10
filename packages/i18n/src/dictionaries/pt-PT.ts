@@ -33,6 +33,10 @@ export const ptPT: Dictionary = {
     bike: { label: "Bicicleta", live: "De bicicleta" },
     walk: { label: "Caminhada", live: "A caminhar" },
     transition: { label: "Transição", live: "Transição" },
+    strength: { label: "Força", live: "Força" },
+    rowing_indoor: { label: "Remo indoor", live: "A remar" },
+    treadmill: { label: "Passadeira", live: "Na passadeira" },
+    swimming_pool: { label: "Natação (piscina)", live: "A nadar" },
   },
   footer: {
     preLaunch:
@@ -118,6 +122,10 @@ export const ptPT: Dictionary = {
       "A permissão de localização está bloqueada. Autoriza-a para o Bricklap nas definições do sistema e volta.",
     locationServicesOff: "A localização está desligada neste telemóvel. Liga-a e toca em Iniciar outra vez.",
     openSettings: "Abrir definições",
+    sportGroupOutdoor: "Rua",
+    sportGroupIndoor: "Ginásio / Piscina",
+    gpsNoPermission: "sem permissão de localização",
+    gpsServicesOff: "localização desligada",
   },
   meta: {
     title: "Bricklap",
