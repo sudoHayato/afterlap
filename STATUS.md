@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Data**: 2026-09-10 · **Branch**: `feat/persistencia-local` (a partir de `main` em `3f59267`, por publicar) · **Fase**: 1 concluída; **Fase 2, parte 1 (persistência local) feita nesta branch**, parte 2 (GPS real) por iniciar
+**Data**: 2026-09-10 · **Branch**: `main` · **Fase**: 1 concluída; **Fase 2, parte 1 (persistência local) concluída**; parte 2 (GPS real) por iniciar
 
 ## Por pacote
 
@@ -19,7 +19,7 @@
 - Camada de unidades (`@bricklap/i18n/units`): métrico implementado hoje; imperial declarado no tipo, não implementado (lança em vez de adivinhar).
 - Ambiente de desenvolvimento em Node 24.21.0 LTS / npm 11.19.0 e toolchain Android local (JDK 17 + SDK 36), tudo instalado nesta sessão.
 - Documentação: README, ARCHITECTURE, ROADMAP, STATUS, CLAUDE.md, `docs/adr/0001–0006`, `docs/BACKLOG.md`, `docs/HISTORY.md`, `docs/reports/`.
-- **Persistência local no Android (sessão 03, `feat/persistencia-local`)**: base SQLite append-only (`apps/mobile/persistence/`), replay puro, ecrã de resumo ao arrancar (continuar/descartar), histórico mínimo. Ver [ADR 0006](docs/adr/0006-persistencia-sqlite-append-only.md) e o relatório da sessão. Só falta publicar/fazer merge da branch.
+- **Persistência local no Android (sessão 03)**: base SQLite append-only (`apps/mobile/persistence/`), replay puro, ecrã de resumo ao arrancar (continuar/descartar), histórico mínimo. Apagamento de sessão a pedido do utilizador (RGPD) é um `DELETE` real, decisão registada para a Fase 4. Ver [ADR 0006](docs/adr/0006-persistencia-sqlite-append-only.md) e o relatório da sessão.
 
 ## Limitações conhecidas
 
@@ -43,4 +43,4 @@
 
 **Fase 2, parte 2 — GPS real**: trocar `sampleFromSim` por `sampleFromGps` (`expo-location` em primeiro plano); a persistência não muda (ADR 0006). Ver [ROADMAP.md](ROADMAP.md) e o relatório da sessão 03.
 
-Antes disso: publicar/fazer merge de `feat/persistencia-local`, e uma validação que falta e não exige código novo: uma sessão longa com o telemóvel no bolso, sabendo que a app ainda não grava em segundo plano. Setup, problemas e validação funcional da Fase 1: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10 e §11.
+Antes disso, uma validação que falta e não exige código novo: uma sessão longa com o telemóvel no bolso, sabendo que a app ainda não grava em segundo plano. Setup, problemas e validação funcional da Fase 1: [docs/reports/2026-09-09-sessao-02.md](docs/reports/2026-09-09-sessao-02.md) §10 e §11.

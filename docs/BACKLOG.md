@@ -10,9 +10,9 @@ Decidido pelo fundador na sessão 02, já não é backlog: `android.package` = `
 
 ## P1 — Fase 2
 
+Feito na sessão 03 (`feat/persistencia-local`, ver ADR 0006 e o relatório da sessão): adaptador de persistência SQLite append-only e `recovered` real ao reabrir a app. Fica por fazer:
+
 - [ ] `expo-location` em primeiro plano; textos de permissão em pt-PT; `sampleFromGps` já aceita `LocationObjectCoords`.
-- [ ] Adaptador de persistência na app Android (eventos + amostras; esquema versionado; mesma semântica que `bricklap.v1` no lab).
-- [ ] `recovered` real ao reabrir a app (`recoverLiveSessions` já existe no motor).
 - [ ] Ícones e cor de fundo definitivos (hoje assets do template Expo); splash com `expo-splash-screen` (não configurado; `assets/splash-icon.png` está por usar).
 - [ ] Decidir `newArchEnabled` explícito em `app.json` (SDK 57 já usa a nova arquitetura por defeito; deixar explícito evita surpresas).
 - [ ] Antes de distribuir: `android.blockedPermissions` para `READ/WRITE_EXTERNAL_STORAGE` (e `INTERNET` enquanto não for usada) — vêm do template do Expo, não do `app.json`.
@@ -36,3 +36,5 @@ Decidido pelo fundador na sessão 02, já não é backlog: `android.package` = `
 - [ ] Mobile: insets calculados à mão (`StatusBar.currentHeight` em cima, 64 dp em baixo); substituir por `react-native-safe-area-context` quando houver mais ecrãs.
 - [ ] Mobile: "Nova sessão" fica desativado 700 ms depois de Parar para um toque duplo não apagar a sessão; substituir por confirmação quando houver persistência.
 - [ ] Badge de cobertura e relatório HTML publicado (opcional).
+- [ ] `testID` não mapeia para `resource-id` no `uiautomator dump` desta app (RN 0.86, Android) — confirmado na sessão 03 (`docs/reports/2026-09-10-sessao-03.md` §5.1). Revisitar só se a app vier a precisar de Detox/Appium a sério.
+- [ ] Cobrir CHANGE no teste de dispositivo Android: hoje impossível por `uiautomator` (ver `docs/reports/2026-09-10-sessao-03.md` §5.2 — o ecrã ao vivo nunca fica "idle"). Se algum dia for preciso, a via é um *broadcast receiver* de depuração que dispare a troca de desporto diretamente na app, sem tocar no ecrã — não `uiautomator`.
