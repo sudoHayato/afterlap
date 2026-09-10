@@ -31,6 +31,7 @@ export type Dictionary = {
     openingSession: string;
     watch: string;
     close: string;
+    continue: string;
   };
   sport: Record<Sport, { label: string; live: string }>;
   footer: {
@@ -90,6 +91,13 @@ export type Dictionary = {
     newSession: string;
     samples: string;
     liveSuffix: string;
+    opening: string;
+    history: string;
+    noSessions: string;
+    resumeTitle: string;
+    resumeCopy: string;
+    inProgress: string;
+    discarded: string;
   };
   meta: {
     title: string;

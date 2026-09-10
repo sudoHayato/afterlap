@@ -8,14 +8,16 @@
     "android": "expo run:android",
     "prebuild:android": "expo prebuild --platform android",
     "export:android": "expo export --platform android --output-dir dist",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "doctor": "expo-doctor"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "doctor": "expo-doctor",
+    "test:device": "vitest run --root ../.. --config ../../vitest.config.mts --dir apps/mobile/device apps/mobile/device/recovery.device.test.ts"
   },
   "dependencies": {
     "@bricklap/engine": "*",
     "@bricklap/i18n": "*",
     "expo": "~57.0.21",
     "expo-dev-client": "~57.0.18",
+    "expo-sqlite": "~57.0.2",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3"
