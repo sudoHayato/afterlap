@@ -43,8 +43,9 @@ num dos ficheiros — ou uma chave a mais — é erro de compilação em `npm ru
 typecheck`, não algo que só se descobre a correr a app.
 
 `sport` está indexado por `Sport` (importado de `@bricklap/engine`, só o
-tipo): acrescentar um quinto desporto ao motor obriga os dois dicionários a
-descrevê-lo antes do build passar.
+tipo): acrescentar um desporto ao motor obriga os dois dicionários a
+descrevê-lo antes do build passar — foi assim que os quatro sem GPS da sessão
+05 (força, remo indoor, passadeira, natação) entraram.
 
 ## Unidades (`src/units.ts`)
 

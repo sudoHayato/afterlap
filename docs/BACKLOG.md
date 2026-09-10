@@ -18,7 +18,11 @@ Feito na sessão 03 (ADR 0006): adaptador de persistência SQLite append-only e 
 - [ ] Tema escuro a nível de sistema (diálogos, teclado): exige `expo-system-ui`; hoje a app pinta as suas cores e o `userInterfaceStyle` foi retirado por não ter efeito sem esse módulo.
 - [ ] CI (GitHub Actions): `npm test`, `npm run typecheck`, `npm run build:web`, `expo export --platform android`.
 
-## P1 — Fase 3 (herdado da sessão 04)
+## P1 — Fase 3 (herdado da sessão 04; parte 1 feita na sessão 05)
+
+- [x] **Desportos sem GPS** (sessão 05, ADR 0008): força, remo indoor, passadeira, natação em piscina; segmentos só de tempo; watcher ligado ao segmento; permissão sob demanda; oito chips em duas linhas.
+- [ ] **Introdução manual de distância nos desportos sem GPS** (metros de remo, piscinas, distância da passadeira) — fase futura, decisão do CTO na sessão 05; hoje são só tempo.
+- [ ] **Chips do ecrã inicial com oito desportos**: duas linhas rotuladas chegam para não piorar; um desenho a sério (ícones, ordem por uso, último usado primeiro) é Fase 4.
 
 - [x] ~~**Cadência de amostras**~~ — **resolvido pelo teste de campo** (sessão 04 §6): em movimento a app entrega ≈ 1 Hz (58,9 amostras/min em 18:37). Os 4–6 s medidos com o telemóvel parado eram supressão de fixes repetidos pelo sistema (`Location Change Trigger`), não um defeito. Nada a fazer.
 - [ ] **Ritmo em caminhada mal calibrado** (nota do fundador, sessão 04 §6.1): em corrida pareceu-lhe bem, a caminhar não. Hipótese do CTO: o ruído do GPS é proporcionalmente maior a velocidades baixas — a ~1,4 m/s um erro de 3 m entre fixes consecutivos a 1 Hz é uma fração enorme do deslocamento real, e o ritmo, sendo o inverso da velocidade, amplifica-o. A atacar com o filtro/suavização da Fase 3, sobre os dados crus que `gps-raw.jsonl` já grava (não inventar médias no motor sem olhar primeiro para os dados). **Candidato a primeiro item da Fase 3.**
