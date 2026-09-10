@@ -104,6 +104,17 @@ export function currentSport(events: SessionEvent[]): Sport | null {
   return segs[segs.length - 1]!.sport;
 }
 
+/**
+ * True when at least one segment is of a sport with GPS — that is, when a
+ * total distance is a meaningful thing to show at all. A gym circuit has
+ * none, and "0 m" would be noise; a mixed session has one from the moment
+ * its first outdoor segment opens, including while a later gym segment is
+ * being recorded.
+ */
+export function hasGpsSegment(events: SessionEvent[]): boolean {
+  return segmentsFromEvents(events).some((s) => sportHasGps(s.sport));
+}
+
 /** Time of the last 'stopped' event, if any. The last one wins, like in segmentsFromEvents. */
 function lastStoppedAt(events: SessionEvent[]): number | undefined {
   for (let i = events.length - 1; i >= 0; i--) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   distanceMeters,
+  hasGpsSegment,
   haversineMeters,
   samplesForSegment,
   segmentMetrics,
@@ -202,6 +203,76 @@ describe("fronteira rua ↔ ginásio", () => {
   it("a session with samples but no 'started' has no segments and therefore no distance (time still runs from createdAt)", () => {
     const odd = makeSession([], [sampleAt(0, 0), sampleAt(1_000, 3)] as Sample[], "live");
     expect(sessionMetrics(odd, 1_000)).toEqual({ durationMs: 1_000, distanceM: 0, avgSpeedMps: 0 });
+  });
+});
+
+describe("hasGpsSegment — quando faz sentido mostrar uma distância total", () => {
+  it("is false for a session with no segments at all", () => {
+    expect(hasGpsSegment([])).toBe(false);
+    expect(hasGpsSegment([{ type: "stopped", at: 1 }])).toBe(false);
+  });
+
+  it("is false for a gym-only session, whatever the sports and however many segments", () => {
+    expect(hasGpsSegment([{ type: "started", at: 0, sport: "strength" }])).toBe(false);
+    expect(
+      hasGpsSegment([
+        { type: "started", at: 0, sport: "strength" },
+        { type: "sport_changed", at: 10, sport: "rowing_indoor" },
+        { type: "sport_changed", at: 20, sport: "treadmill" },
+        { type: "sport_changed", at: 30, sport: "swimming_pool" },
+        { type: "stopped", at: 40 },
+      ]),
+    ).toBe(false);
+  });
+
+  it("is true from the moment the first outdoor segment opens", () => {
+    expect(hasGpsSegment([{ type: "started", at: 0, sport: "run" }])).toBe(true);
+    expect(
+      hasGpsSegment([
+        { type: "started", at: 0, sport: "strength" },
+        { type: "sport_changed", at: 10, sport: "run" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("stays true once an outdoor segment is in the log, including while a later gym segment records", () => {
+    // This is the rule the live screen uses: the kilometres already run do
+    // not disappear because the founder moved to the rowing machine.
+    const events: SessionEvent[] = [
+      { type: "started", at: 0, sport: "run" },
+      { type: "sport_changed", at: 10 * MIN, sport: "strength" },
+    ];
+    expect(hasGpsSegment(events)).toBe(true);
+    expect(hasGpsSegment([...events, { type: "stopped", at: 20 * MIN }])).toBe(true);
+  });
+
+  it("ignores 'recovered' events, like every other derivation", () => {
+    expect(
+      hasGpsSegment([
+        { type: "started", at: 0, sport: "strength" },
+        { type: "recovered", at: 5 },
+      ]),
+    ).toBe(false);
+  });
+
+  it("agrees with the session's distance being showable: gym-only sessions have none", () => {
+    const gym = makeSession([
+      { type: "started", at: 0, sport: "strength" },
+      { type: "stopped", at: 10 * MIN },
+    ]);
+    expect(hasGpsSegment(gym.events)).toBe(false);
+    expect(sessionMetrics(gym).distanceM).toBe(0);
+
+    const mixed = makeSession(
+      [
+        { type: "started", at: 0, sport: "run" },
+        { type: "sport_changed", at: 60_000, sport: "strength" },
+        { type: "stopped", at: 120_000 },
+      ],
+      track(0, 60_000, 10_000, 30),
+    );
+    expect(hasGpsSegment(mixed.events)).toBe(true);
+    expect(sessionMetrics(mixed).distanceM).toBeCloseTo(180, 3);
   });
 });
 

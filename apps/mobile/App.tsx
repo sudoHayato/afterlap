@@ -46,6 +46,7 @@ import {
   formatClock,
   formatDay,
   formatDuration,
+  hasGpsSegment,
   sampleFromGps,
   sampleFromSim,
   segmentMetrics,
@@ -519,9 +520,13 @@ function LiveScreen(props: {
   const { session, now } = props;
   const segments = segmentsFromEvents(session.events);
   const sport = currentSport(session.events) ?? "run";
-  // A segment without GPS shows its clock and the session clock, nothing
-  // else: no distance, no pace, no coordinates (ADR 0008).
+  // A segment without GPS has no distance, pace or coordinates of its own
+  // (ADR 0008). The session's total distance is another matter: it stays on
+  // screen while a gym segment is recorded, as long as the session already
+  // has an outdoor segment — the kilometres already run do not disappear
+  // because the founder moved to the rowing machine.
   const hasGps = sportHasGps(sport);
+  const anyGps = hasGpsSegment(session.events);
   const total = sessionMetrics(session, now);
   const current = segments[segments.length - 1];
   const currentM = current ? segmentMetrics(session, current, now) : null;
@@ -534,14 +539,12 @@ function LiveScreen(props: {
         <Text style={styles.bigClock}>
           {formatDuration(durationMs(session, now))}
         </Text>
-        {hasGps ? (
-          <>
-            <Text style={styles.stat}>
-              {t("mobile.totalDistanceLabel")} · {formatDistanceForUnit(total.distanceM)}
-            </Text>
-            <GpsLine gps={props.gps} samples={session.samples.length} />
-          </>
+        {anyGps ? (
+          <Text style={styles.stat}>
+            {t("mobile.totalDistanceLabel")} · {formatDistanceForUnit(total.distanceM)}
+          </Text>
         ) : null}
+        {hasGps ? <GpsLine gps={props.gps} samples={session.samples.length} /> : null}
       </View>
 
       {currentM ? (
@@ -590,7 +593,7 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
   const segments = segmentsFromEvents(session.events);
   // The total distance is the sum of the GPS segments; a session with none
   // (a gym circuit) has no distance to show at all, not "0 m".
-  const anyGps = segments.some((seg) => sportHasGps(seg.sport));
+  const anyGps = hasGpsSegment(session.events);
   // "Parar" and "Nova sessão" can occupy the same screen rect across the
   // live → summary re-render. The session is already on disk, so a double
   // tap loses nothing now — it would only skip past this summary.
