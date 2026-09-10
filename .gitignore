@@ -29,3 +29,6 @@ apps/mobile/ios
 # misc
 *.log
 .DS_Store
+
+# Not ours: instruction files for other coding agents
+AGENTS.md
