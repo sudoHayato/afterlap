@@ -20,6 +20,8 @@ Feito na sessão 03 (ADR 0006): adaptador de persistência SQLite append-only e 
 
 ## P1 — Fase 3 (herdado da sessão 04)
 
+- [ ] **Cadência de amostras: 1 Hz pedido, 1 fix a cada 4–6 s entregue com o telemóvel imóvel** (relatório da sessão 04 §4.5). O pedido registado no sistema está certo (`ProviderRequest[@+1s0ms, HIGH_ACCURACY]`); a supressão parece ser da pilha da Samsung para um aparelho parado (`Location Change Trigger`). Se o teste de campo mostrar que a caminhada também não dá ≈ 1 Hz, as opções são: subscrever o provedor `gps` puro em vez do fused, juntar um `getCurrentPositionAsync` de 1 em 1 s ao watcher, ou rever o critério "sem perda de amostras" do ROADMAP. **Primeiro item da Fase 3 se o teste de campo falhar por aqui.**
+- [ ] **Exportação de dentro da app**, para não depender de `run-as` (que não funciona no APK de release — sessão 04 §4.5) nem da troca debug↔release: um botão que copie `files/SQLite/bricklap.db*` e `files/gps-raw.jsonl` para uma pasta alcançável (`Android/data/com.bricklap.app/files/`, que o `adb pull` lê sem build depurável) ou para a partilha do sistema. ~30 linhas, sem tocar na persistência. Enquanto não existir, o procedimento de duas instalações está no README.
 - [ ] **Precisão junto da amostra**: migração v2 (`samples.accuracy REAL NULL`) quando a Fase 3 decidir filtros; hoje a precisão e a marca "fraco" (> 30 m) vivem só no registo bruto `files/gps-raw.jsonl` (ADR 0007 §5, relatório da sessão 04 §5). A decidir com o CTO no arranque da Fase 3.
 - [ ] **Registo bruto cresce sem limite** (≈ 230 bytes por fix; ≈ 400 KB por 30 min). Rodar por sessão ou apagar quando o filtro estiver decidido.
 - [ ] Filtro de amostras (precisão, saltos) decidido sobre `gps-raw.jsonl` de treinos reais — já era Fase 3 no ROADMAP.

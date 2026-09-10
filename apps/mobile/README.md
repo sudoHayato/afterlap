@@ -41,6 +41,24 @@ do telemóvel e converte-se em GeoJSON, que qualquer visualizador abre
 (geojson.io, QGIS, …). `adb` abaixo é o `adb` da WSL ou o `adb.exe` do Windows,
 conforme a ligação (ver mais abaixo).
 
+> **`run-as` só funciona num build depurável.** No APK de release instalado para
+> o teste de campo, `run-as` responde `package not debuggable` e a base fica
+> inacessível — os dados estão em armazenamento privado da app. Como os dois
+> builds são assinados com a **mesma** chave (`signingConfigs.debug`, ver
+> `android/app/build.gradle`), instala-se o APK de debug **por cima** do release
+> sem perder dados, exporta-se, e volta-se a instalar o release:
+>
+> ```sh
+> adb shell pm install -r /data/local/tmp/bricklap-debug.apk   # dados mantêm-se
+> # … exportar (comandos abaixo) …
+> adb shell pm install -r /data/local/tmp/bricklap-release.apk # tapar "Não enviar" no Play Protect
+> ```
+>
+> Verificado nesta sessão nos dois sentidos: o histórico e a base sobreviveram às
+> duas instalações. **Nunca** `pm uninstall` — isso apaga as sessões gravadas.
+> A alternativa decente (um botão de exportação dentro da app, sem `adb` nem
+> troca de APK) está no BACKLOG.
+
 ```sh
 mkdir -p /tmp/bricklap-pull && cd /tmp/bricklap-pull
 for x in "" -wal -shm; do
@@ -257,3 +275,15 @@ cd android && ./gradlew assembleRelease
 Instalar por cima do build de debug mantém os dados (mesmo package, mesma
 chave). Para voltar ao desenvolvimento com Metro, instala-se outra vez o
 `assembleDebug` — também sem perder a base.
+
+Instalar um APK de **release** com `pm install` abre no telemóvel um diálogo do
+**Google Play Protect** ("Enviar a app para uma verificação de segurança?") e o
+comando fica bloqueado até alguém responder — **"Não enviar"** (não há razão para
+enviar o binário do Bricklap à Google). Os builds de debug não perguntam.
+
+Verificado no telemóvel a 2026-09-10, com o cabo a servir só de observação
+(Metro morto, `adb reverse --list` vazio): arranque a frio 118 ms, ecrã inicial
+em pt-PT, GPS real a gravar, `expo-keep-awake` a segurar o ecrã aceso 75 s com o
+tempo de espera do sistema a 30 s, sessão a sobreviver a `am force-stop` e a
+continuar ao reabrir. O bundle vai dentro do APK (`assets/index.android.bundle`,
+1,4 MB) — a app nunca procura o Metro.
