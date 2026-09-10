@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Data**: 2026-09-10 · **Branch**: `feat/desportos-indoor` (a partir de `main` em `fafe295`) · **Fase**: 1 e 2 concluídas (2026-09-10); **Fase 3 em curso — parte 1 (desportos sem GPS) feita na sessão 05**
+**Data**: 2026-09-11 · **Branch**: `main` · **Fase**: 1 e 2 concluídas (2026-09-10); **Fase 3 em curso — parte 1 (desportos sem GPS) concluída e validada no telemóvel na sessão 05**
 
 ## Por pacote
 
@@ -9,7 +9,7 @@
 | `@bricklap/engine` | Motor puro, API estável, sem dependências de runtime, sem texto de interface (`SPORT_PACE_KIND` e `SPORT_HAS_GPS` são lógica, não rótulos). **Sessão 05**: oito desportos, quatro deles sem GPS; um segmento sem GPS não tem amostras nem distância; a interpolação nunca atravessa um; a distância da sessão é a soma dos segmentos (ADR 0008) | `npm test`: cobertura 100% (declarações, ramos, funções, linhas); `tsc` limpo; 18 testes novos para sessões mistas e fronteiras |
 | `@bricklap/i18n` | Dicionários `en` (base) e `pt-PT`, tipados; `t(key)` tipado; unidades metric/imperial (imperial declarado, não implementado). Nomes dos oito desportos e rótulos dos grupos "Rua" / "Ginásio / Piscina" | cobertura 100%; `tsc` limpo |
 | `@bricklap/web-lab` | SPA Vite + TanStack Router; consome motor + i18n; chave `bricklap.v1` com migração de `afterlap.v1`; toda a cópia via `t()` | `tsc` limpo; `vite build` ok |
-| `@bricklap/mobile` | Expo SDK 57, dev client, `platforms: ["android"]`; ecrãs START/CHANGE/STOP + resumo/histórico; toda a cópia via `t()`; **persistência local SQLite append-only (ADR 0006), recuperação real ao reabrir; GPS real em primeiro plano com ecrã ligado, pedido a 1 Hz (ADR 0007); desportos de ginásio e piscina só de tempo, watcher de posição ligado ao segmento, permissão pedida quando faz falta (ADR 0008)**, simulador só por interruptor de dev; registo bruto `gps-raw.jsonl` e script GeoJSON | `tsc` limpo; `expo export --platform android` ok; 18 testes do adaptador em Node; **teste de recuperação no dispositivo 6/6** com o build novo; **GPS real validado à mão no telemóvel** (permissão recusada/aceite/localização desligada tratadas; 121 fixes, kill → retoma → descarta) — ver `docs/reports/2026-09-10-sessao-04.md` §4 e §6 (caminhada real: 18:37, 1097 amostras a ≈ 1 Hz, `recovered` na base). **Sessão 05: build de release e de debug compilados com os desportos novos, mas o telemóvel não esteve ligado — teste de dispositivo e instalação por fazer** (relatório da sessão 05 §4.2–4.3) |
+| `@bricklap/mobile` | Expo SDK 57, dev client, `platforms: ["android"]`; ecrãs START/CHANGE/STOP + resumo/histórico; toda a cópia via `t()`; **persistência local SQLite append-only (ADR 0006), recuperação real ao reabrir; GPS real em primeiro plano com ecrã ligado, pedido a 1 Hz (ADR 0007); desportos de ginásio e piscina só de tempo, watcher de posição ligado ao segmento, permissão pedida quando faz falta (ADR 0008)**, simulador só por interruptor de dev; registo bruto `gps-raw.jsonl` e script GeoJSON | `tsc` limpo; `expo export --platform android` ok; 18 testes do adaptador em Node; **teste de recuperação no dispositivo 6/6** com o build novo; **GPS real validado à mão no telemóvel** (permissão recusada/aceite/localização desligada tratadas; 121 fixes, kill → retoma → descarta) — ver `docs/reports/2026-09-10-sessao-04.md` §4 e §6 (caminhada real: 18:37, 1097 amostras a ≈ 1 Hz, `recovered` na base). **Sessão 05: teste de recuperação no dispositivo 6/6; ADR 0008 provado no aparelho** (força sem pedir permissão nem abrir o watcher; permissão e watcher a 1 Hz só na mudança para corrida; watcher a desligar na mudança para um desporto sem GPS; retoma e resumo com tempo só nos segmentos de ginásio) e **release instalado, a arrancar a frio em 121 ms sem Metro** (relatório da sessão 05 §4.2–4.4) |
 
 ## O que existe
 
@@ -25,7 +25,7 @@
 
 ## Limitações conhecidas
 
-- **A sessão 05 não foi validada no telemóvel**: o aparelho não esteve ligado. O build de release com os desportos sem GPS está compilado e no PC, mas não instalado; o teste de recuperação no dispositivo não correu com este código. Procedimento de 10 min no relatório da sessão 05 §4.2–4.3.
+- **O ecrã de gravação não é legível pelo `uiautomator`** em nenhum build (falha com `could not get idle state`: o relógio re-renderiza 4×/s). Consequência prática: mudar de desporto a meio de uma sessão não se automatiza por `uiautomator` — na sessão 05 fez-se por navegação de foco com o teclado, cuja ordem não é controlável. A via para automatizar é o *broadcast receiver* de depuração que está no BACKLOG desde a sessão 03.
 
 - GPS real só em **primeiro plano, com o ecrã ligado** (a app trata de o manter ligado); em segundo plano ou com o ecrã desligado não grava — Fase 3. O lab web continua com GPS simulado.
 - A precisão de cada fix (e a marca "fraco" > 30 m) só existe no registo bruto `gps-raw.jsonl`, não na base (ADR 0007 §5); a migração v2 fica para a Fase 3.
