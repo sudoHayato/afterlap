@@ -84,7 +84,7 @@ export const en: Dictionary = {
     waitingForMovement: "Waiting for movement",
   },
   mobile: {
-    kicker: "Android · Simulated GPS",
+    kicker: "Android · GPS",
     initialSport: "Starting sport",
     idleHint:
       "Tap Start once. Then you can Change sport without stopping the clock, and Stop only at the end.",
@@ -102,6 +102,22 @@ export const en: Dictionary = {
       "The app was closed while this session was running. Continue where you left off, or discard it.",
     inProgress: "In progress",
     discarded: "Discarded",
+    kickerSim: "Android · Simulated GPS",
+    gpsSource: "GPS source (dev)",
+    gpsReal: "Real GPS",
+    gpsSim: "Simulated",
+    gpsWaiting: "Waiting for GPS…",
+    gpsWeak: "weak signal",
+    gpsUnavailable: "GPS unavailable",
+    samplesSaved: "samples saved",
+    locationRationale:
+      "Bricklap uses your location only while a session is recording, to measure distance and pace. Nothing leaves the phone.",
+    locationDenied:
+      "Location permission was denied. Bricklap can't record without it — tap Start to ask again.",
+    locationBlocked:
+      "Location permission is blocked. Allow it for Bricklap in the system settings, then come back.",
+    locationServicesOff: "Location is turned off on this phone. Turn it on and tap Start again.",
+    openSettings: "Open settings",
   },
   meta: {
     title: "Bricklap",

@@ -10,13 +10,17 @@
     "export:android": "expo export --platform android --output-dir dist",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "doctor": "expo-doctor",
-    "test:device": "vitest run --config vitest.device.config.mts"
+    "test:device": "vitest run --config vitest.device.config.mts",
+    "export:geojson": "node scripts/geojson.mjs"
   },
   "dependencies": {
     "@bricklap/engine": "*",
     "@bricklap/i18n": "*",
     "expo": "~57.0.21",
     "expo-dev-client": "~57.0.18",
+    "expo-file-system": "~57.0.6",
+    "expo-keep-awake": "~57.0.1",
+    "expo-location": "~57.0.16",
     "expo-sqlite": "~57.0.2",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
