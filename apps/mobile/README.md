@@ -196,12 +196,30 @@ A WSL 2 não vê USB, mas o **adb do Windows** vê — e corre a partir da WSL:
    ```sh
    /mnt/c/Users/<utilizador>/platform-tools/adb.exe devices -l
    ```
-3. Instalar o APK compilado na WSL (o ficheiro está em `/mnt/c`? não — o
-   `adb.exe` lê caminhos WSL via `\\wsl$`; mais simples é copiar):
+3. Instalar o APK compilado na WSL. **O que funciona** (sessões 04–06, debug de
+   178 MB e release de 76 MB): copiar para o disco do Windows, `push` para
+   `/data/local/tmp` com **caminho Windows**, e `pm install -r` no telemóvel.
    ```sh
-   cp android/app/build/outputs/apk/debug/app-debug.apk /mnt/c/Users/<utilizador>/bricklap-debug.apk
-   adb.exe install -r "C:\Users\<utilizador>\bricklap-debug.apk"
+   cp android/app/build/outputs/apk/release/app-release.apk /mnt/c/Users/<utilizador>/bricklap-release.apk
+   adb.exe push "C:\Users\<utilizador>\bricklap-release.apk" /data/local/tmp/bricklap-release.apk
+   adb.exe shell md5sum /data/local/tmp/bricklap-release.apk   # comparar com md5sum no PC
+   adb.exe shell pm install -r /data/local/tmp/bricklap-release.apk
    ```
+   Regras aprendidas à força:
+   - **Caminho Windows no `push`.** Com `/mnt/c/...` o `adb.exe` responde
+     `cannot stat` — e um `pm install -r` a seguir instala **em silêncio o APK
+     antigo** que ainda esteja em `/data/local/tmp`. Daí o `md5sum`.
+   - **Nada de outros comandos `adb` enquanto o `push` corre.** Na sessão 06 um
+     `push` de 76 MB lançado em paralelo com `uiautomator dump` e `am force-stop`
+     morreu com `no response: connection reset` e prendeu o transporte USB; o
+     mesmo ficheiro, sozinho, passou em 1 s (93,6 MB/s). Se o transporte prender:
+     matar os processos `adb.exe` pendurados **pelo PID** (`pkill -f` apanha a
+     própria shell), `taskkill.exe /F /IM adb.exe`, `adb.exe start-server` — e o
+     telemóvel volta como `unauthorized` até alguém tocar "Permitir" no ecrã.
+   - O `adb.exe install` direto (em *streaming*) prendeu o transporte uma vez na
+     sessão 04; fica como alternativa, não como caminho normal.
+   - Um release pode abrir o diálogo do Play Protect e o `pm install` fica à
+     espera — ver *Build de release* abaixo.
 4. `adb.exe reverse tcp:8081 tcp:8081`. O `localhost:8081` do telemóvel passa a
    ser o `localhost:8081` **do Windows**, que a WSL 2 encaminha para o Metro —
    confirma com `curl.exe http://localhost:8081/status` no Windows.
