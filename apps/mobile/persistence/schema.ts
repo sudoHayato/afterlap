@@ -12,8 +12,9 @@ import type { SqlDb } from "./sql";
  * - `events`: START / CHANGE / STOP / RECOVERED. `discarded` marks a STOP
  *   that the athlete chose to throw away — the row stays, the flag says so.
  * - `samples`: GPS fixes, one row each, at ~1 Hz. Kept apart from `events`
- *   so the hot write path is five numeric columns with no nullable text,
- *   and so the tiny events table is never scanned past thousands of fixes.
+ *   so the hot write path is a handful of numeric columns with no nullable
+ *   text, and so the tiny events table is never scanned past thousands of
+ *   fixes. Since v2 each row also carries the fix's reported accuracy.
  *
  * There is no UPDATE and no DELETE anywhere in the adapter: state is always
  * a replay of these rows (see replay.ts), exactly as the engine derives
@@ -46,6 +47,16 @@ export const MIGRATIONS: readonly Migration[] = [
         );
         CREATE INDEX samples_by_session ON samples(session_id, seq);
       `);
+    },
+  },
+  {
+    // v2 (ADR 0009): the horizontal accuracy the provider reported for each
+    // fix, in metres, next to the fix itself. NULL for rows written before
+    // this column existed and for simulated samples. Additive: rows, seqs
+    // and every other column stay exactly as they were.
+    version: 2,
+    up: (db) => {
+      db.execSync("ALTER TABLE samples ADD COLUMN accuracy REAL");
     },
   },
 ];
