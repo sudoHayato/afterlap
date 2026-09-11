@@ -18,19 +18,31 @@ Feito na sessão 03 (ADR 0006): adaptador de persistência SQLite append-only e 
 - [ ] Tema escuro a nível de sistema (diálogos, teclado): exige `expo-system-ui`; hoje a app pinta as suas cores e o `userInterfaceStyle` foi retirado por não ter efeito sem esse módulo.
 - [ ] CI (GitHub Actions): `npm test`, `npm run typecheck`, `npm run build:web`, `expo export --platform android`.
 
-## P1 — Fase 3 (herdado da sessão 04; parte 1 feita na sessão 05)
+## Visão do produto — blocos por métrica (Fase 4+, sem desenho)
+
+Decisão do fundador em [docs/VISAO.md](VISAO.md): um treino HIIT/AMRAP é uma sessão com blocos, cada um com as suas métricas. Uma linha por bloco futuro, **todos Fase 4+**, nenhum desenhado agora:
+
+- [ ] **Força com exercício, repetições e carga** por segmento (Fase 4+). Introdução após o treino sobre o segmento já gravado é a primeira via a estudar; durante o treino é Fase 5 (relógio).
+- [ ] **Passadeira por ritmo × distância → tempo** (Fase 4+): o atleta introduz o ritmo e a distância da máquina; o tempo já está gravado.
+- [ ] **Remo indoor com metros** (Fase 4+): metros do monitor do remo, introduzidos após o treino.
+- [ ] **Natação em piscina com piscinas/metros** (Fase 4+), pela mesma via.
+
+## P1 — Fase 3 (herdado da sessão 04; partes 1 e 2 feitas nas sessões 05 e 06)
 
 - [x] **Desportos sem GPS** (sessão 05, ADR 0008): força, remo indoor, passadeira, natação em piscina; segmentos só de tempo; watcher ligado ao segmento; permissão sob demanda; oito chips em duas linhas.
-- [ ] **Introdução manual de distância nos desportos sem GPS** (metros de remo, piscinas, distância da passadeira) — fase futura, decisão do CTO na sessão 05; hoje são só tempo.
+- [ ] **Introdução manual de distância nos desportos sem GPS** — absorvido pelos blocos da visão do produto acima (Fase 4+).
 - [ ] **Chips do ecrã inicial com oito desportos**: duas linhas rotuladas chegam para não piorar; um desenho a sério (ícones, ordem por uso, último usado primeiro) é Fase 4.
 
 - [x] ~~**Cadência de amostras**~~ — **resolvido pelo teste de campo** (sessão 04 §6): em movimento a app entrega ≈ 1 Hz (58,9 amostras/min em 18:37). Os 4–6 s medidos com o telemóvel parado eram supressão de fixes repetidos pelo sistema (`Location Change Trigger`), não um defeito. Nada a fazer.
-- [ ] **Ritmo em caminhada mal calibrado** (nota do fundador, sessão 04 §6.1): em corrida pareceu-lhe bem, a caminhar não. Hipótese do CTO: o ruído do GPS é proporcionalmente maior a velocidades baixas — a ~1,4 m/s um erro de 3 m entre fixes consecutivos a 1 Hz é uma fração enorme do deslocamento real, e o ritmo, sendo o inverso da velocidade, amplifica-o. A atacar com o filtro/suavização da Fase 3, sobre os dados crus que `gps-raw.jsonl` já grava (não inventar médias no motor sem olhar primeiro para os dados). **Candidato a primeiro item da Fase 3.**
-- [ ] **Exportação de dentro da app**, para não depender de `run-as` (que não funciona no APK de release — sessão 04 §4.5) nem da troca debug↔release: um botão que copie `files/SQLite/bricklap.db*` e `files/gps-raw.jsonl` para uma pasta alcançável (`Android/data/com.bricklap.app/files/`, que o `adb pull` lê sem build depurável) ou para a partilha do sistema. ~30 linhas, sem tocar na persistência. Enquanto não existir, o procedimento de duas instalações está no README.
-- [ ] **Precisão junto da amostra**: migração v2 (`samples.accuracy REAL NULL`) quando a Fase 3 decidir filtros; hoje a precisão e a marca "fraco" (> 30 m) vivem só no registo bruto `files/gps-raw.jsonl` (ADR 0007 §5, relatório da sessão 04 §5). A decidir com o CTO no arranque da Fase 3.
-- [ ] **Registo bruto cresce sem limite** (≈ 230 bytes por fix; ≈ 400 KB por 30 min). Rodar por sessão ou apagar quando o filtro estiver decidido.
-- [ ] Filtro de amostras (precisão, saltos) decidido sobre `gps-raw.jsonl` de treinos reais — já era Fase 3 no ROADMAP.
-- [ ] `t` da amostra = hora de chegada; `fixAt` do provider fica no registo bruto. Rever se a Fase 3 preferir o timestamp do fix (uma linha em `App.tsx`).
+- [x] ~~**Ritmo em caminhada mal calibrado**~~ — **resolvido com dados na sessão 06** ([ADR 0009](adr/0009-ritmo-precisao-exportacao.md)): a caminhada estava bem; o ritmo médio do segmento diluía 103 s de paragens (14:06/km em vez de ≈ 12:20 a andar). A hipótese do ruído confirmou-se por troço (cv 0,49 a andar vs 0,14 a correr) mas o ecrã nunca o mostrava. Sem filtro na distância; "ritmo atual" dos últimos 30 s no ecrã de gravação.
+- [ ] **Ritmo em movimento** (excluir paragens, como o Strava): os dados sugerem "parado" = velocidade < 0,5 m/s numa janela de 5 s. Matéria do resumo e do histórico — **Fase 4**, a decidir com o CTO.
+- [ ] **Filtro por precisão** (limiar de deslocamento relativo à precisão): **rejeitado com números na sessão 06** — nas duas sessões de campo só retira 1 % de deriva com o telemóvel parado e torna o ritmo em janela mais nervoso; a precisão (mediana 3–4 m) não distingue fixes bons de maus. Reabrir só com uma sessão real com fixes fracos; a coluna `accuracy` está na base para isso.
+- [ ] **Salto isolado numa caminhada** (um troço a > 6 m/s em 329, ≈ 5 m a mais): o corte de 55 m/s não o apanha. Um limite de plausibilidade por desporto seria simples, mas o efeito é de 1 % num segmento — só se voltar a aparecer.
+- [x] ~~**Exportação de dentro da app**~~ — **feito na sessão 06**: botão "Exportar dados" no histórico (`VACUUM INTO` + folha de partilha do sistema via `expo-sharing`). A pasta externa da app não é alcançável pelo `expo-file-system`; a partilha cobre a necessidade. O procedimento de duas instalações fica no README como alternativa.
+- [x] ~~**Precisão junto da amostra**~~ — **feito na sessão 06**: migração v2 (`samples.accuracy REAL NULL`), `Sample.accuracyM` opcional, adaptador a gravar a precisão de cada fix.
+- [x] ~~**Registo bruto cresce sem limite**~~ — **feito na sessão 06**: só em builds de desenvolvimento, rodado por sessão (`gps-raw.prev.jsonl` guarda o anterior).
+- [ ] `scripts/geojson.mjs` ainda lê a precisão do registo bruto; podia lê-la da base (v2). Não é urgente.
+- [ ] `t` da amostra = hora de chegada; `fixAt` do provider fica no registo bruto (dev). Rever se alguma fase preferir o timestamp do fix (uma linha em `App.tsx`).
 
 ## P1 — i18n (sessão 02)
 

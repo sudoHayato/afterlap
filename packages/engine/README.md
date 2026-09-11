@@ -17,7 +17,10 @@ amostras (GPS/sim)  →  eventos  →  segmentos (derivados)  →  métricas
 
 Regras e invariantes: ver `ARCHITECTURE.md` na raiz.
 
-Testes: `test/*.test.ts` (vitest), 124 testes, cobertura 100% sobre `src/`.
+Testes: `test/*.test.ts` (vitest), 169 testes, cobertura 100% sobre `src/`.
+`test/pace.test.ts` usa excertos reais anonimizados das sessões de campo
+(`test/fixtures/field-legs.json`: só Δt, distância e precisão por troço — nunca
+uma coordenada).
 Correr `npm test` ou `npm run test:coverage` na raiz do repositório. `vitest` e
 `typescript` estão declarados como `devDependencies` deste pacote mas são
 instalados (hoisted) pela raiz do workspace.

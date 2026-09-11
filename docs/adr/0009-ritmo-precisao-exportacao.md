@@ -1,0 +1,45 @@
+# ADR 0009 — Ritmo decidido com dados: sem filtro na distância, ritmo dos últimos 30 s, precisão na base, exportação de dentro da app
+
+**Estado**: aceite (sessão 06, 2026-09-11). **Decisão do CTO** quanto ao método e aos entregáveis; a escolha do filtro (nenhum) e da janela (30 s) é o resultado da análise, executada pela equipa de desenvolvimento.
+
+## Contexto
+
+O fundador achou o ritmo em caminhada "mal calibrado" (sessão 04 §6.1) e o ritmo em corrida certo. Hipótese do CTO: o ruído do GPS é proporcionalmente maior a velocidades baixas. Instrução do CTO: **o filtro decide-se com os dados, não com intuição** — analisar as duas sessões de campo, propor um filtro simples e explicável (limiar de deslocamento relativo à precisão, janela de suavização do ritmo), validá-lo (ritmo a andar estável, ritmo a correr não piora, distância de cada sessão dentro de ±2 %), e só então implementar. E, se os dados mostrassem que a caminhada está bem e o problema é outro, dizê-lo em vez de inventar um filtro.
+
+Dados: a caminhada da sessão 04 (18:37, 1097 amostras, 1,489 km; segmentos caminhada 12:02 → corrida 1:06 → caminhada 5:29) e a corrida de 2026-09-11 (25:02, 1481 amostras, 4,213 km; referência externa: o Strava deu 4,24 km em 25:26). Análise em `apps/mobile/scripts/gps-noise.mjs`, números completos no relatório da sessão 06 §3.
+
+## O que os dados mostram
+
+1. **A hipótese confirma-se no ruído por troço, mas esse ruído nunca chega ao ecrã.** A velocidade entre fixes consecutivos (distância / Δt, a 1 Hz) tem um coeficiente de variação de **0,49** a andar (segmento 1) contra **0,14** a correr — três a quatro vezes mais, em termos relativos, como o CTO previu. Mas o ecrã não mostra a velocidade instantânea: mostra o **ritmo médio do segmento** (distância desde o início / tempo desde o início), cuja variação ao longo do segmento é de **0,046** a andar e **0,019** a correr. Estável nos dois casos.
+2. **A caminhada está bem calibrada. O que o fundador viu foi o ritmo médio diluído por paragens.** No primeiro segmento de caminhada esteve **103 s parado em 12:02** (14 %: passadeiras, o fecho/reabertura deliberado da app) — a velocidade por troço e a velocidade Doppler do provider concordam, abaixo de 0,5 m/s. O segmento lê **14:06/km**; a andar, o ritmo foi **≈ 12:20/km**. O terceiro segmento, sem paragens, lê **11:46/km**. A corrida de 25 min teve **0 s parado**, e o ritmo médio coincidiu com o que o fundador sentia — e com o Strava (5:56 contra 6:00/km; distância −0,7 %).
+3. **A precisão reportada não discrimina nada nestas sessões.** Mediana 4,1 m a andar e 3,1 m a correr, 95 % dos fixes abaixo de 6 m. O ruído por troço é igual nos fixes de 3–5 m e nos de 5–8 m (desvio-padrão 0,57 contra 0,52 m/s). Um filtro indexado à precisão não tem em que se apoiar aqui.
+4. **A velocidade Doppler do provider é mais lisa mas enviesada.** Coeficiente de variação 0,12 a andar e 0,05 a correr — muito mais estável que distância / Δt — mas integrada no tempo dá **−5,6 % a −11,9 %** contra a distância haversine, também na corrida onde o Strava confirma a haversine. Serve para saber se o telemóvel está parado; não serve para distância nem para ritmo.
+5. **Um limiar de deslocamento relativo à precisão só retira a deriva com o telemóvel parado — e piora o ritmo em janela.** Com *k* = 0,25 (um fix só conta se se afastou ≥ ¼ da sua precisão do último fix contado): caminhada **−1,27 %** (−18,9 m, essencialmente os 16,5 m de deriva durante os 103 s parados), corrida **−0,01 %**. Com *k* = 0,5: −2,78 % / −0,02 % — fora do critério. E em todos os casos o salto entre leituras consecutivas de um ritmo em janela de 30 s **aumenta** (a distância passa a chegar aos solavancos): de 0,038 para 0,053 m/s no segmento sem paragens. Ganho de 1 % na distância, ritmo mais nervoso, nada no ecrã que o fundador notasse.
+6. **Uma janela de ritmo é o que responde à queixa, e os dados escolhem o tamanho.** Salto no percentil 95 entre leituras consecutivas do ritmo sobre os últimos *W* segundos (segmento de caminhada sem paragens / corrida): 5 s → 0,27 / 0,19 m/s; 10 s → 0,12 / 0,10; 20 s → 0,058 / 0,049; **30 s → 0,038 / 0,030** (≈ ±20 s/km a andar, ±4 s/km a correr); 60 s → 0,019 / 0,016. A 5–10 s a leitura ainda salta ±1–2 min/km a andar; a 60 s um intervalo de corrida de 66 s (o segmento 2 da caminhada) mal se vê. 30 s é o compromisso.
+
+## Decisão
+
+1. **Nenhum filtro na distância.** `distanceMeters` continua a somar todos os troços abaixo de 55 m/s. As distâncias de referência ficam **exatamente** como estavam: 1 488,5 m na caminhada, 4 212,9 m na corrida (critério: ±2 %). Não se inventa um filtro para justificar a sessão.
+2. **"Ritmo atual" = ritmo dos últimos 30 s do segmento**, ao lado do ritmo médio do segmento, no ecrã de gravação: `recentMetrics(session, segment, at, windowMs = RECENT_WINDOW_MS)` no motor, puro, cortado ao início do segmento (logo após um CHANGE a janela é tão curta quanto o segmento) e preso pela mesma cerca do ADR 0008 (nunca interpola através de um segmento sem GPS). Numa paragem a janela tem menos de 20 m e o formatador escreve "—", que é o que uma paragem é. Nos desportos de velocidade (bicicleta) é "Velocidade atual".
+3. **Migração v2: `samples.accuracy REAL NULL`.** O adaptador grava a precisão de cada fix (`Sample.accuracyM`, opcional; ausente nas amostras simuladas e nas anteriores à migração). Nada no motor a usa para calcular distância hoje. Fica gravada porque a próxima vez que este assunto se abrir — uma corrida entre prédios altos com fixes de 20 m, por exemplo — a decisão volta a ser sobre dados, e desta vez sem depender do registo bruto.
+4. **O registo bruto `gps-raw.jsonl` passa a existir só em builds de desenvolvimento** (`__DEV__`), rodado por sessão: o da sessão anterior fica em `gps-raw.prev.jsonl`, o de trás desaparece. Guarda o que a base não tem (altitude, rumo, timestamp do próprio fix, `mocked`). O release não escreve nada.
+5. **Exportação de dentro da app**: botão "Exportar dados" no histórico. Faz um `VACUUM INTO` da base para a cache da app — uma cópia consistente num só ficheiro, WAL incluído, a partir de uma segunda ligação que não toca na do store — e entrega-a à folha de partilha do sistema (`expo-sharing`); se existir registo bruto (dev), partilha-o a seguir. A persistência não muda. **Dependência nova**: `expo-sharing`, a única via do Expo para a folha de partilha com um ficheiro (o `Share` do react-native só partilha texto no Android).
+
+## Alternativas rejeitadas
+
+- **Limiar de deslocamento relativo à precisão** (*k* × precisão). Ver ponto 5 acima: retira 1 % de deriva e torna o ritmo em janela mais nervoso; e a precisão nestas sessões não distingue fixes bons de maus. Fica registado como a primeira coisa a reavaliar quando houver uma sessão com precisão fraca a sério — a coluna `accuracy` existe para isso.
+- **Kalman ou qualquer suavização de posição.** Não há prova de que seja preciso: a distância bate com o Strava a 0,7 % e o ritmo médio é estável. O CTO pediu explicitamente que não se fizesse sem prova.
+- **Usar a velocidade Doppler para o ritmo atual.** Mais lisa, mas 6–12 % lenta em relação à distância medida; mostraria um ritmo atual sistematicamente 30 s/km mais lento do que o ritmo médio do mesmo segmento. Duas verdades incompatíveis no mesmo ecrã.
+- **Ritmo em movimento** (excluir as paragens do ritmo médio, como o Strava faz). Resolve a mesma queixa de outra maneira, mas exige um limiar de "parado" (os dados sugerem 0,5 m/s numa janela de 5 s) e um segundo tempo (em movimento) no resumo — é matéria do resumo e do histórico, Fase 4. Fica no BACKLOG e nas dúvidas para o CTO; não se antecipa.
+- **Janela de 10 ou 60 s.** Ver ponto 6.
+- **Pasta externa da app para a exportação** (`Android/data/com.bricklap.app/files/`, legível por `adb pull` sem build depurável). O `expo-file-system` não expõe a pasta externa (só `document`, `cache` e `bundle`); precisaria de módulo nativo. A folha de partilha cobre o que se queria: os ficheiros saem para Drive, e-mail ou "Ficheiros" sem cabo.
+- **Copiar `bricklap.db` + `-wal` + `-shm`** em vez de `VACUUM INTO`. Três ficheiros para partilhar e uma cópia que pode ficar a meio de um checkpoint; o `VACUUM INTO` dá um ficheiro consistente a partir de uma transação de leitura.
+
+## Consequências
+
+- O ecrã de gravação tem uma métrica a mais nos desportos com GPS. O ritmo médio do segmento continua lá; quem quiser saber "a que ritmo vou agora" olha para a outra.
+- `Sample` ganha um campo opcional; `GpsCoords` ganha `accuracy?`. Nenhum teste anterior mudou de expectativa: 225 testes, motor a 100 %.
+- O esquema está em v2. Uma base v1 sobe sozinha no primeiro arranque; os fixes antigos ficam sem precisão (NULL), e o replay não lhes inventa nenhuma.
+- O procedimento de trocar o APK de debug pelo release para exportar continua no README como alternativa, mas deixa de ser necessário.
+- `scripts/geojson.mjs` continua a ler a precisão do registo bruto; podia passar a lê-la da base — não é urgente.
+- Fica por fazer nesta fase: segundo plano (sessão 07).

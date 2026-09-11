@@ -1,6 +1,6 @@
 # @bricklap/mobile
 
-Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 3, parte 1 — desportos sem GPS** (sobre a Fase 2: GPS real e persistência local).
+Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 3, partes 1 e 2 — desportos sem GPS; ritmo, precisão na base e exportação** (sobre a Fase 2: GPS real e persistência local).
 
 ## O que é
 
@@ -25,19 +25,33 @@ Nesta fase:
   `sampleFromSim`) continua disponível por um interruptor no ecrã inicial,
   **só em builds de desenvolvimento**; uma sessão retomada segue a fonte da sua
   última amostra.
+- **Ritmo, precisão e exportação** ([ADR 0009](../../docs/adr/0009-ritmo-precisao-exportacao.md)): o ecrã de gravação mostra o ritmo médio do segmento **e** o ritmo dos últimos 30 s ("Ritmo atual"; "Velocidade atual" na bicicleta) — uma paragem lê "—". Não há filtro na distância: a análise das duas sessões de campo mostrou que a caminhada estava bem calibrada e que o ritmo médio só diluía as paragens. Cada fix leva a sua precisão para a base (esquema v2, `samples.accuracy`).
 - **Persistência local** em SQLite append-only (`persistence/`,
   [ADR 0006](../../docs/adr/0006-persistencia-sqlite-append-only.md)); a sessão
-  sobrevive a fechar ou matar a app. Cada fix vai também para um registo bruto
-  `files/gps-raw.jsonl` com a precisão (ver *Exportar o traçado*).
+  sobrevive a fechar ou matar a app. Em builds de **desenvolvimento** cada fix
+  vai também para um registo bruto `files/gps-raw.jsonl` (altitude, rumo,
+  timestamp do fix), rodado por sessão (`gps-raw.prev.jsonl` guarda o
+  anterior); o release não o escreve.
+- **Exportar dados** no histórico: uma cópia consistente da base (`VACUUM INTO`,
+  um só ficheiro, WAL incluído) entregue à folha de partilha do sistema, e o
+  registo bruto a seguir se existir. Ver *Exportar*.
 - **Não há navegação** nem mapa. Dependências: `expo`, `expo-dev-client`,
-  `expo-file-system`, `expo-keep-awake`, `expo-location`, `expo-sqlite`,
-  `expo-status-bar`, `react`, `react-native` e os workspaces `@bricklap/engine`
-  e `@bricklap/i18n`.
+  `expo-file-system`, `expo-keep-awake`, `expo-location`, `expo-sharing`,
+  `expo-sqlite`, `expo-status-bar`, `react`, `react-native` e os workspaces
+  `@bricklap/engine` e `@bricklap/i18n`.
 - **Só Android.** Não existe configuração iOS nem web.
 
-## Exportar o traçado (depuração)
+## Exportar
 
-A app não mostra mapa. Para ver o que gravou, puxa-se a base e o registo bruto
+**De dentro da app** (sessão 06): Histórico → **Exportar dados**. A app faz um
+`VACUUM INTO` da base para a sua cache (`bricklap-AAAAMMDD-HHMM.db`, completo,
+sem `-wal`/`-shm`) e abre a partilha do sistema — Drive, e-mail, "Guardar em
+Ficheiros", o que houver. Num build de desenvolvimento partilha a seguir o
+registo bruto (`gps-raw-AAAAMMDD-HHMM.jsonl`). Não precisa de cabo, de `adb`
+nem de trocar de APK. O Expo não expõe a pasta externa da app
+(`Android/data/…/files`), por isso não há cópia para lá.
+
+**Pelo cabo** (alternativa de depuração): puxa-se a base e o registo bruto
 do telemóvel e converte-se em GeoJSON, que qualquer visualizador abre
 (geojson.io, QGIS, …). `adb` abaixo é o `adb` da WSL ou o `adb.exe` do Windows,
 conforme a ligação (ver mais abaixo).
@@ -82,6 +96,20 @@ sessão. É esse resumo que a secção "Teste de campo" do relatório pede.
 O script é autónomo (`node:sqlite`, sem dependências) e reimplementa o corte de
 segmentos por `sport_changed` / `stopped` — se essa regra mudar no motor, muda
 aqui também.
+
+**Análise do ruído** (`scripts/gps-noise.mjs`): por segmento com GPS, a
+distribuição da velocidade instantânea, a velocidade Doppler do provider, a
+precisão e a relação entre as duas, a estabilidade do ritmo que o atleta lê
+(médio e em janelas de 5–60 s) e o efeito de um limiar de deslocamento relativo
+à precisão. Nunca imprime coordenadas. É o que produziu os números do ADR 0009.
+
+```sh
+node apps/mobile/scripts/gps-noise.mjs bricklap.db gps-raw.jsonl --session <id> [--svg ritmo.svg]
+```
+
+Os ficheiros puxados do telemóvel contêm as coordenadas de quem treinou:
+ficam **fora do repositório** (o `.gitignore` recusa `*.db`, `*.geojson` e
+`gps-raw*`, e `git status` deve ficar limpo antes de qualquer commit).
 
 ## Comandos
 
@@ -248,10 +276,11 @@ apps/mobile/
   store.ts         uma instância do adaptador de persistência por processo
   i18n.ts          locale do dispositivo (I18nManager) -> t() de @bricklap/i18n
   index.ts         registerRootComponent(App)
-  gps/             expo-location (permissão, watcher a 1 Hz) e o registo bruto gps-raw.jsonl
-  persistence/     SQLite append-only: esquema, replay, store (ADR 0006)
+  export.ts        cópia consistente da base (VACUUM INTO) + folha de partilha do sistema
+  gps/             expo-location (permissão, watcher a 1 Hz) e o registo bruto gps-raw.jsonl (só dev)
+  persistence/     SQLite append-only: esquema (v2: accuracy), replay, store (ADR 0006, 0009)
   device/          teste de recuperação num telemóvel real (npm run test:device)
-  scripts/         geojson.mjs — base + registo bruto -> GeoJSON e resumo
+  scripts/         geojson.mjs — base + registo bruto -> GeoJSON e resumo; gps-noise.mjs — análise do ruído
   test/            testes em Node (node:sqlite) do adaptador
   app.json         configuração Expo (só Android; package com.bricklap.app; plugin expo-location sem segundo plano)
   tsconfig.json    extends expo/tsconfig.base + strict + noUncheckedIndexedAccess
