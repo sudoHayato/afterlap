@@ -6,9 +6,11 @@
  *
  * Every screen a test touches (idle, resume, history) is read with
  * `uiautomator dump` and its buttons tapped by their accessible label —
- * never by pixel colour or screen geometry. The live screen is never dumped:
- * it re-renders four times a second and `uiautomator` fails outright with
- * "could not get idle state" on it (session 03).
+ * never by pixel colour or screen geometry. The tests never dump the live
+ * screen: it re-renders four times a second and `uiautomator` usually fails
+ * on it with "could not get idle state" (session 03). Usually, not always —
+ * in session 08 it dumped fine on a release build — but nothing here relies
+ * on that, so CHANGE and STOP stay out of the automated flow.
  */
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
