@@ -86,9 +86,9 @@ describe("replaySessions", () => {
         { seq: 4, session_id: "a", type: "stopped", at: T0 + 30_000, sport: null, discarded: 1 },
       ],
       [
-        { session_id: "a", t: T0, lat: 1, lng: 2, speed_mps: 3, source: "sim" },
-        { session_id: "b", t: T0 + 20_000, lat: 4, lng: 5, speed_mps: 1, source: "gps" },
-        { session_id: "ghost", t: T0, lat: 0, lng: 0, speed_mps: 0, source: "sim" },
+        { session_id: "a", t: T0, lat: 1, lng: 2, speed_mps: 3, source: "sim", accuracy: null },
+        { session_id: "b", t: T0 + 20_000, lat: 4, lng: 5, speed_mps: 1, source: "gps", accuracy: 4.25 },
+        { session_id: "ghost", t: T0, lat: 0, lng: 0, speed_mps: 0, source: "sim", accuracy: null },
       ],
     );
     expect(stored.map((s) => s.session.id)).toEqual(["a", "b"]);
@@ -102,9 +102,12 @@ describe("replaySessions", () => {
       { type: "stopped", at: T0 + 30_000 },
     ]);
     expect(a!.session.samples).toEqual([{ t: T0, lat: 1, lng: 2, speedMps: 3, source: "sim" }]);
+    // No accuracy on disk → no key at all on the sample (not null), so a
+    // replayed session equals the one the engine built in memory.
+    expect("accuracyM" in a!.session.samples[0]!).toBe(false);
     expect(b!.session.status).toBe("live");
     expect(b!.discarded).toBe(false);
-    expect(b!.session.samples[0]?.source).toBe("gps");
+    expect(b!.session.samples[0]).toEqual({ t: T0 + 20_000, lat: 4, lng: 5, speedMps: 1, source: "gps", accuracyM: 4.25 });
   });
 
   it("is loud about rows it does not understand", () => {
@@ -120,9 +123,70 @@ describe("replaySessions", () => {
     expect(() =>
       replaySessions(
         [{ seq: 1, session_id: "a", type: "started", at: T0, sport: "run", discarded: 0 }],
-        [{ session_id: "a", t: T0, lat: 0, lng: 0, speed_mps: 0, source: "guess" }],
+        [{ session_id: "a", t: T0, lat: 0, lng: 0, speed_mps: 0, source: "guess", accuracy: null }],
       ),
     ).toThrow(/unknown source "guess"/);
+  });
+});
+
+describe("migration v2 — accuracy next to the sample (ADR 0009)", () => {
+  it("is the current version and adds a nullable accuracy column to samples", () => {
+    expect(SCHEMA_VERSION).toBe(2);
+    const db = openNodeDb();
+    migrate(db);
+    const cols = db.raw.prepare("PRAGMA table_info(samples)").all() as { name: string; type: string; notnull: number }[];
+    expect(cols.find((c) => c.name === "accuracy")).toMatchObject({ type: "REAL", notnull: 0 });
+  });
+
+  it("upgrades a v1 database in place: rows, seqs and columns untouched, accuracy NULL for old fixes", () => {
+    const db = openNodeDb();
+    // A phone that recorded the session 04 walk on schema v1.
+    expect(migrate(db, MIGRATIONS.slice(0, 1))).toEqual({ from: 0, to: 1 });
+    db.runSync("INSERT INTO events (session_id, type, at, sport) VALUES (?, ?, ?, ?)", ["walk", "started", T0, "walk"]);
+    db.runSync("INSERT INTO samples (session_id, t, lat, lng, speed_mps, source) VALUES (?, ?, ?, ?, ?, ?)", [
+      "walk",
+      T0,
+      38.7,
+      -9.1,
+      1.4,
+      "gps",
+    ]);
+    db.runSync("INSERT INTO samples (session_id, t, lat, lng, speed_mps, source) VALUES (?, ?, ?, ?, ?, ?)", [
+      "walk",
+      T0 + 1_000,
+      38.70001,
+      -9.10001,
+      1.4,
+      "gps",
+    ]);
+
+    expect(migrate(db)).toEqual({ from: 1, to: 2 });
+    expect(readSchemaVersion(db)).toBe(2);
+    const rows = db.raw.prepare("SELECT seq, t, speed_mps, source, accuracy FROM samples ORDER BY seq").all();
+    expect(rows).toEqual([
+      { seq: 1, t: T0, speed_mps: 1.4, source: "gps", accuracy: null },
+      { seq: 2, t: T0 + 1_000, speed_mps: 1.4, source: "gps", accuracy: null },
+    ]);
+    // The store opens the upgraded database and replays the old fixes without an accuracy.
+    const store = new SqliteSessionStore(db, { flushIntervalMs: 0, now: () => T0 + 5_000 });
+    const live = store.hydrate();
+    expect(live?.samples).toHaveLength(2);
+    expect(live!.samples.every((s) => !("accuracyM" in s))).toBe(true);
+  });
+
+  it("round-trips the accuracy of a real fix and stores NULL for a sample without one", () => {
+    const db = openNodeDb();
+    const store = new SqliteSessionStore(db, { flushIntervalMs: 0, now: () => T0 });
+    store.hydrate(T0);
+    const id = store.start("run", T0);
+    const real: Sample = { ...sample(T0, 0), source: "gps", accuracyM: 3.09 };
+    const sim = sample(T0 + 1_000, 1);
+    store.pushSample(real);
+    store.pushSample(sim);
+    store.stop(T0 + 2_000);
+    const rows = db.raw.prepare("SELECT accuracy FROM samples ORDER BY seq").all();
+    expect(rows).toEqual([{ accuracy: 3.09 }, { accuracy: null }]);
+    expect(store.byId(id)!.samples).toEqual([real, sim]);
   });
 });
 

@@ -1,5 +1,15 @@
 # Roadmap
 
+## Visão do produto
+
+Decisão do fundador (2026-09-11), uma página em [docs/VISAO.md](docs/VISAO.md): um treino HIIT/AMRAP é **uma sessão** com blocos de força (exercício, reps, carga), passadeira (ritmo × distância → tempo), remo indoor e corrida na rua, cada bloco com as suas métricas, tudo no mesmo treino. O motor Session → Event → Segment já foi desenhado para isto. Três frases fixas, a respeitar em todas as fases:
+
+1. **A diferenciação do Bricklap é a combinação** de força + passadeira + remo indoor + corrida na rua **no mesmo treino**, cada bloco com as suas métricas. Não competir com Hevy/Strong nem com o Garmin no registo de força isolado.
+2. **O problema difícil é a introdução de dados durante o treino, não o cálculo**; resolve-se na Fase 5 (relógio) e/ou por introdução após o treino sobre os segmentos já gravados.
+3. **A tese fica registada, não se constrói agora**: é o ponto de partida da Fase 4 (design e histórico). Nenhuma fase anterior antecipa UI ou código por causa dela.
+
+## Fases
+
 Fases 0–6. As Fases 3–6 são **proposta a validar pelo fundador**; as Fases 0, 1 e 2 estão concluídas.
 
 ## Fase 0 — Laboratório web (concluída)
@@ -26,14 +36,15 @@ Fases 0–6. As Fases 3–6 são **proposta a validar pelo fundador**; as Fases 
 
 - **Objetivo**: gravar com o ecrã desligado e a app em segundo plano — e servir para o treino do fundador, que é dentro do ginásio.
 - **Parte 1 (sessão 05, feita)**: desportos sem GPS — força, remo indoor, passadeira, natação em piscina — como segmentos só de tempo; o watcher de posição segue o segmento e a permissão pede-se quando faz falta. Ver [ADR 0008](docs/adr/0008-desportos-sem-gps.md) e `docs/reports/2026-09-10-sessao-05.md`.
-- **Entregáveis**: foreground service com notificação persistente, gestão de bateria/doze, filtro de amostras (precisão, saltos) — **incluindo a calibração do ritmo a velocidades baixas** (relatório da sessão 04 §6.1), com os dados crus de `gps-raw.jsonl` já disponíveis —, testes em campo com bicicleta e corrida, métricas de fiabilidade.
+- **Parte 2 (sessão 06, feita)**: ritmo decidido com os dados das duas sessões de campo — **a caminhada estava bem calibrada**; o que o fundador viu foi o ritmo médio do segmento diluído por 103 s de paragens. **Sem filtro na distância** (as referências ficam a 1,489 km e 4,213 km, a 0,7 % do Strava); "ritmo atual" dos últimos 30 s ao lado do ritmo médio; precisão de cada fix na base (esquema v2); registo bruto só em dev, rodado por sessão; botão de exportação no histórico. Ver [ADR 0009](docs/adr/0009-ritmo-precisao-exportacao.md) e `docs/reports/2026-09-11-sessao-06.md`.
+- **Parte 3 (por iniciar, sessão 07)**: segundo plano — foreground service com notificação persistente, gestão de bateria/doze; depois testes em campo com bicicleta e corrida, métricas de fiabilidade. Um filtro por precisão volta a estar em cima da mesa só quando uma sessão real mostrar fixes fracos — a coluna `accuracy` existe para isso.
 - **Critério de saída**: 2 h de gravação contínua com o telemóvel no bolso, sem buracos superiores a 10 s.
 
 ## Fase 4 — Histórico, resumo e exportação (proposta)
 
-- **Objetivo**: valor para o atleta além do registo.
-- **Entregáveis**: histórico e resumo por sessão na app, exportação GPX (e FIT, a estudar), identidade do responsável pelo tratamento preenchida, textos legais adaptados à app nativa (permissões de localização, retenção local).
-- **Critério de saída**: uma sessão exportada abre corretamente numa ferramenta externa.
+- **Objetivo**: valor para o atleta além do registo. **Parte de [docs/VISAO.md](docs/VISAO.md)**: o resumo e o histórico mostram a sessão como o fundador a treina — blocos de força, passadeira, remo e corrida, cada um com as suas métricas — e a introdução de dados **após** o treino, sobre os segmentos já gravados, é a primeira via a estudar (a introdução durante o treino é da Fase 5).
+- **Entregáveis**: histórico e resumo por sessão na app (por blocos), introdução após o treino das métricas dos blocos de ginásio (reps, carga, metros, ritmo × distância), ritmo em movimento no resumo, exportação GPX (e FIT, a estudar), identidade do responsável pelo tratamento preenchida, textos legais adaptados à app nativa (permissões de localização, retenção local).
+- **Critério de saída**: uma sessão exportada abre corretamente numa ferramenta externa; uma sessão de 5 séries de 5 exercícios com corrida incluída lê-se no resumo como o fundador a fez.
 
 ## Fase 5 — Relógio (proposta)
 

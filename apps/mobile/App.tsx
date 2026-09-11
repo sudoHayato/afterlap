@@ -23,6 +23,14 @@
  * permissão de localização só se pede na primeira vez que faz falta. Um
  * segmento sem GPS não tem amostras, distância nem ritmo — o motor garante-o,
  * o ecrã limita-se a não os mostrar.
+ *
+ * Ritmo, precisão e exportação (Fase 3, parte 2, ADR 0009): cada amostra
+ * leva a precisão do fix para a base (esquema v2); o ecrã de gravação mostra,
+ * ao lado do ritmo médio do segmento, o ritmo dos últimos 30 s
+ * (`recentMetrics`) — é o que responde "a que ritmo vou agora", uma paragem
+ * incluída. O registo bruto passa a existir só em desenvolvimento, rodado
+ * por sessão. O histórico tem um botão que exporta a base (e o registo
+ * bruto, se existir) pela partilha do sistema (./export).
  */
 import { useKeepAwake } from "expo-keep-awake";
 import { StatusBar } from "expo-status-bar";
@@ -47,6 +55,7 @@ import {
   formatDay,
   formatDuration,
   hasGpsSegment,
+  recentMetrics,
   sampleFromGps,
   sampleFromSim,
   segmentMetrics,
@@ -61,8 +70,9 @@ import {
   type Sport,
 } from "@bricklap/engine";
 import { formatDistanceForUnit, formatPaceForUnit, formatSpeedForUnit } from "@bricklap/i18n";
+import { exportData } from "./export";
 import { isWeak, requestForegroundLocation, watchFixes, type Fix, type PermissionOutcome } from "./gps/location";
-import { appendRawFix, rawFixLine } from "./gps/rawLog";
+import { appendRawFix, rawFixLine, rotateRawLog } from "./gps/rawLog";
 import { locale, t } from "./i18n";
 import type { SessionSummary } from "./persistence";
 import { getStore, logRecovery } from "./store";
@@ -87,6 +97,13 @@ type Screen =
   | { kind: "live" }
   | { kind: "summary"; session: Session }
   | { kind: "history"; sessions: SessionSummary[] };
+
+/** The export button's state on the history screen. */
+type ExportState =
+  | { kind: "idle" }
+  | { kind: "busy" }
+  | { kind: "done"; files: string[] }
+  | { kind: "error"; message: string };
 
 /** What the live screen shows about the GPS feed. */
 type GpsStatus =
@@ -306,6 +323,8 @@ export default function App() {
       const ts = Date.now();
       const store = getStore();
       store.start(sport, ts);
+      // A new session, a new raw log (dev builds only; no-op in release).
+      rotateRawLog();
       simRef.current = createSim();
       lastTickRef.current = ts;
       lastFixRef.current = null;
@@ -365,7 +384,16 @@ export default function App() {
   }, []);
 
   const openHistory = useCallback(() => {
+    setExportState({ kind: "idle" });
     setScreen({ kind: "history", sessions: getStore().summaries() });
+  }, []);
+
+  const [exportState, setExportState] = useState<ExportState>({ kind: "idle" });
+  const doExport = useCallback(() => {
+    setExportState({ kind: "busy" });
+    exportData()
+      .then((files) => setExportState({ kind: "done", files }))
+      .catch((e: unknown) => setExportState({ kind: "error", message: String(e) }));
   }, []);
 
   const goIdle = useCallback(() => {
@@ -409,7 +437,13 @@ export default function App() {
         ) : screen.kind === "summary" ? (
           <SummaryScreen session={screen.session} onReset={goIdle} />
         ) : screen.kind === "history" ? (
-          <HistoryScreen sessions={screen.sessions} now={now} onBack={goIdle} />
+          <HistoryScreen
+            sessions={screen.sessions}
+            now={now}
+            onBack={goIdle}
+            exportState={exportState}
+            onExport={doExport}
+          />
         ) : null}
       </ScrollView>
     </View>
@@ -531,6 +565,10 @@ function LiveScreen(props: {
   const current = segments[segments.length - 1];
   const currentM = current ? segmentMetrics(session, current, now) : null;
   const rate = currentM && hasGps ? paceOrSpeed(sport, currentM) : null;
+  // The pace of the moment (last 30 s, ADR 0009) next to the segment's
+  // average: a walk with street crossings reads 14:00/km on average and
+  // 11:45/km when actually walking, and both are true. "—" while stopped.
+  const recentRate = current && hasGps ? paceOrSpeed(sport, recentMetrics(session, current, now)) : null;
 
   return (
     <View style={styles.stack}>
@@ -559,6 +597,12 @@ function LiveScreen(props: {
               <Metric
                 label={SPORT_PACE_KIND[sport] === "pace" ? t("common.pace") : t("common.speed")}
                 value={rate}
+              />
+            ) : null}
+            {recentRate ? (
+              <Metric
+                label={SPORT_PACE_KIND[sport] === "pace" ? t("mobile.currentPace") : t("mobile.currentSpeed")}
+                value={recentRate}
               />
             ) : null}
           </View>
@@ -628,10 +672,35 @@ function SummaryScreen(props: { session: Session; onReset: () => void }) {
 }
 
 /** Proof of persistence, nothing more: one row per stored session. Fase 4 owns the real summary. */
-function HistoryScreen(props: { sessions: SessionSummary[]; now: number; onBack: () => void }) {
+function HistoryScreen(props: {
+  sessions: SessionSummary[];
+  now: number;
+  onBack: () => void;
+  exportState: ExportState;
+  onExport: () => void;
+}) {
   const rows = [...props.sessions].reverse();
+  const ex = props.exportState;
   return (
     <View style={styles.stack}>
+      <View style={styles.card}>
+        <Button
+          testID="btn-export"
+          label={t("mobile.exportData")}
+          kind="secondary"
+          disabled={ex.kind === "busy"}
+          onPress={props.onExport}
+        />
+        {ex.kind === "error" ? (
+          <Text testID="export-problem" style={styles.problem}>
+            {t("mobile.exportFailed")} · {ex.message}
+          </Text>
+        ) : ex.kind === "done" ? (
+          <Text testID="export-done" style={styles.hint}>
+            {ex.files.join(" · ")}
+          </Text>
+        ) : null}
+      </View>
       <View style={styles.card}>
         <Text style={styles.sectionLabel}>{t("mobile.history")}</Text>
         {rows.length === 0 ? <Text style={styles.hint}>{t("mobile.noSessions")}</Text> : null}

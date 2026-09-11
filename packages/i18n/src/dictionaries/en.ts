@@ -126,6 +126,10 @@ export const en: Dictionary = {
     sportGroupIndoor: "Gym / Pool",
     gpsNoPermission: "no location permission",
     gpsServicesOff: "location is off",
+    currentPace: "Current pace",
+    currentSpeed: "Current speed",
+    exportData: "Export data",
+    exportFailed: "Export failed",
   },
   meta: {
     title: "Bricklap",

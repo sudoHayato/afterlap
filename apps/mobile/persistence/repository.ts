@@ -68,7 +68,7 @@ export type RepositoryOptions = {
 export const DEFAULT_FLUSH_INTERVAL_MS = 2000;
 
 const SELECT_EVENTS = "SELECT seq, session_id, type, at, sport, discarded FROM events";
-const SELECT_SAMPLES = "SELECT session_id, t, lat, lng, speed_mps, source FROM samples";
+const SELECT_SAMPLES = "SELECT session_id, t, lat, lng, speed_mps, source, accuracy FROM samples";
 
 function defaultClock(): number {
   const p = (globalThis as { performance?: { now?: () => number } }).performance;
@@ -254,13 +254,9 @@ export class SqliteSessionStore implements SessionStore {
   }
 
   private insertSample(sessionId: string, s: Sample): void {
-    this.db.runSync("INSERT INTO samples (session_id, t, lat, lng, speed_mps, source) VALUES (?, ?, ?, ?, ?, ?)", [
-      sessionId,
-      s.t,
-      s.lat,
-      s.lng,
-      s.speedMps,
-      s.source,
-    ]);
+    this.db.runSync(
+      "INSERT INTO samples (session_id, t, lat, lng, speed_mps, source, accuracy) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [sessionId, s.t, s.lat, s.lng, s.speedMps, s.source, s.accuracyM ?? null],
+    );
   }
 }

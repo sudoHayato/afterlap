@@ -179,6 +179,11 @@ export function interpolateAt(samples: Sample[], t: number): Sample | null {
     lng: before.lng + (after.lng - before.lng) * f,
     speedMps: before.speedMps + (after.speedMps - before.speedMps) * f,
     source: before.source,
+    // Accuracy only when both neighbours have one; a synthesised sample must
+    // not claim a precision nobody measured.
+    ...(before.accuracyM !== undefined && after.accuracyM !== undefined
+      ? { accuracyM: before.accuracyM + (after.accuracyM - before.accuracyM) * f }
+      : {}),
   };
 }
 
@@ -243,6 +248,12 @@ function gpsSpan(session: Session, segment: Segment): { start: number; end: numb
   };
 }
 
+/** The samples a GPS segment may draw on: the session's, fenced by gpsSpan. */
+function segmentPool(session: Session, segment: Segment): Sample[] {
+  const span = gpsSpan(session, segment);
+  return samplesInRange(session.samples, span.start, span.end);
+}
+
 /**
  * Samples of a segment (see samplesBetween for the boundary rules). A segment
  * of a sport without GPS owns no samples at all, even if some were recorded
@@ -250,9 +261,42 @@ function gpsSpan(session: Session, segment: Segment): { start: number; end: numb
  */
 export function samplesForSegment(session: Session, segment: Segment, at = nowMs()): Sample[] {
   if (!sportHasGps(segment.sport)) return [];
-  const span = gpsSpan(session, segment);
-  const pool = samplesInRange(session.samples, span.start, span.end);
-  return samplesBetween(pool, segment.startAt, segmentEnd(session, segment, at));
+  return samplesBetween(segmentPool(session, segment), segment.startAt, segmentEnd(session, segment, at));
+}
+
+/**
+ * Length of the trailing window behind "current pace". Chosen on the field
+ * data of sessions 04 and 06 (ADR 0009): at 1 Hz a 5–10 s window still
+ * jumps by ±1–2 min/km between readings when walking; 30 s brings the
+ * 95th-percentile jump down to ±0.3–0.5 min/km walking and ±6 s/km running,
+ * while still reacting within a 66 s running interval, which a 60 s window
+ * barely registers.
+ */
+export const RECENT_WINDOW_MS = 30_000;
+
+/**
+ * Metrics over the last `windowMs` of a segment, ending at `at` while the
+ * segment is open (or at its end once closed): the pace of the moment, as
+ * opposed to the segment's average since it started. The window is clipped
+ * to the segment — right after a CHANGE it is as short as the segment is,
+ * and it never borrows samples from across a segment without GPS. A stop
+ * shows up as it should: a window with (almost) no distance, which the
+ * formatters already render as "—" below 20 m. A segment without GPS has no
+ * recent pace, like it has no pace at all.
+ */
+export function recentMetrics(
+  session: Session,
+  segment: Segment,
+  at = nowMs(),
+  windowMs = RECENT_WINDOW_MS,
+): SegmentMetrics {
+  const end = segmentEnd(session, segment, at);
+  const start = Math.max(segment.startAt, end - windowMs);
+  const durationMs = Math.max(0, end - start);
+  if (!sportHasGps(segment.sport)) return { durationMs, distanceM: 0, avgSpeedMps: 0 };
+  const distanceM = distanceMeters(samplesBetween(segmentPool(session, segment), start, end));
+  const avgSpeedMps = durationMs > 0 ? distanceM / (durationMs / 1000) : 0;
+  return { durationMs, distanceM, avgSpeedMps };
 }
 
 export function metricsFor(

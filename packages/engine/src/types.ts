@@ -53,6 +53,14 @@ export type Sample = {
   lng: number;
   speedMps: number;
   source: "sim" | "gps";
+  /**
+   * Horizontal accuracy the provider reported for this fix, in metres
+   * (68 % confidence radius on Android). Absent when unknown — simulated
+   * samples, and real fixes recorded before the accuracy column existed
+   * (ADR 0009). Recorded so filters can be decided on data; nothing in the
+   * engine changes distance because of it today.
+   */
+  accuracyM?: number;
 };
 
 /**
@@ -64,6 +72,7 @@ export type GpsCoords = {
   latitude: number;
   longitude: number;
   speed?: number | null;
+  accuracy?: number | null;
 };
 
 export type SessionStatus = "live" | "stopped";

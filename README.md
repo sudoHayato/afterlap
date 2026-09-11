@@ -12,11 +12,11 @@ Monorepo com npm workspaces:
 
 | Caminho | Pacote | O que é |
 |---|---|---|
-| `packages/engine` | `@bricklap/engine` | Motor de sessão. TypeScript puro: sem DOM, sem React Native, sem armazenamento, sem texto de interface. 124 testes, cobertura 100%. |
-| `packages/i18n` | `@bricklap/i18n` | Dicionários de tradução (en base, pt-PT) tipados, e formatação por unidade (metric hoje, imperial declarado). 25 testes, cobertura 100%. |
+| `packages/engine` | `@bricklap/engine` | Motor de sessão. TypeScript puro: sem DOM, sem React Native, sem armazenamento, sem texto de interface. 169 testes, cobertura 100%. |
+| `packages/i18n` | `@bricklap/i18n` | Dicionários de tradução (en base, pt-PT) tipados, e formatação por unidade (metric hoje, imperial declarado). 26 testes, cobertura 100%. |
 | `apps/web-lab` | `@bricklap/web-lab` | Laboratório web (Vite + React + TanStack Router + Tailwind). GPS simulado. Inclui as páginas legais (pt-PT, fora do i18n) e 9 testes do store. **Não é o produto.** |
-| `apps/mobile` | `@bricklap/mobile` | App Android (Expo SDK 57, dev client). START/CHANGE/STOP com GPS real em primeiro plano, persistência SQLite append-only, recuperação ao reabrir; desportos de ginásio e piscina só de tempo, com o GPS ligado ao segmento (Fase 3, parte 1); simulador só em desenvolvimento. |
-| `docs/` | — | ADRs, backlog, história, relatórios de sessão. |
+| `apps/mobile` | `@bricklap/mobile` | App Android (Expo SDK 57, dev client). START/CHANGE/STOP com GPS real em primeiro plano, persistência SQLite append-only (esquema v2, com a precisão de cada fix), recuperação ao reabrir; desportos de ginásio e piscina só de tempo, com o GPS ligado ao segmento; ritmo médio e ritmo dos últimos 30 s; exportação da base pela partilha do sistema (Fase 3, partes 1 e 2); simulador só em desenvolvimento. |
+| `docs/` | — | ADRs, backlog, história, [visão do produto](docs/VISAO.md), relatórios de sessão. |
 
 Leitura recomendada, por esta ordem: este ficheiro → [STATUS.md](STATUS.md) → [ARCHITECTURE.md](ARCHITECTURE.md) → [ROADMAP.md](ROADMAP.md) → o relatório mais recente em `docs/reports/`. Agentes de código: [CLAUDE.md](CLAUDE.md).
 

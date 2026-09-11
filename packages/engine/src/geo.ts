@@ -52,11 +52,15 @@ export function sampleFromSim(
 
 export function sampleFromGps(coords: GpsCoords, t: number): Sample {
   const speed = coords.speed ?? 0;
+  const accuracy = coords.accuracy;
   return {
     t,
     lat: coords.latitude,
     lng: coords.longitude,
     speedMps: speed > 0 ? speed : 0,
     source: "gps",
+    // Unknown stays absent (not null, not 0): a filter must never mistake
+    // "no accuracy reported" for "perfect fix".
+    ...(typeof accuracy === "number" && Number.isFinite(accuracy) && accuracy >= 0 ? { accuracyM: accuracy } : {}),
   };
 }

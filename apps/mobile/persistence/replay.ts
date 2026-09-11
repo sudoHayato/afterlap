@@ -18,6 +18,8 @@ export type SampleRow = {
   lng: number;
   speed_mps: number;
   source: string;
+  /** Metres, or NULL when the fix reported none (and for every row older than schema v2). */
+  accuracy: number | null;
 };
 
 export type StoredSession = {
@@ -53,7 +55,16 @@ export function sampleFromRow(row: SampleRow): Sample {
   if (row.source !== "sim" && row.source !== "gps") {
     throw new Error(`samples: unknown source ${JSON.stringify(row.source)}`);
   }
-  return { t: row.t, lat: row.lat, lng: row.lng, speedMps: row.speed_mps, source: row.source };
+  return {
+    t: row.t,
+    lat: row.lat,
+    lng: row.lng,
+    speedMps: row.speed_mps,
+    source: row.source,
+    // Absent, not null, when unknown: the replayed sample must equal the one
+    // the engine built in memory, which never carries a null accuracy.
+    ...(row.accuracy === null ? {} : { accuracyM: row.accuracy }),
+  };
 }
 
 /**

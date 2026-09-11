@@ -117,6 +117,12 @@ export type Dictionary = {
     /** Short GPS-line reasons when a GPS segment cannot get fixes mid-session. */
     gpsNoPermission: string;
     gpsServicesOff: string;
+    /** Pace / speed over the last 30 s of the current segment (ADR 0009), next to the segment average. */
+    currentPace: string;
+    currentSpeed: string;
+    /** Export button in the history screen and its failure line. */
+    exportData: string;
+    exportFailed: string;
   };
   meta: {
     title: string;

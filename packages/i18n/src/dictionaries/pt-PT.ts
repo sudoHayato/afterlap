@@ -126,6 +126,10 @@ export const ptPT: Dictionary = {
     sportGroupIndoor: "Ginásio / Piscina",
     gpsNoPermission: "sem permissão de localização",
     gpsServicesOff: "localização desligada",
+    currentPace: "Ritmo atual",
+    currentSpeed: "Velocidade atual",
+    exportData: "Exportar dados",
+    exportFailed: "A exportação falhou",
   },
   meta: {
     title: "Bricklap",
