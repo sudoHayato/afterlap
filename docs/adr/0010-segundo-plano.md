@@ -1,6 +1,6 @@
 # ADR 0010 — Segundo plano: tarefa de localização do expo-location com serviço em primeiro plano
 
-**Estado**: **proposto, condicionado ao teste de campo** (sessão 07, 2026-09-11). A decisão final fecha-se com os números da Parte C do relatório da sessão 07; o que está abaixo é o desenho, a investigação e o critério de decisão. **Decisão do CTO** quanto ao método; **decisões do fundador** já tomadas e não reabertas: notificação persistente durante a gravação; pedir ao utilizador a exceção de otimização de bateria (a app explica e abre as definições, não contorna); permissão "enquanto usa a app" com serviço em primeiro plano, "sempre" só se se provar que não há outra forma.
+**Estado**: **aceite** (sessão 07, 2026-09-11) — decidido com o teste de campo do fundador (relatório da sessão 07 §8): **o `expo-location` chega**. O desenho abaixo é o da versão final (sessão 08). **Decisão do CTO** quanto ao método; **decisões do fundador** já tomadas e não reabertas: notificação persistente durante a gravação; pedir ao utilizador a exceção de otimização de bateria (a app explica e abre as definições, não contorna); permissão "enquanto usa a app" com serviço em primeiro plano, "sempre" só se se provar que não há outra forma.
 
 ## Contexto
 
@@ -64,15 +64,20 @@ O que muda e o que não muda: **`persistence/` não muda** (o store já era um *
 
 Ordem de preferência se A falhar: **b) antes de a)** — o problema, a existir, está no transporte dos fixes até ao JS, não no GPS; um módulo nosso resolve exatamente isso sem licença nem dependência grande. Nenhuma das duas foi instalada.
 
-## Decisão (a fechar com o teste)
+## Decisão
 
-**`expo-location` chega** se, no teste de 30 min com o ecrã apagado e o telemóvel no bolso, sem cabo:
+**`expo-location` com tarefa de localização + serviço em primeiro plano + notificação persistente + exceção de bateria pedida ao utilizador é o caminho.** Os critérios eram: (1) sem buracos > 10 s; (2) serviço nunca morto; (3) bateria claramente abaixo dos 4–5 % em 25 min da referência do fundador (ecrã ligado + Strava). O teste (2026-09-11, Caminhada de **17:28** com o ecrã apagado, telemóvel no bolso, sem cabo, exceção de bateria dada):
 
-1. não houver buracos > 10 s entre amostras (fora do arranque);
-2. o serviço não for morto (nem pelo Android nem pela One UI) — `service_stop` só no "Parar";
-3. a bateria descer **claramente menos** do que a referência do fundador (4–5 % em 25 min com o ecrã sempre ligado e o Strava a gravar em simultâneo) — meta: ≤ 3 % em 30 min.
+| Critério | Resultado |
+|---|---|
+| Buracos > 10 s | **0** em 977 amostras (1 Hz sustentado; maior intervalo 9,3 s) |
+| Serviço | vivo do "Iniciar" ao "Parar"; processo nunca morreu; nenhum contexto *headless* foi preciso |
+| Bateria | **100 % → 100 %** (menos de 1 ponto em 17,5 min; plateau a 100 %, medida a repetir longe da carga cheia) |
+| Atraso fix → tarefa | p50 **50 ms**, p95 139 ms com o ecrã apagado (4,2 s à secretária com o cabo — o `JobScheduler` só é lento quando a app está "em cima") |
 
-Se chegar: a sessão 08 implementa a versão final sobre este desenho (ver a proposta no relatório §8). Se não chegar: alternativa **b)** primeiro, com os dados do teste a dizer o quê (atraso dos lotes → `JobScheduler`; buracos com o serviço vivo → GPS/One UI; serviço morto → bateria/One UI).
+O que o teste **não** cobriu e a sessão 08 tem de cobrir antes de fechar a fase: 2 h contínuas (critério de saída), um troço com o telemóvel parado (o *doze* profundo nunca se instalou porque o fundador andou o tempo todo), e a bateria a partir de um nível que desça. A alternativa **b)** (módulo Kotlin) fica registada como plano B se o teste de 2 h mostrar atrasos ou buracos com o telemóvel parado; a **a)** (Transistor) não tem caso de uso à vista.
+
+Regras que ficam para a versão final: `t` = timestamp do fix; a tarefa hidrata o store em *headless* e pára o serviço sem sessão ao vivo; `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` no manifesto e nada de `ACCESS_BACKGROUND_LOCATION`; a exceção de bateria é pedida e explicada, nunca contornada; sem keep-awake.
 
 ## Consequências (da experiência)
 
