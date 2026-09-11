@@ -28,7 +28,7 @@
 
 ## Limitações conhecidas
 
-- **O ecrã de gravação não é legível pelo `uiautomator`** em nenhum build (falha com `could not get idle state`: o relógio re-renderiza 4×/s). Consequência prática: mudar de desporto a meio de uma sessão não se automatiza por `uiautomator` — na sessão 05 fez-se por navegação de foco com o teclado, cuja ordem não é controlável. A via para automatizar é o *broadcast receiver* de depuração que está no BACKLOG desde a sessão 03.
+- **O ecrã de gravação quase nunca é legível pelo `uiautomator`** (falha com `could not get idle state`: o relógio re-renderiza 4×/s). Não é "nunca": na sessão 08 leu-se sem esforço no build de **release**, o que permitiu tocar em "Parar" pelo rótulo. Nos builds de desenvolvimento continua a falhar. Vale tentar, sem contar com isso. Consequência prática: mudar de desporto a meio de uma sessão não se automatiza por `uiautomator` — na sessão 05 fez-se por navegação de foco com o teclado, cuja ordem não é controlável. A via para automatizar é o *broadcast receiver* de depuração que está no BACKLOG desde a sessão 03.
 
 - **Critério de saída da Fase 3 por cumprir**: falta o teste de campo de 2 h (relatório da sessão 08 §8). O lab web continua com GPS simulado.
 - **Processo morto a meio**: o Android reanima-o e a gravação continua (teste de dispositivo da sessão 08), mas o serviço **não volta a primeiro plano** — sem notificação até o atleta abrir a app e carregar em "Continuar". O `expo-location` não o permite; a alternativa é o módulo Kotlin (ADR 0010 §5b).
