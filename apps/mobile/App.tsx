@@ -96,6 +96,7 @@ import { rotateRawLog } from "./gps/rawLog";
 import { locale, t } from "./i18n";
 import type { SessionSummary } from "./persistence";
 import { getStore, logRecovery } from "./store";
+import { rotateWriteCost } from "./writeCostFile";
 
 const COLORS = {
   background: "#070708",
@@ -410,9 +411,11 @@ export default function App() {
       const ts = Date.now();
       const store = getStore();
       store.start(sport, ts);
-      // A new session, new raw and diagnostics logs (dev builds only; no-ops in release).
+      // A new session, new raw and diagnostics logs (dev builds only; no-ops in
+      // release) and a new write-cost summary (release too).
       rotateRawLog();
       rotateDiagLog();
+      rotateWriteCost();
       simRef.current = createSim();
       lastTickRef.current = ts;
       if (simEnabled && sportHasGps(sport)) store.pushSample(sampleFromSim(simRef.current, sport, ts));

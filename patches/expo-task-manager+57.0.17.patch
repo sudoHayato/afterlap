@@ -1,0 +1,36 @@
+diff --git a/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskService.java b/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskService.java
+index de829ca..f1ee8ae 100644
+--- a/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskService.java
++++ b/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskService.java
+@@ -612,7 +612,30 @@ public class TaskService implements SingletonModule, TaskServiceInterface {
+     HeadlessAppLoader appLoader = getAppLoader();
+     if (appLoader != null) {
+       if (getAppLoader().invalidateApp(appScopeKey)) {
+-        sHeadlessTaskManagers.remove(appScopeKey);
++        // BRICKLAP PATCH (session 08) — ISSUE_URL_PLACEHOLDER
++        // Bridgeless React Native has one ReactHost per app. An Activity opened
++        // while the headless instance is still alive (inside this 2 s window)
++        // reuses it, and invalidateApp() then keeps it running instead of
++        // destroying it. Its TaskManagerInternalModule registered itself once,
++        // as headless; dropping that registration left no task manager at all,
++        // so every later task event was queued for an app "load" that never
++        // calls back and hung until the process died (no location samples).
++        // Same check as RNHeadlessAppLoader.invalidateApp, posted after it on the
++        // main looper: if the host was kept, keep its task manager as the app's.
++        final WeakReference<TaskManagerInterface> headless = sHeadlessTaskManagers.remove(appScopeKey);
++        final Context context = mContextRef.get();
++        if (headless != null && context != null) {
++          new Handler(context.getMainLooper()).post(() -> {
++            ReactHost reactHost = ((ReactApplication) context.getApplicationContext()).getReactHost();
++            if (reactHost != null
++                && reactHost.getLifecycleState() != com.facebook.react.common.LifecycleState.BEFORE_CREATE
++                && headless.get() != null
++                && sTaskManagers.get(appScopeKey) == null) {
++              sTaskManagers.put(appScopeKey, headless);
++              Log.i(TAG, "Kept the task manager of the headless instance an Activity took over for '" + appScopeKey + "'.");
++            }
++          });
++        }
+       }
+     }
+   }

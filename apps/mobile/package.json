@@ -33,5 +33,15 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
+  },
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-task-manager",
+          "unimodules-app-loader"
+        ]
+      }
+    }
   }
 }

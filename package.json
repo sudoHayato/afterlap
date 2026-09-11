@@ -16,10 +16,12 @@
     "dev:web": "npm run dev --workspace @bricklap/web-lab",
     "build:web": "npm run build --workspace @bricklap/web-lab",
     "dev:mobile": "npm run start --workspace @bricklap/mobile",
-    "android": "npm run android --workspace @bricklap/mobile"
+    "android": "npm run android --workspace @bricklap/mobile",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.11",
+    "patch-package": "^8.0.1",
     "typescript": "~6.0.3",
     "vitest": "^4.1.11"
   },

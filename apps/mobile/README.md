@@ -380,3 +380,32 @@ git checkout -- . 2>/dev/null || sed -i '/^\s*debuggable true$/d' app/build.grad
 
 Instala-se como qualquer APK (mesma chave, os dados mantêm-se). **O fundador
 treina com o release normal**, nunca com este.
+
+**Custo das escritas** (sessão 08): a app guarda em `files/write-cost.json` um
+resumo dos tempos de escrita da sessão atual, também no release. Lê-se com
+este build instalado por cima:
+
+```sh
+adb exec-out run-as com.bricklap.app cat files/write-cost.json
+```
+
+## Remendo ao `expo-task-manager`
+
+`patches/expo-task-manager+57.0.17.patch`, aplicado pelo `patch-package` no
+`postinstall` da raiz (decisão do CTO, sessão 08, ADR 0010 "Dependência da camada
+expo"). Corrige o gestor de tarefas perdido quando a app abre no motor React
+headless de um processo reanimado — a gravação parava em silêncio.
+
+O Expo SDK 57 liga os módulos a partir de AARs **pré-compilados**
+(`local-maven-repo` dentro de cada pacote), que ignoram o código-fonte
+remendado. Por isso o `package.json` desta app tem:
+
+```json
+"expo": { "autolinking": { "android": { "buildFromSource": ["expo-task-manager", "unimodules-app-loader"] } } }
+```
+
+(`unimodules-app-loader` é dependência do `expo-task-manager` e também só existe
+pré-compilado.) Para confirmar que o remendo entrou num build: a tarefa
+`:expo-task-manager:compileReleaseJavaWithJavac` tem de aparecer no log do
+Gradle. Ao atualizar o SDK, o `patch-package` falha se o ficheiro mudou — é o
+momento de ver se a correção já existe a montante e tirar o remendo.

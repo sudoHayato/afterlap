@@ -98,6 +98,22 @@ Regras que ficam para a versão final: `t` = timestamp do fix; a tarefa hidrata 
 
 **Notificação** (entregável 3 da sessão 08): a API do `expo-location` não tem "atualizar a notificação" — o texto é uma opção da tarefa, e mudá-lo é chamar `startLocationUpdatesAsync` outra vez. No código nativo isso é `setOptions` no consumidor: **pára e volta a pedir a localização** (novo `PendingIntent`), mantém o serviço e reconstrói a notificação com o mesmo id. É barato uma vez por evento e absurdo uma vez por segundo. Ficou: **título "Desporto · tempo decorrido", corpo "Desde as HH:MM · tempo às HH:MM"**, refrescados no START, no CHANGE e no "Continuar" — nunca por *tick*. O corpo é curto de propósito: o `expo-location` não aplica estilo de texto longo, e na barra o corpo fica numa só linha, cortado com reticências. O tempo decorrido é o do último desses momentos, e o corpo di-lo. Uma notificação com o cronómetro a andar exige um serviço nosso (plano B do §5b) ou o `expo-notifications` a escrever por cima da do serviço — nenhum dos dois vale a pena agora; fica no BACKLOG.
 
+## Dependência da camada expo — gatilho para o módulo Kotlin
+
+O caminho escolhido assenta em duas bibliotecas da Expo (`expo-location` e `expo-task-manager`) e no carregador headless do `expo-modules-core`. Em duas sessões encontrámos **três defeitos que nenhuma documentação menciona**, todos só visíveis no telemóvel:
+
+1. **`RECEIVE_BOOT_COMPLETED` obrigatória e não declarada** (sessão 07). O `expo-task-manager` agenda os *jobs* como persistentes. Sem esta permissão, a app rebenta no primeiro fix. Nenhuma das bibliotecas a declara. Correção: a permissão entra em `app.json`.
+2. **Contexto headless destruído 2 s depois de cada lote** (sessão 08). Num processo reanimado, o `expo-task-manager` invalida o motor React 2 s depois de a tarefa acabar. O *buffer* de amostras do store, com temporizador de 2 s, perdia a corrida em todos os lotes: 99 s sem uma amostra na base. Correção: a tarefa escreve cada lote logo no fim.
+3. **Gestor de tarefas perdido no motor reaproveitado** (sessão 08). Com o React Native sem *bridge* há um só `ReactHost` por app. Uma Activity aberta dentro dessa janela de 2 s reutiliza o motor headless. A invalidação mantém o motor vivo, mas deita fora o gestor de tarefas, que só se regista uma vez. Os lotes seguintes ficam em fila para sempre. **Resultado: o atleta abre a app, carrega em "Continuar", e a gravação para em silêncio.** O `expo-task-manager` 57.0.17 é o mais recente e tem o mesmo código. Correção: um **remendo nativo** em `patches/expo-task-manager+57.0.17.patch`, aplicado pelo `patch-package` no `postinstall` (decisão do CTO, opção A). Se o motor sobreviveu à invalidação, o gestor passa para o registo normal. Issue a montante: ISSUE_URL_PLACEHOLDER. O teste de dispositivo abre a app de propósito dentro da janela; falha sem o remendo e passa com ele (relatório da sessão 08 §4.2).
+
+Há ainda dois limites que não são defeitos mas pesam na mesma balança. Depois de o Android matar o processo, o serviço não volta a primeiro plano. Depois de um reinício, não há retoma automática.
+
+**Regra do CTO (sessão 08).** À **quarta surpresa** nesta camada, **ou** se o **teste de 2 h mostrar perdas**, passa-se ao **módulo Kotlin** (§5b), sem nova discussão. O remendo revê-se a cada atualização do SDK: o `patch-package` falha de forma ruidosa se o ficheiro mudar. Sai quando a correção existir a montante.
+
+**Opção rejeitada por escrito — contorno em JS com `reloadAppAsync`.** A ideia era recarregar a app quando ela arranca num motor que já correu a tarefa em headless, para o motor novo se registar bem. Foi rejeitada por duas razões:
+- **Experiência má.** A app recarregaria à frente do atleta e pedir-lhe-ia outro "Continuar".
+- **Dependência de tempos.** Só funcionaria depois de a janela de 2 s fechar, e o JS não tem forma de saber quando isso acontece.
+
 ## Consequências
 
 - Três dependências novas na sessão 07, todas emparelhadas com o SDK 57 e justificadas no relatório: `expo-task-manager`, `expo-battery`, `expo-intent-launcher`. Uma a menos na sessão 08: `expo-keep-awake`.
