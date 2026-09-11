@@ -2,7 +2,7 @@
 
 **Estado**: [expo/expo#50060](https://github.com/expo/expo/issues/50060) foi aberto a 2026-09-11 às 20:00 e **fechado um minuto depois pelo bot da Expo**, com a etiqueta `incomplete issue: missing or invalid repro`. O bot pede um **projeto mínimo de reprodução** num issue novo; passos sobre a nossa app não contam. Nenhuma pessoa da Expo leu o relato.
 
-O defeito está descrito no [ADR 0010](adr/0010-segundo-plano.md) e corrigido no nosso repositório por `patches/expo-task-manager+57.0.17.patch`, por isso **isto não bloqueia nada nosso**. Vale a pena reenviar para a correção chegar a montante e o remendo poder sair.
+**Decisão do CTO (sessão 08): não reenviar agora.** O defeito está descrito no [ADR 0010](adr/0010-segundo-plano.md) e corrigido no nosso repositório por `patches/expo-task-manager+57.0.17.patch`, por isso **não bloqueia nada nosso**, e preparar um projeto mínimo público para o provar é custo desproporcionado. Este ficheiro fica como receita para quando for preciso: se o remendo deixar de aplicar numa atualização do SDK, ou se passarmos ao módulo Kotlin e valer a pena deixar o defeito documentado a montante.
 
 **Quem envia**: o fundador, na sua conta do GitHub. O primeiro issue foi aberto com a conta que está autenticada nesta máquina.
 
