@@ -123,6 +123,9 @@ export type Dictionary = {
     /** Export button in the history screen and its failure line. */
     exportData: string;
     exportFailed: string;
+    /** The persistent notification while a session records in the background (session 07 spike). */
+    recordingNotificationTitle: string;
+    recordingNotificationBody: string;
   };
   meta: {
     title: string;

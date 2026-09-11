@@ -130,6 +130,8 @@ export const ptPT: Dictionary = {
     currentSpeed: "Velocidade atual",
     exportData: "Exportar dados",
     exportFailed: "A exportação falhou",
+    recordingNotificationTitle: "O Bricklap está a gravar",
+    recordingNotificationBody: "A sessão continua a gravar com o ecrã apagado. Abre a app para parar.",
   },
   meta: {
     title: "Bricklap",

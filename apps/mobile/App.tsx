@@ -31,8 +31,15 @@
  * incluída. O registo bruto passa a existir só em desenvolvimento, rodado
  * por sessão. O histórico tem um botão que exporta a base (e o registo
  * bruto, se existir) pela partilha do sistema (./export).
+ *
+ * EXPERIÊNCIA — segundo plano (Fase 3, parte 3a, sessão 07, ADR 0010 por
+ * decidir): o GPS real deixa de ser um watcher em primeiro plano e passa a
+ * ser uma tarefa do expo-task-manager com serviço em primeiro plano e
+ * notificação persistente (./gps/background). A tarefa escreve as amostras
+ * diretamente no store; este ecrã limita-se a reler o store a cada tick do
+ * relógio. Sem keep-awake: o ecrã pode apagar-se. O simulador (dev) continua
+ * a ser um intervalo neste componente.
  */
-import { useKeepAwake } from "expo-keep-awake";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -71,8 +78,15 @@ import {
 } from "@bricklap/engine";
 import { formatDistanceForUnit, formatPaceForUnit, formatSpeedForUnit } from "@bricklap/i18n";
 import { exportData } from "./export";
-import { isWeak, requestForegroundLocation, watchFixes, type Fix, type PermissionOutcome } from "./gps/location";
-import { appendRawFix, rawFixLine, rotateRawLog } from "./gps/rawLog";
+import {
+  batchesReceived,
+  latestLocation,
+  startBackgroundRecording,
+  stopBackgroundRecording,
+} from "./gps/background";
+import { isBatteryOptimised, requestBatteryExemption } from "./gps/battery";
+import { isWeak, requestForegroundLocation, type PermissionOutcome } from "./gps/location";
+import { rotateRawLog } from "./gps/rawLog";
 import { locale, t } from "./i18n";
 import type { SessionSummary } from "./persistence";
 import { getStore, logRecovery } from "./store";
@@ -89,6 +103,16 @@ const COLORS = {
 const CLOCK_TICK_MS = 250;
 const GPS_TICK_MS = 1000;
 const RESET_GUARD_MS = 700;
+
+/**
+ * Session 07 experiment copy, deliberately NOT in @bricklap/i18n: the brief
+ * froze the dictionaries except for the notification text. If the
+ * experiment becomes the design (session 08), these two strings move to the
+ * dictionaries with an English base.
+ */
+const SPIKE_BATTERY_COPY =
+  "Para gravar com o ecrã apagado, o Android não pode pôr o Bricklap a dormir. Autoriza a exceção de bateria no diálogo do sistema.";
+const SPIKE_BATTERY_BUTTON = "Autorizar exceção de bateria";
 
 type Screen =
   | { kind: "opening" }
@@ -140,13 +164,17 @@ export default function App() {
   const [simEnabled, setSimEnabled] = useState(false);
   const [permission, setPermission] = useState<PermissionOutcome | null>(null);
   const [gps, setGps] = useState<GpsStatus>({ kind: "off" });
+  // Session 07 experiment: null until checked; true means Android may put
+  // the app to sleep and the idle screen offers the exemption dialog.
+  const [batteryOptimised, setBatteryOptimised] = useState<boolean | null>(null);
+  const refreshBattery = useCallback(() => {
+    void isBatteryOptimised().then(setBatteryOptimised);
+  }, []);
 
   // Refs so the interval callbacks never see a stale session or sim state.
   const sessionRef = useRef<Session | null>(null);
   const simRef = useRef<SimState>(createSim());
   const lastTickRef = useRef<number>(0);
-  // Newest real fix, re-stamped for the boundary sample on CHANGE / STOP.
-  const lastFixRef = useRef<Fix | null>(null);
 
   useEffect(() => {
     sessionRef.current = session;
@@ -178,12 +206,16 @@ export default function App() {
 
   // Going to the background is the moment a kill becomes likely: drain the
   // sample buffer so the bounded loss applies only to a foreground kill.
+  // Coming back is the moment to re-read the battery exemption (the athlete
+  // may have just answered the system dialog).
   useEffect(() => {
+    refreshBattery();
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") getStore().flush();
+      else refreshBattery();
     });
     return () => sub.remove();
-  }, []);
+  }, [refreshBattery]);
 
   const recording = screen.kind === "live";
   // The position feed lives and dies with the current segment (ADR 0008): it
@@ -218,12 +250,30 @@ export default function App() {
     setNow(sample.t);
   }, []);
 
-  // The clock runs for the whole recording, GPS or not.
+  // The clock runs for the whole recording, GPS or not. It is also how the
+  // screen learns about samples the background task wrote to the store:
+  // the store is the truth, the render cache catches up four times a second.
   useEffect(() => {
     if (!recording) return;
-    const clock = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+    const clock = setInterval(() => {
+      setNow(Date.now());
+      const live = getStore().live();
+      if (live !== sessionRef.current) setSession(live);
+      if (!simEnabled) {
+        const loc = latestLocation();
+        if (loc) {
+          setGps({
+            kind: "fix",
+            lat: loc.coords.latitude,
+            lng: loc.coords.longitude,
+            accuracyM: loc.coords.accuracy,
+            weak: isWeak(loc),
+          });
+        }
+      }
+    }, CLOCK_TICK_MS);
     return () => clearInterval(clock);
-  }, [recording]);
+  }, [recording, simEnabled]);
 
   // The feed: a simulator interval or a real subscription, only while the
   // current segment wants one. Changing to a sport without GPS tears it
@@ -242,9 +292,12 @@ export default function App() {
       return () => clearInterval(sim);
     }
 
-    // Real GPS: permission and subscription are async, and the segment may
-    // already have changed by the time they land — then they are dropped.
-    let stop: (() => void) | null = null;
+    // Real GPS (session 07 experiment): a background task with a foreground
+    // service. Permission and the service start are async, and the segment
+    // may already have changed by the time they land — then the service is
+    // stopped again at once. Re-arming an already running task is harmless
+    // (the task manager just refreshes its options), which is what makes a
+    // resume after a kill work.
     let cancelled = false;
     setGps({ kind: "waiting" });
     (async () => {
@@ -258,34 +311,17 @@ export default function App() {
         });
         return;
       }
-      const unsubscribe = await watchFixes(
-        (fix) => {
-          const s = sessionRef.current;
-          if (!s || s.status !== "live") return;
-          const at = Date.now();
-          lastFixRef.current = fix;
-          record(sampleFromGps(fix.coords, at));
-          appendRawFix(rawFixLine(s.id, at, fix));
-          setGps({
-            kind: "fix",
-            lat: fix.coords.latitude,
-            lng: fix.coords.longitude,
-            accuracyM: fix.coords.accuracy,
-            weak: isWeak(fix),
-          });
-        },
-        (message) => setGps({ kind: "error", message }),
-      );
-      if (cancelled) unsubscribe();
-      else stop = unsubscribe;
+      await startBackgroundRecording({
+        title: t("mobile.recordingNotificationTitle"),
+        body: t("mobile.recordingNotificationBody"),
+      });
+      if (cancelled) await stopBackgroundRecording("segment changed before the service was up");
     })().catch((e: unknown) => {
       if (!cancelled) setGps({ kind: "error", message: String(e) });
     });
     return () => {
       cancelled = true;
-      stop?.();
-      // The next GPS segment starts from a fresh fix, never from a stale one.
-      lastFixRef.current = null;
+      void stopBackgroundRecording("feed no longer wanted");
       setGps({ kind: "off" });
     };
   }, [feedWanted, simEnabled, tickSim, record]);
@@ -304,9 +340,9 @@ export default function App() {
     const sport = currentSport(s.events);
     if (!sport || !sportHasGps(sport)) return null;
     if (simEnabled) return tickSim();
-    const fix = lastFixRef.current;
-    if (!fix) return null;
-    return sampleFromGps(fix.coords, Date.now());
+    const loc = latestLocation();
+    if (!loc) return null;
+    return sampleFromGps(loc.coords, Date.now());
   }, [simEnabled, tickSim]);
 
   const start = useCallback(
@@ -327,7 +363,6 @@ export default function App() {
       rotateRawLog();
       simRef.current = createSim();
       lastTickRef.current = ts;
-      lastFixRef.current = null;
       if (simEnabled && sportHasGps(sport)) store.pushSample(sampleFromSim(simRef.current, sport, ts));
       const live = store.live();
       sessionRef.current = live;
@@ -372,12 +407,14 @@ export default function App() {
     setSimEnabled(last?.source === "sim");
     // Pick the simulation up where the last fix was, not back in Lisbon.
     simRef.current = last ? createSim({ lat: last.lat, lng: last.lng }) : createSim();
-    lastFixRef.current = null;
     setNow(Date.now());
     setScreen({ kind: "live" });
   }, []);
 
   const discard = useCallback(() => {
+    // The service may still be running from before the kill: a discarded
+    // session must not keep recording into the void.
+    void stopBackgroundRecording("session discarded");
     getStore().discardLive(Date.now());
     setSession(null);
     setScreen({ kind: "idle" });
@@ -421,6 +458,8 @@ export default function App() {
             simEnabled={simEnabled}
             onSimEnabled={setSimEnabled}
             permission={permission}
+            batteryOptimised={batteryOptimised}
+            onBatteryExemption={() => void requestBatteryExemption().then(refreshBattery)}
           />
         ) : screen.kind === "resume" && session ? (
           <ResumeScreen session={session} now={now} onContinue={resume} onDiscard={discard} />
@@ -462,6 +501,8 @@ function IdleScreen(props: {
   simEnabled: boolean;
   onSimEnabled: (v: boolean) => void;
   permission: PermissionOutcome | null;
+  batteryOptimised: boolean | null;
+  onBatteryExemption: () => void;
 }) {
   const wantsGps = sportHasGps(props.sport);
   const problem =
@@ -513,6 +554,19 @@ function IdleScreen(props: {
       ) : null}
       <Text style={styles.hint}>{t("mobile.idleHint")}</Text>
       {props.simEnabled || !wantsGps ? null : <Text style={styles.hint}>{t("mobile.locationRationale")}</Text>}
+      {!props.simEnabled && wantsGps && props.batteryOptimised === true ? (
+        <View style={styles.card}>
+          <Text testID="battery-problem" style={styles.problem}>
+            {SPIKE_BATTERY_COPY}
+          </Text>
+          <Button
+            testID="btn-battery-exemption"
+            label={SPIKE_BATTERY_BUTTON}
+            kind="secondary"
+            onPress={props.onBatteryExemption}
+          />
+        </View>
+      ) : null}
       <Button testID="btn-history" label={t("mobile.history")} kind="secondary" onPress={props.onHistory} />
     </View>
   );
@@ -549,8 +603,8 @@ function LiveScreen(props: {
   onChange: (s: Sport) => void;
   onStop: () => void;
 }) {
-  // "Screen on" is the Fase 2 test condition; Android would lock it in 30 s.
-  useKeepAwake();
+  // Session 07 experiment: no keep-awake. The screen locks in 30 s and the
+  // background task must keep recording; that is the whole point.
   const { session, now } = props;
   const segments = segmentsFromEvents(session.events);
   const sport = currentSport(session.events) ?? "run";
@@ -768,7 +822,7 @@ function SegmentList(props: { session: Session; now: number }) {
  * a map (ADR 0007).
  */
 function GpsLine(props: { gps: GpsStatus | null; samples: number }) {
-  const saved = `${props.samples} ${t("mobile.samplesSaved")}`;
+  const saved = `${props.samples} ${t("mobile.samplesSaved")}` + (props.gps === null ? "" : ` · ${batchesReceived()} lotes`);
   const g = props.gps;
   const status =
     g === null

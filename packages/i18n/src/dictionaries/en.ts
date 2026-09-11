@@ -130,6 +130,8 @@ export const en: Dictionary = {
     currentSpeed: "Current speed",
     exportData: "Export data",
     exportFailed: "Export failed",
+    recordingNotificationTitle: "Bricklap is recording",
+    recordingNotificationBody: "Your session keeps recording with the screen off. Open the app to stop.",
   },
   meta: {
     title: "Bricklap",
