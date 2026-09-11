@@ -28,9 +28,12 @@ Nesta fase:
   matar o processo, reanima-o para o lote seguinte e a tarefa hidrata o store
   sozinha (`recovered_headless` na base). A notificação mostra o desporto e o
   tempo decorrido à data do último Iniciar / Mudar / Continuar (a API não deixa
-  refrescá-la sem reiniciar o pedido de localização). A app pede a **exceção de
-  otimização de bateria** e explica porquê; se for recusada grava na mesma e
-  avisa no ecrã de gravação. Sem keep-awake. O simulador (`createSim` /
+  refrescá-la sem reiniciar o pedido de localização). A notificação só aparece
+  com a permissão **`POST_NOTIFICATIONS`** (Android 13+), pedida no arranque da
+  app; sem ela o serviço grava na mesma, mas nada o mostra na barra — a app
+  avisa. A app pede também a **exceção de otimização de bateria** e explica
+  porquê; se for recusada grava na mesma e avisa no ecrã de gravação. Nenhuma
+  recusa bloqueia a gravação. Sem keep-awake. O simulador (`createSim` /
   `stepSim` / `sampleFromSim`) continua disponível por um interruptor no ecrã
   inicial, **só em builds de desenvolvimento**; uma sessão retomada segue a
   fonte da sua última amostra.

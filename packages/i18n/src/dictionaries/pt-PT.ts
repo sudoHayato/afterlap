@@ -131,11 +131,16 @@ export const ptPT: Dictionary = {
     exportData: "Exportar dados",
     exportFailed: "A exportação falhou",
     recordingNotificationTitle: "{sport} · {elapsed}",
-    recordingNotificationBody: "Iniciada às {startedAt}, atualizado às {updatedAt}. Abre a app para parar.",
+    recordingNotificationBody: "Desde as {startedAt} · tempo às {updatedAt}",
     batteryExemptionCopy:
       "Para gravar com o ecrã apagado, o Android não pode pôr o Bricklap a dormir. Autoriza a exceção de bateria no diálogo do sistema.",
     batteryExemptionButton: "Autorizar exceção de bateria",
     batteryWarning: "Sem a exceção de bateria, a gravação pode falhar com o ecrã apagado.",
+    notificationsCopy:
+      "O Bricklap mostra uma notificação enquanto grava. Sem ela, com o ecrã apagado não tens forma de saber que a sessão está a gravar, nem de o confirmar a meio do treino.",
+    notificationsButton: "Autorizar notificações",
+    notificationsWarning:
+      "Notificações desligadas: a sessão está a gravar, mas com o ecrã apagado nada o mostra e não o consegues confirmar a meio do treino.",
   },
   meta: {
     title: "Bricklap",

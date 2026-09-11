@@ -62,6 +62,10 @@ Uma tarefa só está feita quando:
 7. Textos legais intocados (salvo pedido explícito do fundador).
 8. **Branch de trabalho publicado no remoto** (`git push -u origin <branch>`), com o commit local confirmado igual ao remoto. Regra permanente: nenhuma sessão termina sem este push.
 
+## Validação no telemóvel
+
+- **O que o atleta vê só conta como validado quando o fundador o vê no telemóvel.** Em particular, **a notificação da gravação só está validada depois de o fundador a ver na barra de notificações** — título e corpo, completos e legíveis. `dumpsys` (serviço em primeiro plano, `foregroundNoti`, canal) prova que o sistema a tem, não que aparece: na sessão 07 deu-se por validada assim, e sem a permissão `POST_NOTIFICATIONS` nunca tinha aparecido (relatório da sessão 08). Nenhuma sessão dá a notificação por validada com `dumpsys` sozinho.
+
 ## Nunca
 
 - Nunca alterar a redação dos textos legais (`apps/web-lab/LEGAL.md`, `src/lib/legal/`, `src/routes/legal.*.tsx`, `LICENSE`, `NOTICE`) sem pedido explícito do fundador. Só nome do produto, chave de armazenamento e caminhos de import.

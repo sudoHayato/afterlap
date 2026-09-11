@@ -67,6 +67,15 @@ export function appPid(): string | null {
   }
 }
 
+/**
+ * Grant the notification permission up front: the app asks for it at start
+ * (session 08), and the system dialog would cover every button the test taps.
+ * The dialog itself is checked by the founder on the phone, not here.
+ */
+export function grantNotifications(): void {
+  shell(`pm grant ${PKG} android.permission.POST_NOTIFICATIONS`);
+}
+
 export function forceStop(): number {
   const at = phoneNow();
   shell(`am force-stop ${PKG}`);

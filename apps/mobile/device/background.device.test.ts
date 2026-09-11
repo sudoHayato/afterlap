@@ -31,6 +31,7 @@ import {
   adb,
   appPid,
   forceStop,
+  grantNotifications,
   hasDevice,
   phoneNow,
   releaseScreen,
@@ -92,6 +93,7 @@ describe("background recording on the device", () => {
     expect(shell("cmd location is-location-enabled"), "location services on").toContain("true");
     wakeScreen();
     forceStop();
+    grantNotifications();
     adb("logcat", "-c");
   }, 30_000);
 

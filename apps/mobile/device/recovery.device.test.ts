@@ -35,6 +35,7 @@ import {
   adb,
   dumpUi,
   forceStop,
+  grantNotifications,
   hasDevice,
   releaseScreen,
   scrollToAndTap,
@@ -103,6 +104,7 @@ describe("recovery on the device", () => {
     // phone has to be unlocked by hand before the run.
     wakeScreen();
     forceStop();
+    grantNotifications();
   }, 30_000);
 
   afterAll(() => {

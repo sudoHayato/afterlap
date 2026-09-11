@@ -135,6 +135,10 @@ export type Dictionary = {
     batteryExemptionCopy: string;
     batteryExemptionButton: string;
     batteryWarning: string;
+    /** Notification permission (Android 13+): the idle-screen card that asks, its button, and the live-screen warning while it is missing. */
+    notificationsCopy: string;
+    notificationsButton: string;
+    notificationsWarning: string;
   };
   meta: {
     title: string;

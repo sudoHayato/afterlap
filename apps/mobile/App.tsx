@@ -89,6 +89,7 @@ import {
   type RecordingNotification,
 } from "./gps/background";
 import { isBatteryOptimised, requestBatteryExemption } from "./gps/battery";
+import { notificationsAllowed, requestNotifications, type NotificationPermission } from "./gps/notifications";
 import { rotateDiagLog } from "./gps/diag";
 import { isWeak, requestForegroundLocation, type PermissionOutcome } from "./gps/location";
 import { rotateRawLog } from "./gps/rawLog";
@@ -186,6 +187,26 @@ export default function App() {
   const refreshBattery = useCallback(() => {
     void isBatteryOptimised().then(setBatteryOptimised);
   }, []);
+  // Null until asked. Anything but "granted" means the recording notification
+  // stays invisible: the idle screen asks again, the live screen warns.
+  const [notifications, setNotifications] = useState<NotificationPermission | null>(null);
+  const refreshNotifications = useCallback(() => {
+    void notificationsAllowed().then((ok) =>
+      setNotifications((prev) => (ok ? "granted" : prev === null || prev === "granted" ? "denied" : prev)),
+    );
+  }, []);
+  const askNotifications = useCallback(() => {
+    // Once Android stops showing the dialog, only its settings can grant it.
+    if (notifications === "blocked") void Linking.openSettings();
+    else void requestNotifications().then(setNotifications);
+  }, [notifications]);
+
+  // Asked at app start (decision of the CTO, session 08): the notification is
+  // how the athlete knows a session is recording with the screen off. A
+  // refusal never blocks recording.
+  useEffect(() => {
+    void requestNotifications().then(setNotifications);
+  }, []);
 
   // Refs so the interval callbacks never see a stale session or sim state.
   const sessionRef = useRef<Session | null>(null);
@@ -228,10 +249,13 @@ export default function App() {
     refreshBattery();
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") getStore().flush();
-      else refreshBattery();
+      else {
+        refreshBattery();
+        refreshNotifications();
+      }
     });
     return () => sub.remove();
-  }, [refreshBattery]);
+  }, [refreshBattery, refreshNotifications]);
 
   const recording = screen.kind === "live";
   // The position feed lives and dies with the current segment (ADR 0008): it
@@ -488,6 +512,8 @@ export default function App() {
             permission={permission}
             batteryOptimised={batteryOptimised}
             onBatteryExemption={() => void requestBatteryExemption().then(refreshBattery)}
+            notifications={notifications}
+            onNotifications={askNotifications}
           />
         ) : screen.kind === "resume" && session ? (
           <ResumeScreen session={session} now={now} onContinue={resume} onDiscard={discard} />
@@ -498,6 +524,8 @@ export default function App() {
             gps={simEnabled ? null : gps}
             batteryOptimised={batteryOptimised}
             onBatteryExemption={() => void requestBatteryExemption().then(refreshBattery)}
+            notifications={notifications}
+            onNotifications={askNotifications}
             pickerOpen={pickerOpen}
             onTogglePicker={() => setPickerOpen((v) => !v)}
             onChange={change}
@@ -533,6 +561,8 @@ function IdleScreen(props: {
   permission: PermissionOutcome | null;
   batteryOptimised: boolean | null;
   onBatteryExemption: () => void;
+  notifications: NotificationPermission | null;
+  onNotifications: () => void;
 }) {
   const wantsGps = sportHasGps(props.sport);
   const problem =
@@ -597,6 +627,19 @@ function IdleScreen(props: {
           />
         </View>
       ) : null}
+      {!props.simEnabled && wantsGps && props.notifications !== null && props.notifications !== "granted" ? (
+        <View style={styles.card}>
+          <Text testID="notifications-problem" style={styles.problem}>
+            {t("mobile.notificationsCopy")}
+          </Text>
+          <Button
+            testID="btn-notifications"
+            label={t(props.notifications === "blocked" ? "mobile.openSettings" : "mobile.notificationsButton")}
+            kind="secondary"
+            onPress={props.onNotifications}
+          />
+        </View>
+      ) : null}
       <Button testID="btn-history" label={t("mobile.history")} kind="secondary" onPress={props.onHistory} />
     </View>
   );
@@ -630,6 +673,8 @@ function LiveScreen(props: {
   gps: GpsStatus | null;
   batteryOptimised: boolean | null;
   onBatteryExemption: () => void;
+  notifications: NotificationPermission | null;
+  onNotifications: () => void;
   pickerOpen: boolean;
   onTogglePicker: () => void;
   onChange: (s: Sport) => void;
@@ -670,6 +715,22 @@ function LiveScreen(props: {
         ) : null}
         {hasGps ? <GpsLine gps={props.gps} samples={session.samples.length} /> : null}
       </View>
+
+      {hasGps && props.gps !== null && props.notifications !== null && props.notifications !== "granted" ? (
+        // No notification permission: the service records, but its notification
+        // is invisible. Say so plainly, offer the dialog (or the settings) again.
+        <View style={styles.card}>
+          <Text testID="notifications-warning" style={styles.problem}>
+            {t("mobile.notificationsWarning")}
+          </Text>
+          <Button
+            testID="btn-notifications-live"
+            label={t(props.notifications === "blocked" ? "mobile.openSettings" : "mobile.notificationsButton")}
+            kind="secondary"
+            onPress={props.onNotifications}
+          />
+        </View>
+      ) : null}
 
       {hasGps && props.gps !== null && props.batteryOptimised === true ? (
         // The exemption was refused or never answered: record anyway, say
