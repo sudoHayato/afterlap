@@ -1,6 +1,6 @@
 # ADR 0010 — Segundo plano: tarefa de localização do expo-location com serviço em primeiro plano
 
-**Estado**: **aceite** (sessão 07, 2026-09-11) — decidido com o teste de campo do fundador (relatório da sessão 07 §8): **o `expo-location` chega**. O desenho abaixo é o da versão final (sessão 08). **Decisão do CTO** quanto ao método; **decisões do fundador** já tomadas e não reabertas: notificação persistente durante a gravação; pedir ao utilizador a exceção de otimização de bateria (a app explica e abre as definições, não contorna); permissão "enquanto usa a app" com serviço em primeiro plano, "sempre" só se se provar que não há outra forma.
+**Estado**: **aceite** (sessão 07, 2026-09-11) — decidido com o teste de campo do fundador (relatório da sessão 07 §8): **o `expo-location` chega**. **Fechado na sessão 08** (2026-09-11) com as decisões do CTO sobre as dúvidas da sessão 07 (secção "Decisões da sessão 08" abaixo) e a versão final implementada; o critério de saída da Fase 3 (2 h sem buracos > 10 s) fica pendente do teste de campo de 2 h (relatório da sessão 08). **Decisão do CTO** quanto ao método; **decisões do fundador** já tomadas e não reabertas: notificação persistente durante a gravação; pedir ao utilizador a exceção de otimização de bateria (a app explica e abre as definições, não contorna); permissão "enquanto usa a app" com serviço em primeiro plano, "sempre" só se se provar que não há outra forma.
 
 ## Contexto
 
@@ -34,21 +34,26 @@ Consequências para o desenho:
 - **A tarefa tem de estar definida no arranque de qualquer contexto JS** — em `index.ts`, antes do `registerRootComponent`. Uma tarefa definida depois do primeiro *job* que a nomeia é descartada.
 - O `JobScheduler` tem os seus próprios limites (quotas por app em *standby buckets*, *doze*); é exatamente isto que a exceção de bateria e o teste de campo medem. **Medido no cabo** (app em primeiro plano ou em segundo plano com HOME, a carregar): cada lote chega **≈ 4,2 s depois do fix** (`delayMs` 4178–4244 ms, constante). Nada se perde — o `t` é o do fix — mas o ecrã ao vivo anda 4 s atrasado, e em *doze* o atraso pode crescer. Se o teste mostrar atrasos de dezenas de segundos ou lotes agrupados, o problema é este transporte, não o GPS — e a alternativa é o módulo Kotlin (§5b), que não passa pelo `JobScheduler`.
 
-### 3. Arquitetura da experiência
+### 3. Arquitetura (experiência na sessão 07; versão final na sessão 08)
 
 ```
 index.ts            defineRecordingTask()  ← antes do React, em todos os contextos
 gps/background.ts   tarefa: locations → store.pushSample(sampleFromGps(coords, fix.timestamp))
-                    start/stop do serviço; latestLocation() para a fronteira e a linha do GPS
-gps/diag.ts         BRICKLAP_BG no logcat + files/bg-diag.jsonl (serviço, lotes, bateria/min)
+                    start / refresh da notificação / stop, serializados numa fila de promessas;
+                    em headless: store.hydrate(_, "headless"); latestLocation() para a fronteira
+gps/location.ts     só a permissão e isWeak(): o watcher do ADR 0007 saiu (sessão 08)
+gps/devLog.ts       ficheiro JSON-lines só em dev, rodado por sessão (registo bruto e diagnóstico)
+gps/diag.ts         BRICKLAP_BG no logcat + files/bg-diag.jsonl — só em dev desde a sessão 08
 gps/battery.ts      isBatteryOptimised() (expo-battery) · requestBatteryExemption() (intent)
 store.ts            inalterado: já era um singleton de módulo — serve a tarefa e o ecrã
-persistence/        inalterado (esquema v2 chega)
-App.tsx             feed real = start/stop da tarefa; o relógio relê getStore().live() a cada tick;
-                    sem keep-awake; cartão da exceção de bateria no ecrã inicial
+persistence/        esquema inalterado (v2); hydrate(at, origin) escreve `recovered_headless`
+                    quando é a tarefa a hidratar; o replay devolve `recovered` ao motor
+App.tsx             feed real = start/stop da tarefa; notificação refrescada no CHANGE; o relógio
+                    relê getStore().live() a cada tick; sem keep-awake; cartão da exceção de
+                    bateria no ecrã inicial e aviso no ecrã de gravação se estiver por dar
 ```
 
-O que muda e o que não muda: **`persistence/` não muda** (o store já era um *singleton* por processo com `hydrate()` a repor a sessão ao vivo por *replay*); **`gps/location.ts` mantém** a permissão e o watcher (o simulador e o lab não o usam; fica para a versão final decidir se sai); **`App.tsx`** troca a subscrição pela tarefa e passa a ler o store no relógio em vez de receber *callbacks*. A interface já lia a sessão por *replay* da base na retoma — agora fá-lo também durante a gravação, quatro vezes por segundo, a partir da cópia em memória do store (sem ler a base).
+O que muda e o que não muda: **o esquema da base não muda** (o store já era um *singleton* por processo com `hydrate()` a repor a sessão ao vivo por *replay*); **`App.tsx`** troca a subscrição pela tarefa e passa a ler o store no relógio em vez de receber *callbacks*. A interface já lia a sessão por *replay* da base na retoma — agora fá-lo também durante a gravação, quatro vezes por segundo, a partir da cópia em memória do store (sem ler a base). Na sessão 07 o watcher antigo ficou em `gps/location.ts` sem uso; na sessão 08 saiu, com o `expo-keep-awake`.
 
 ### 4. Bateria
 
@@ -79,9 +84,20 @@ O que o teste **não** cobriu e a sessão 08 tem de cobrir antes de fechar a fas
 
 Regras que ficam para a versão final: `t` = timestamp do fix; a tarefa hidrata o store em *headless* e pára o serviço sem sessão ao vivo; `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` no manifesto e nada de `ACCESS_BACKGROUND_LOCATION`; a exceção de bateria é pedida e explicada, nunca contornada; sem keep-awake.
 
-## Consequências (da experiência)
+## Decisões da sessão 08 (CTO, sobre as dúvidas da sessão 07) e como ficaram
 
-- Três dependências novas, todas emparelhadas com o SDK 57 e justificadas no relatório: `expo-task-manager`, `expo-battery`, `expo-intent-launcher`.
+1. **`t` da amostra = timestamp do fix; eventos com a hora do utilizador; amostra de fronteira interpolada na hora do evento, como hoje.** Ficou assim: a tarefa carimba cada amostra com `location.timestamp`; START/CHANGE/STOP levam `Date.now()`; a amostra de fronteira continua a ser o fix mais recente re-carimbado à hora do evento, e o motor interpola a fronteira como antes. Um fix tirado antes do evento mas entregue depois fica fora de ordem na base por ≤ 1 s em campo (≤ 4 s à secretária) — a fronteira copia as coordenadas do último fix, por isso a distância não muda; o troço de ≤ 1 s de movimento pode cair no segmento "errado". Registado, não corrigido (não é mensurável em campo).
+2. **Um único caminho de gravação: a tarefa em segundo plano.** O watcher `watchFixes` saiu de `gps/location.ts` (fica a permissão e `isWeak`); `expo-keep-awake` saiu das dependências da app (continua no lockfile como dependência do próprio `expo`, não nossa).
+3. **Recusa da exceção de bateria: a app grava na mesma e avisa; não bloqueia.** O cartão do ecrã inicial pede e explica (textos no i18n, en + pt-PT); enquanto a exceção estiver por dar, o ecrã de gravação mostra um aviso persistente ("Sem a exceção de bateria, a gravação pode falhar com o ecrã apagado.") com o botão para pedir outra vez. A app não sabe distinguir "recusou" de "ainda não respondeu" — o `PowerManager` só diz se está na lista — e não precisa: o aviso serve os dois casos.
+4. **Vários `recovered` numa sessão são aceitáveis; distinguir o renascimento automático do "Continuar" com uma marca no evento, sem alterar o esquema.** A marca é o **valor da coluna `type`**: `recovered_headless` quando é a tarefa a hidratar o store num processo que o Android reanimou; `recovered` quando é a app a arrancar pela mão do atleta. Nenhuma coluna nova; `eventFromRow` devolve ao motor um `recovered` em ambos os casos (o motor não muda). Os scripts `geojson.mjs` e `gps-noise.mjs` ignoram os dois tipos, como já ignoravam `recovered`. O `hydrate()` passou também a escrever as amostras ainda em memória antes de reler a base — o caso "processo reanimado pela tarefa, depois aberto pelo atleta" hidrata duas vezes o mesmo store.
+5. **Reinício do telemóvel a meio de uma sessão: retomar sozinho se o Android deixar; senão, retoma ao abrir a app e fica documentado o que se perde.** Pelo código, o Android não deixa: ao `BOOT_COMPLETED` o `TaskBroadcastReceiver` repõe a tarefa e volta a pedir localização, mas `maybeStartForegroundService` recusa arrancar o serviço com a app em segundo plano (`isForegrounded` falso) — e sem serviço nem `ACCESS_BACKGROUND_LOCATION` o *fused provider* não entrega fixes a uma app em segundo plano. A sessão fica intacta na base (é append-only); ao abrir a app aparece "Sessão em curso" e o "Continuar" volta a armar o serviço. **Perde-se o intervalo entre o reinício e o "Continuar"**, mais nada. Confirmado no telemóvel no teste (b) da sessão 08 (relatório §4.3).
+6. **Precisão no bolso: sem filtro nesta sessão.** Os dados do teste de 2 h ficam guardados fora do repo e o filtro rejeitado no ADR 0009 é reavaliado na sessão seguinte, sobre dados de bolso, pela mesma regra (distância ±2 %, ritmo não piora).
+
+**Notificação** (entregável 3 da sessão 08): a API do `expo-location` não tem "atualizar a notificação" — o texto é uma opção da tarefa, e mudá-lo é chamar `startLocationUpdatesAsync` outra vez. No código nativo isso é `setOptions` no consumidor: **pára e volta a pedir a localização** (novo `PendingIntent`), mantém o serviço e reconstrói a notificação com o mesmo id. É barato uma vez por evento e absurdo uma vez por segundo. Ficou: **título "Desporto · tempo decorrido", corpo "Iniciada às HH:MM, atualizado às HH:MM. Abre a app para parar."**, refrescados no START, no CHANGE e no "Continuar" — nunca por *tick*. O tempo decorrido é o do último desses momentos, e o corpo di-lo. Uma notificação com o cronómetro a andar exige um serviço nosso (plano B do §5b) ou o `expo-notifications` a escrever por cima da do serviço — nenhum dos dois vale a pena agora; fica no BACKLOG.
+
+## Consequências
+
+- Três dependências novas na sessão 07, todas emparelhadas com o SDK 57 e justificadas no relatório: `expo-task-manager`, `expo-battery`, `expo-intent-launcher`. Uma a menos na sessão 08: `expo-keep-awake`.
 - Manifesto: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` e `RECEIVE_BOOT_COMPLETED` a mais; `ACCESS_BACKGROUND_LOCATION` continua ausente.
-- O registo bruto (`gps-raw.jsonl`, só dev) deixa de ser escrito pela tarefa; a precisão já vive na base (ADR 0009).
-- O texto do cartão da exceção de bateria está fora do i18n, de propósito (o brief congelou os dicionários); passa para lá na sessão 08 se o desenho ficar.
+- O registo bruto (`gps-raw.jsonl`, só dev) volta a ser escrito — pela tarefa, fix a fix — com `t` = timestamp do fix e `arrivedAt` = hora de chegada; o diagnóstico (`bg-diag.jsonl`) passa a existir só em dev, rodado por sessão como o registo bruto. **Um teste de campo com o release lê-se só da base**: buracos, amostras, `recovered_headless`; a bateria é anotada pelo atleta.
+- Dois testes de dispositivo: o de recuperação (dev client + Metro, simulador) e o de segundo plano (release *debuggable*, GPS real, `kill -9` do processo com a tarefa a correr). Um `kill -9` **não** é um `am force-stop`: o segundo derruba serviço e *jobs*; o primeiro é a morte que o OOM killer ou as "apps a dormir" da Samsung infligem, e é essa que o teste prova.

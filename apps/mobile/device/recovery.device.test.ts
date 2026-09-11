@@ -11,10 +11,12 @@
  * It records with the simulator (dev switch on the idle screen) so it runs
  * indoors; the real GPS is validated by the field test in the session 04 report.
  *
- * Driving the UI: every screen the test touches (idle, resume, history) is
- * read with `uiautomator dump` and its buttons tapped by their accessible
- * label — never by pixel colour or screen geometry. All buttons and sport
- * chips carry `testID` + `accessibilityLabel` (App.tsx) for this.
+ * Driving the UI (helpers/phone.ts): every screen the test touches (idle,
+ * resume, history) is read with `uiautomator dump` and its buttons tapped by
+ * their accessible label — never by pixel colour or screen geometry. All
+ * buttons and sport chips carry `testID` + `accessibilityLabel` (App.tsx).
+ * The background recording (real GPS, process killed mid-session) has its
+ * own test, background.device.test.ts, on a debuggable release build.
  *
  * The live screen (recording) is deliberately never dumped or tapped here:
  * it re-renders four times a second (the running clock), and on this RN
@@ -25,123 +27,28 @@
  * CHANGE, which can only be exercised while live, stays out of this test.
  * It is covered by the engine's unit tests instead; see the session report.
  */
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { isLive, segmentsFromEvents, sessionMetrics } from "@bricklap/engine";
-import { DEFAULT_FLUSH_INTERVAL_MS, SqliteSessionStore, type StoredSession } from "../persistence";
-import { openNodeDb } from "../test/helpers/node-db";
+import { DEFAULT_FLUSH_INTERVAL_MS, type StoredSession } from "../persistence";
+import {
+  DbPuller,
+  adb,
+  dumpUi,
+  forceStop,
+  hasDevice,
+  releaseScreen,
+  scrollToAndTap,
+  shell,
+  sleep,
+  tapText,
+  waitForText,
+  wakeScreen,
+} from "./helpers/phone";
 
-const PKG = "com.bricklap.app";
-const DB_REMOTE = "files/SQLite/bricklap.db";
 const DEV_CLIENT_URL = "exp+bricklap://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081";
 /** Documented ceiling on samples lost to a hard kill. */
 const MAX_SAMPLE_LOSS_MS = 5_000;
 const GPS_TICK_MS = 1_000;
-
-// -- adb ---------------------------------------------------------------------
-
-/**
- * Which adb to call. From WSL 2 a USB phone is only visible to Windows, so
- * BRICKLAP_ADB=/mnt/c/Users/<user>/platform-tools/adb.exe drives it through
- * the Windows binary; the default is the adb on PATH (wireless debugging).
- */
-const ADB = process.env["BRICKLAP_ADB"] ?? "adb";
-
-function adb(...args: string[]): string {
-  // adb.exe on Windows ends lines with \r\n; keep every regex below Unix-only.
-  return execFileSync(ADB, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).replace(/\r/g, "");
-}
-
-function adbBytes(...args: string[]): Buffer {
-  return execFileSync(ADB, args, { maxBuffer: 64 * 1024 * 1024 });
-}
-
-function shell(cmd: string): string {
-  return adb("shell", cmd).trim();
-}
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-/** Phone's own clock, so kill times and sample times share a reference. */
-function phoneNow(): number {
-  return Number(shell("date +%s%3N"));
-}
-
-function tap(x: number, y: number): void {
-  shell(`input tap ${Math.round(x)} ${Math.round(y)}`);
-}
-
-// -- UI: static screens via uiautomator ---------------------------------------
-
-type Node = { text: string; bounds: [number, number, number, number] };
-
-function dumpUi(): Node[] {
-  shell("uiautomator dump /sdcard/bricklap-ui.xml >/dev/null");
-  const xml = shell("cat /sdcard/bricklap-ui.xml");
-  const nodes: Node[] = [];
-  const re = /<node[^>]*text="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/g;
-  for (const m of xml.matchAll(re)) {
-    nodes.push({ text: decodeXml(m[1]!), bounds: [+m[2]!, +m[3]!, +m[4]!, +m[5]!] });
-  }
-  return nodes;
-}
-
-function decodeXml(s: string): string {
-  return s.replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-}
-
-async function waitForText(text: string, timeoutMs = 20_000): Promise<Node> {
-  const deadline = Date.now() + timeoutMs;
-  let last: string[] = [];
-  while (Date.now() < deadline) {
-    try {
-      const nodes = dumpUi();
-      const hit = nodes.find((n) => n.text === text);
-      if (hit) return hit;
-      last = nodes.map((n) => n.text).filter(Boolean);
-    } catch {
-      // uiautomator could not get an idle state; the screen is still moving.
-    }
-    await sleep(500);
-  }
-  throw new Error(`"${text}" not on screen; saw: ${JSON.stringify(last)}`);
-}
-
-async function tapText(text: string): Promise<void> {
-  const [l, t, r, b] = (await waitForText(text)).bounds;
-  tap((l + r) / 2, (t + b) / 2);
-}
-
-/**
- * Bring `text` into view, then return it. `uiautomator dump` only reports
- * what is rendered, so a button below the fold does not exist as far as it
- * is concerned — and the history screen grows by one row per stored session,
- * so "Voltar" sinks out of sight as the phone accumulates test sessions.
- * Swipes the content up a few times, checking after each swipe.
- */
-async function scrollToText(text: string, swipes = 8): Promise<Node> {
-  const size = shell("wm size");
-  const [w, h] = (size.match(/(\d+)x(\d+)\s*$/) ?? ["", "1080", "2340"]).slice(1).map(Number) as [number, number];
-  for (let i = 0; i < swipes; i++) {
-    try {
-      const hit = dumpUi().find((n) => n.text === text);
-      if (hit) return hit;
-    } catch {
-      // Screen not idle yet; the swipe below settles it.
-    }
-    shell(`input swipe ${Math.round(w / 2)} ${Math.round(h * 0.7)} ${Math.round(w / 2)} ${Math.round(h * 0.25)} 250`);
-    await sleep(600);
-  }
-  return waitForText(text, 5_000);
-}
-
-async function scrollToAndTap(text: string): Promise<void> {
-  const [l, t, r, b] = (await scrollToText(text)).bounds;
-  tap((l + r) / 2, (t + b) / 2);
-}
 
 // -- app lifecycle ------------------------------------------------------------
 
@@ -167,30 +74,8 @@ async function launch(): Promise<Recovery> {
   throw new Error("app did not log BRICKLAP_RECOVERY after launch (is Metro reachable?)");
 }
 
-function forceStop(): number {
-  const at = phoneNow();
-  shell(`am force-stop ${PKG}`);
-  return at;
-}
-
-let pulls = 0;
-const workDir = mkdtempSync(join(tmpdir(), "bricklap-recovery-"));
-
-/** Copy the database (plus WAL and shm, which hold the latest commits) and replay it here. */
-function pullAndReplay(label: string): StoredSession[] {
-  const dir = join(workDir, `${++pulls}-${label}`);
-  execFileSync("mkdir", ["-p", dir]);
-  for (const suffix of ["", "-wal", "-shm"]) {
-    try {
-      const bytes = adbBytes("exec-out", `run-as ${PKG} cat ${DB_REMOTE}${suffix}`);
-      if (bytes.length > 0) writeFileSync(join(dir, `bricklap.db${suffix}`), bytes);
-    } catch {
-      // No such file: a checkpointed database has no -wal/-shm.
-    }
-  }
-  const db = openNodeDb(join(dir, "bricklap.db"));
-  return new SqliteSessionStore(db).loadAll();
-}
+const db = new DbPuller("recovery");
+const pullAndReplay = (label: string): StoredSession[] => db.pullAndReplay(label);
 
 function timings(): { kind: string; ms: number; rows: number }[] {
   return adb("logcat", "-d", "-s", "ReactNativeJS")
@@ -210,26 +95,24 @@ describe("recovery on the device", () => {
   const allTimings: { kind: string; ms: number; rows: number }[] = [];
 
   beforeAll(async () => {
-    expect(adb("devices").split("\n").some((l) => /\tdevice$/.test(l)), "a device on adb").toBe(true);
+    expect(hasDevice(), "a device on adb").toBe(true);
     expect(shell("curl -s http://localhost:8081/status"), "Metro through adb reverse").toContain("packager-status:running");
     // The phone is on USB, so "stay on while charging" keeps the screen from
-    // timing out mid-test (a locked screen answers no input at all).
-    shell("svc power stayon true");
-    shell("input keyevent KEYCODE_WAKEUP");
-    // A screen that timed out before the run sits behind the keyguard, and
-    // every tap below would land on the lock screen. Only works without a PIN.
-    shell("wm dismiss-keyguard");
+    // timing out mid-test (a locked screen answers no input at all). A screen
+    // behind the keyguard is only dismissed without a PIN: with one, the
+    // phone has to be unlocked by hand before the run.
+    wakeScreen();
     forceStop();
   }, 30_000);
 
   afterAll(() => {
-    shell("svc power stayon false");
+    releaseScreen();
     allTimings.push(...timings());
     const byKind = (k: string) => allTimings.filter((t) => t.kind === k).map((t) => t.ms).sort((a, b) => a - b);
     const stats = (v: number[]) =>
       v.length ? { n: v.length, min: v[0], median: v[Math.floor(v.length / 2)], p95: v[Math.floor(v.length * 0.95)], max: v[v.length - 1] } : null;
     console.log("WRITE_TIMINGS " + JSON.stringify({ event: stats(byKind("event")), batch: stats(byKind("batch")) }));
-    console.log("DB pulls in " + workDir);
+    console.log("DB pulls in " + db.workDir);
   });
 
   it("starts a session and lets samples settle on disk", async () => {

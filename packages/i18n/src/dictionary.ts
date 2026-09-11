@@ -123,9 +123,18 @@ export type Dictionary = {
     /** Export button in the history screen and its failure line. */
     exportData: string;
     exportFailed: string;
-    /** The persistent notification while a session records in the background (session 07 spike). */
+    /**
+     * The persistent notification while a session records in the background
+     * (ADR 0010). Title takes `{sport}` and `{elapsed}`; body takes
+     * `{startedAt}` and `{updatedAt}` — the text only changes at START,
+     * CHANGE and resume, so it says when it was last refreshed.
+     */
     recordingNotificationTitle: string;
     recordingNotificationBody: string;
+    /** Battery-optimisation exemption: the idle-screen card that asks, and the live-screen warning while it is missing. */
+    batteryExemptionCopy: string;
+    batteryExemptionButton: string;
+    batteryWarning: string;
   };
   meta: {
     title: string;

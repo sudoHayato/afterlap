@@ -27,7 +27,7 @@ Decisão do fundador em [docs/VISAO.md](VISAO.md): um treino HIIT/AMRAP é uma s
 - [ ] **Remo indoor com metros** (Fase 4+): metros do monitor do remo, introduzidos após o treino.
 - [ ] **Natação em piscina com piscinas/metros** (Fase 4+), pela mesma via.
 
-## P1 — Fase 3 (herdado da sessão 04; partes 1 e 2 feitas nas sessões 05 e 06)
+## P1 — Fase 3 (herdado da sessão 04; partes 1, 2 e 3 feitas nas sessões 05–08; fecho pendente do teste de 2 h)
 
 - [x] **Desportos sem GPS** (sessão 05, ADR 0008): força, remo indoor, passadeira, natação em piscina; segmentos só de tempo; watcher ligado ao segmento; permissão sob demanda; oito chips em duas linhas.
 - [ ] **Introdução manual de distância nos desportos sem GPS** — absorvido pelos blocos da visão do produto acima (Fase 4+).
@@ -39,14 +39,17 @@ Decisão do fundador em [docs/VISAO.md](VISAO.md): um treino HIIT/AMRAP é uma s
 - [ ] **Filtro por precisão** (limiar de deslocamento relativo à precisão): **rejeitado com números na sessão 06** — nas duas sessões de campo só retira 1 % de deriva com o telemóvel parado e torna o ritmo em janela mais nervoso; a precisão (mediana 3–4 m) não distingue fixes bons de maus. Reabrir só com uma sessão real com fixes fracos; a coluna `accuracy` está na base para isso.
 - [ ] **Limite de plausibilidade por desporto** (decisão do CTO no fecho da sessão 06: fica no BACKLOG). Hoje só há o corte de 55 m/s para todos; uma caminhada da sessão 04 teve um troço a > 6 m/s em 329 (≈ 5 m a mais, 1 % do segmento) que esse corte não apanha. Um limite por desporto (p. ex. 5 m/s a andar) é uma tabela ao lado de `SIM_SPEED_MPS`. Sem data.
 - [x] ~~**Exportação de dentro da app**~~ — **feito na sessão 06**: botão "Exportar dados" no histórico (`VACUUM INTO` + folha de partilha do sistema via `expo-sharing`). **Decisão do CTO**: a partilha do sistema chega, sem módulo nativo para a pasta externa da app; a folha dupla num build de dev (base, depois registo bruto) é aceitável. O procedimento de duas instalações fica no README como alternativa.
-- [ ] **Segundo plano — versão final (sessão 08)**, sobre o desenho do [ADR 0010](adr/0010-segundo-plano.md): tirar o watcher antigo e o `expo-keep-awake`; texto do cartão da bateria para o i18n e tratamento da recusa; rotação/desligar do `bg-diag.jsonl`; teste de dispositivo com processo morto a meio (`headless_hydrate`); `t` da amostra de fronteira alinhado com o dos fixes; teste de campo de **2 h** com troço parado e bateria longe dos 100 %.
-- [ ] **Precisão no bolso**: no teste da sessão 07 a precisão mediana foi 8,7 m (4 m na mão), com fixes até 196 m. Reavaliar o filtro rejeitado no ADR 0009 sobre dados de bolso, com a coluna `accuracy` da base.
-- [ ] **Notificação com tempo e distância**: a API do `expo-location` só aceita título/corpo fixos; mudar o texto exige reiniciar a tarefa. Ver se compensa (sessão 08 ou Fase 4).
+- [x] ~~**Segundo plano — versão final (sessão 08)**~~ — **feito na sessão 08** sobre o [ADR 0010](adr/0010-segundo-plano.md): watcher antigo e `expo-keep-awake` fora; textos da bateria no i18n e aviso persistente na recusa; `bg-diag.jsonl` só em dev, rodado por sessão; `recovered_headless` na base; teste de dispositivo com `kill -9` a meio (reanimação + hidratação headless) e reinício do telemóvel. Fica a amostra de fronteira como estava (decisão do CTO).
+- [ ] **Teste de campo de 2 h** (critério de saída da Fase 3): com o release da sessão 08, telemóvel no bolso, bateria longe dos 100 %, um troço parado (ginásio). Quando o fundador avisar: análise pela secção "Teste de campo de 2 h" do relatório da sessão 08, fecho da fase, merge em `main`.
+- [ ] **Precisão no bolso** (decisão do CTO na sessão 08: **sem filtro nesta sessão**): no teste da sessão 07 a precisão mediana foi 8,7 m (4 m na mão), com fixes até 196 m. Guardar os dados do teste de 2 h e reavaliar o filtro rejeitado no ADR 0009 sobre dados de bolso, pela mesma regra (distância ±2 %, ritmo não piora), na sessão seguinte.
+- [ ] **Notificação com cronómetro a andar e distância**: a API do `expo-location` só aceita título/corpo como opções da tarefa, e mudá-los reinicia o pedido de localização (ADR 0010, "Notificação"). Hoje mostra o desporto e o tempo decorrido à data do último START/CHANGE/Continuar, com essa hora no corpo. Um cronómetro ao vivo exige um serviço nosso (ADR 0010 §5b) ou `expo-notifications` por cima da notificação do serviço. Fase 4, se compensar.
+- [ ] **Amostras fora de ordem na fronteira**: um fix tirado antes do CHANGE/STOP mas entregue depois fica na base atrás da amostra de fronteira (≤ 1 s em campo). A distância não muda; ≤ 1 s de movimento pode cair no segmento errado. Só corrigir se alguma análise o mostrar.
+- [ ] **Retoma automática depois de um reinício do telemóvel**: o Android não deixa o `expo-location` arrancar o serviço com a app em segundo plano ao `BOOT_COMPLETED`; a retoma é ao abrir a app (decisão do CTO: chega). Se um dia fizer falta, é um serviço nosso arrancado pelo `BOOT_COMPLETED` (ADR 0010 §5b).
 - [ ] **Teste de dispositivo: margem depois de "Continuar"** (decisão do CTO no fecho da sessão 06): se voltar a falhar por margem, alargar a espera de 5 s para 10 s e registar os tempos reais (quanto demorou a primeira amostra nova) no relatório dessa sessão.
 - [x] ~~**Precisão junto da amostra**~~ — **feito na sessão 06**: migração v2 (`samples.accuracy REAL NULL`), `Sample.accuracyM` opcional, adaptador a gravar a precisão de cada fix.
 - [x] ~~**Registo bruto cresce sem limite**~~ — **feito na sessão 06**: só em builds de desenvolvimento, rodado por sessão (`gps-raw.prev.jsonl` guarda o anterior).
 - [ ] `scripts/geojson.mjs` ainda lê a precisão do registo bruto; podia lê-la da base (v2). Não é urgente.
-- [ ] `t` da amostra = hora de chegada; `fixAt` do provider fica no registo bruto (dev). Rever se alguma fase preferir o timestamp do fix (uma linha em `App.tsx`).
+- [x] ~~`t` da amostra = hora de chegada~~ — **desde a sessão 08 (ADR 0010, decisão do CTO) `t` é o timestamp do fix**; o registo bruto (dev) guarda `arrivedAt` para medir o atraso de entrega.
 
 ## P1 — i18n (sessão 02)
 

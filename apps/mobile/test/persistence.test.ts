@@ -306,6 +306,52 @@ describe("SqliteSessionStore", () => {
     expect(live).toEqual(expected);
   });
 
+  it("a headless hydrate (ADR 0010) writes recovered_headless, which replays as a plain recovered", () => {
+    const db = openNodeDb();
+    const first = new SqliteSessionStore(db, { flushIntervalMs: 0 });
+    first.hydrate(T0);
+    const id = first.start("walk", T0);
+    first.pushSample(sample(T0, 0));
+    // The process dies; Android revives it for the next batch of fixes and
+    // the background task hydrates the store itself.
+    const task = new SqliteSessionStore(db, { flushIntervalMs: 0 });
+    const live = task.hydrate(T0 + 30_000, "headless");
+    expect(live!.events).toEqual([
+      { type: "started", at: T0, sport: "walk" },
+      { type: "recovered", at: T0 + 30_000 },
+    ]);
+    task.pushSample(sample(T0 + 31_000, 1));
+    // Then the athlete opens the app: a plain recovered, as always.
+    const app = new SqliteSessionStore(db, { flushIntervalMs: 0 });
+    app.hydrate(T0 + 90_000);
+    const rows = db.raw.prepare("SELECT type, at, sport FROM events WHERE session_id = ? ORDER BY seq").all(id);
+    expect(rows).toEqual([
+      { type: "started", at: T0, sport: "walk" },
+      { type: "recovered_headless", at: T0 + 30_000, sport: null },
+      { type: "recovered", at: T0 + 90_000, sport: null },
+    ]);
+    // The engine never sees the difference; the summary counts the samples of both contexts.
+    expect(app.byId(id)!.events.map((e) => e.type)).toEqual(["started", "recovered", "recovered"]);
+    expect(app.summaries()[0]!.sampleCount).toBe(2);
+    expect(() => replaySessions([{ seq: 1, session_id: id, type: "recovered_headless", at: T0, sport: null, discarded: 0 }], [])).toThrow(
+      /begins with recovered/,
+    );
+  });
+
+  it("hydrate writes the samples still in the buffer before replaying (a revived process reopened by the athlete)", () => {
+    const db = openNodeDb();
+    const store = new SqliteSessionStore(db, { flushIntervalMs: 60_000, now: () => T0 });
+    store.hydrate(T0);
+    const id = store.start("run", T0);
+    store.pushSample(sample(T0 + 1_000, 0));
+    expect(countRows(db, "samples")).toBe(0);
+    const live = store.hydrate(T0 + 5_000);
+    expect(countRows(db, "samples")).toBe(1);
+    expect(live!.id).toBe(id);
+    expect(live!.samples).toHaveLength(1);
+    expect(live!.events.map((e) => e.type)).toEqual(["started", "recovered"]);
+  });
+
   it("hydrate on a stopped session returns null and writes nothing", () => {
     const db = openNodeDb();
     const first = new SqliteSessionStore(db, { flushIntervalMs: 0 });

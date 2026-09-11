@@ -84,3 +84,14 @@ describe("en and pt-PT dictionaries — mesmo conjunto de chaves", () => {
     );
   });
 });
+
+describe("recording notification (ADR 0010) — placeholders present in both languages", () => {
+  it("title takes {sport} and {elapsed}; body takes {startedAt} and {updatedAt}", () => {
+    for (const dict of [en, ptPT] as const) {
+      expect(dict.mobile.recordingNotificationTitle).toContain("{sport}");
+      expect(dict.mobile.recordingNotificationTitle).toContain("{elapsed}");
+      expect(dict.mobile.recordingNotificationBody).toContain("{startedAt}");
+      expect(dict.mobile.recordingNotificationBody).toContain("{updatedAt}");
+    }
+  });
+});

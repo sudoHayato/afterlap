@@ -130,8 +130,12 @@ export const en: Dictionary = {
     currentSpeed: "Current speed",
     exportData: "Export data",
     exportFailed: "Export failed",
-    recordingNotificationTitle: "Bricklap is recording",
-    recordingNotificationBody: "Your session keeps recording with the screen off. Open the app to stop.",
+    recordingNotificationTitle: "{sport} · {elapsed}",
+    recordingNotificationBody: "Started at {startedAt}, updated at {updatedAt}. Open the app to stop.",
+    batteryExemptionCopy:
+      "To record with the screen off, Android must not put Bricklap to sleep. Allow the battery exemption in the system dialog.",
+    batteryExemptionButton: "Allow battery exemption",
+    batteryWarning: "Without the battery exemption, recording may fail with the screen off.",
   },
   meta: {
     title: "Bricklap",

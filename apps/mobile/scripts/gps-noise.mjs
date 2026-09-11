@@ -14,7 +14,7 @@
  * Never prints a coordinate: legs are reduced to (dt, distance, accuracy,
  * speed) before anything is reported. Self-contained like geojson.mjs:
  * node:sqlite, no dependency, its own segment walk (sport_changed / stopped
- * cut segments, `recovered` is ignored — the engine's rules, mirrored).
+ * cut segments, `recovered` and `recovered_headless` are ignored — the engine's rules, mirrored).
  */
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync } from "node:fs";

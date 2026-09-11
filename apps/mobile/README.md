@@ -1,6 +1,6 @@
 # @bricklap/mobile
 
-Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 3, partes 1 e 2 — desportos sem GPS; ritmo, precisão na base e exportação** (sobre a Fase 2: GPS real e persistência local).
+Aplicação Android do Bricklap (Expo SDK 57, TypeScript, dev client). **Fase 3 — desportos sem GPS; ritmo, precisão na base e exportação; gravação em segundo plano** (sobre a Fase 2: GPS real e persistência local).
 
 ## O que é
 
@@ -18,26 +18,39 @@ segmentos e métricas são derivados.
 Nesta fase:
 
 - **Desportos sem GPS** ([ADR 0008](../../docs/adr/0008-desportos-sem-gps.md)): força, remo indoor, passadeira e natação em piscina são só tempo. O watcher de posição existe apenas enquanto o segmento atual for de um desporto com GPS; a permissão de localização só se pede na primeira vez que faz falta (uma sessão que começa no ginásio não pede nada). Num segmento sem GPS o ecrã mostra o cronómetro do segmento e o total, sem distância, ritmo nem coordenadas.
-- **GPS real em primeiro plano** (`expo-location`, 1 Hz, precisão máxima, só
-  `ACCESS_FINE_LOCATION`; nada de segundo plano — ver
-  [ADR 0007](../../docs/adr/0007-gps-primeiro-plano.md)). O ecrã fica ligado
-  enquanto grava (`expo-keep-awake`). O simulador (`createSim` / `stepSim` /
-  `sampleFromSim`) continua disponível por um interruptor no ecrã inicial,
-  **só em builds de desenvolvimento**; uma sessão retomada segue a fonte da sua
-  última amostra.
+- **GPS real em segundo plano** ([ADR 0010](../../docs/adr/0010-segundo-plano.md),
+  sobre o [ADR 0007](../../docs/adr/0007-gps-primeiro-plano.md)): uma tarefa de
+  localização do `expo-location` (1 Hz, precisão máxima) com **serviço em
+  primeiro plano e notificação persistente** — grava com o ecrã apagado e o
+  telemóvel no bolso, sem `ACCESS_BACKGROUND_LOCATION` (só `ACCESS_FINE_LOCATION`
+  + as permissões de serviço e `RECEIVE_BOOT_COMPLETED` no manifesto). A tarefa
+  escreve cada fix na base com o **timestamp do próprio fix**; se o Android
+  matar o processo, reanima-o para o lote seguinte e a tarefa hidrata o store
+  sozinha (`recovered_headless` na base). A notificação mostra o desporto e o
+  tempo decorrido à data do último Iniciar / Mudar / Continuar (a API não deixa
+  refrescá-la sem reiniciar o pedido de localização). A app pede a **exceção de
+  otimização de bateria** e explica porquê; se for recusada grava na mesma e
+  avisa no ecrã de gravação. Sem keep-awake. O simulador (`createSim` /
+  `stepSim` / `sampleFromSim`) continua disponível por um interruptor no ecrã
+  inicial, **só em builds de desenvolvimento**; uma sessão retomada segue a
+  fonte da sua última amostra.
 - **Ritmo, precisão e exportação** ([ADR 0009](../../docs/adr/0009-ritmo-precisao-exportacao.md)): o ecrã de gravação mostra o ritmo médio do segmento **e** o ritmo dos últimos 30 s ("Ritmo atual"; "Velocidade atual" na bicicleta) — uma paragem lê "—". Não há filtro na distância: a análise das duas sessões de campo mostrou que a caminhada estava bem calibrada e que o ritmo médio só diluía as paragens. Cada fix leva a sua precisão para a base (esquema v2, `samples.accuracy`).
 - **Persistência local** em SQLite append-only (`persistence/`,
   [ADR 0006](../../docs/adr/0006-persistencia-sqlite-append-only.md)); a sessão
-  sobrevive a fechar ou matar a app. Em builds de **desenvolvimento** cada fix
-  vai também para um registo bruto `files/gps-raw.jsonl` (altitude, rumo,
-  timestamp do fix), rodado por sessão (`gps-raw.prev.jsonl` guarda o
-  anterior); o release não o escreve.
+  sobrevive a fechar ou matar a app, e a um reinício do telemóvel (retoma ao
+  abrir a app; perde-se o intervalo até ao "Continuar"). Em builds de
+  **desenvolvimento** cada fix vai também para um registo bruto
+  `files/gps-raw.jsonl` (altitude, rumo, velocidade Doppler, hora de chegada) e
+  a tarefa em segundo plano escreve um diagnóstico `files/bg-diag.jsonl`
+  (serviço, lotes, atraso de entrega, bateria por minuto); ambos rodados por
+  sessão (`*.prev.jsonl` guarda o anterior); o release não escreve nenhum.
 - **Exportar dados** no histórico: uma cópia consistente da base (`VACUUM INTO`,
   um só ficheiro, WAL incluído) entregue à folha de partilha do sistema, e o
   registo bruto a seguir se existir. Ver *Exportar*.
-- **Não há navegação** nem mapa. Dependências: `expo`, `expo-dev-client`,
-  `expo-file-system`, `expo-keep-awake`, `expo-location`, `expo-sharing`,
-  `expo-sqlite`, `expo-status-bar`, `react`, `react-native` e os workspaces
+- **Não há navegação** nem mapa. Dependências: `expo`, `expo-battery`,
+  `expo-dev-client`, `expo-file-system`, `expo-intent-launcher`,
+  `expo-location`, `expo-sharing`, `expo-sqlite`, `expo-status-bar`,
+  `expo-task-manager`, `react`, `react-native` e os workspaces
   `@bricklap/engine` e `@bricklap/i18n`.
 - **Só Android.** Não existe configuração iOS nem web.
 
@@ -231,7 +244,19 @@ A WSL 2 não vê USB, mas o **adb do Windows** vê — e corre a partir da WSL:
    em Node a encaminhar `0.0.0.0:8082 → 127.0.0.1:8081`), seguido de
    `adb.exe reverse tcp:8081 tcp:8082`. Nesta máquina já existe um relé em
    `8082` (sessão 04).
-5. Teste de recuperação: `BRICKLAP_ADB=/mnt/c/Users/<utilizador>/platform-tools/adb.exe npm run test:device`.
+5. Testes de dispositivo (`BRICKLAP_ADB=/mnt/c/Users/<utilizador>/platform-tools/adb.exe`):
+   - `npm run test:device` — recuperação depois de `am force-stop`, com o
+     simulador; precisa do **build de debug** (dev client) instalado e do Metro
+     alcançável (passo 4).
+   - `npm run test:device:background` — gravação em segundo plano com o **GPS
+     real**: `kill -9` do processo com a tarefa a correr, reanimação pelo
+     Android, hidratação headless (`recovered_headless` na base), retoma pelo
+     "Continuar". Precisa do **release *debuggable*** (ver *Build de release*)
+     e da localização ligada; uma secretária perto de uma janela chega.
+   Os dois leem os ecrãs estáticos com `uiautomator` (o ecrã de gravação
+   nunca) e puxam a base com `run-as`, que só um build *debuggable* permite.
+   O telemóvel tem de estar **desbloqueado** antes de correr: com um PIN, o
+   `wm dismiss-keyguard` do teste não passa o ecrã de bloqueio.
 
 O que **não** funciona nesta máquina: apontar o `adb` da WSL ao servidor do
 Windows (`adb.exe -a nodaemon server` + `ADB_SERVER_SOCKET=tcp:<ip-host>:5037`).
@@ -293,11 +318,12 @@ apps/mobile/
   App.tsx          ecrãs: início / ao vivo / resumo / retomar / histórico
   store.ts         uma instância do adaptador de persistência por processo
   i18n.ts          locale do dispositivo (I18nManager) -> t() de @bricklap/i18n
-  index.ts         registerRootComponent(App)
+  index.ts         defineRecordingTask() antes de registerRootComponent(App): a tarefa existe em todos os contextos JS
   export.ts        cópia consistente da base (VACUUM INTO) + folha de partilha do sistema
-  gps/             expo-location (permissão, watcher a 1 Hz) e o registo bruto gps-raw.jsonl (só dev)
-  persistence/     SQLite append-only: esquema (v2: accuracy), replay, store (ADR 0006, 0009)
-  device/          teste de recuperação num telemóvel real (npm run test:device)
+  gps/             background.ts (tarefa de localização + serviço, ADR 0010), location.ts (permissão),
+                   battery.ts (exceção de bateria), diag.ts e rawLog.ts (só dev, rodados por sessão)
+  persistence/     SQLite append-only: esquema (v2: accuracy), replay, store (ADR 0006, 0009, 0010)
+  device/          testes num telemóvel real: recuperação (test:device) e segundo plano (test:device:background)
   scripts/         geojson.mjs — base + registo bruto -> GeoJSON e resumo; gps-noise.mjs — análise do ruído
   test/            testes em Node (node:sqlite) do adaptador
   app.json         configuração Expo (só Android; package com.bricklap.app; plugin expo-location sem segundo plano)
@@ -331,7 +357,23 @@ enviar o binário do Bricklap à Google). Os builds de debug não perguntam.
 
 Verificado no telemóvel a 2026-09-10, com o cabo a servir só de observação
 (Metro morto, `adb reverse --list` vazio): arranque a frio 118 ms, ecrã inicial
-em pt-PT, GPS real a gravar, `expo-keep-awake` a segurar o ecrã aceso 75 s com o
-tempo de espera do sistema a 30 s, sessão a sobreviver a `am force-stop` e a
-continuar ao reabrir. O bundle vai dentro do APK (`assets/index.android.bundle`,
-1,4 MB) — a app nunca procura o Metro.
+em pt-PT, GPS real a gravar, o ecrã aceso 75 s com o tempo de espera do sistema
+a 30 s (na altura com `expo-keep-awake`; desde a sessão 08 o ecrã apaga-se e a
+gravação continua), sessão a sobreviver a `am force-stop` e a continuar ao
+reabrir. O bundle vai dentro do APK (`assets/index.android.bundle`, 1,4 MB) —
+a app nunca procura o Metro.
+
+**Release *debuggable*** (para o teste `test:device:background` e para puxar a
+base de um build que arranca sem Metro): o mesmo release com `debuggable true`,
+que `run-as` aceita. `android/` é gerada e ignorada pelo git, por isso é um
+retoque local depois do `prebuild`, desfeito a seguir:
+
+```sh
+cd apps/mobile/android
+sed -i 's/^\(\s*\)signingConfig signingConfigs.debug$/&/; /buildTypes {/,/^    }/ s/^\(\s*release {\)$/\1\n            debuggable true/' app/build.gradle
+./gradlew assembleRelease && cp app/build/outputs/apk/release/app-release.apk /mnt/c/Users/<utilizador>/bricklap-release-dbg.apk
+git checkout -- . 2>/dev/null || sed -i '/^\s*debuggable true$/d' app/build.gradle
+```
+
+Instala-se como qualquer APK (mesma chave, os dados mantêm-se). **O fundador
+treina com o release normal**, nunca com este.
