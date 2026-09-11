@@ -32,7 +32,7 @@ Consequências para o desenho:
 - **`t` da amostra = timestamp do próprio fix**, não a hora de chegada (o `JobScheduler` pode atrasar um lote segundos, em *doze* mais). Muda em relação ao ADR 0007, onde `t` era a hora de chegada.
 - **O contexto *headless* não tem React nem store em memória.** A tarefa tem de abrir o store como *singleton* de módulo, hidratá-lo (o que regista `recovered`, como qualquer arranque) e, se não houver sessão ao vivo, **parar a tarefa** — senão fica um serviço zombie a gastar bateria.
 - **A tarefa tem de estar definida no arranque de qualquer contexto JS** — em `index.ts`, antes do `registerRootComponent`. Uma tarefa definida depois do primeiro *job* que a nomeia é descartada.
-- O `JobScheduler` tem os seus próprios limites (quotas por app em *standby buckets*, *doze*); é exatamente isto que a exceção de bateria e o teste de campo medem.
+- O `JobScheduler` tem os seus próprios limites (quotas por app em *standby buckets*, *doze*); é exatamente isto que a exceção de bateria e o teste de campo medem. **Medido no cabo** (app em primeiro plano ou em segundo plano com HOME, a carregar): cada lote chega **≈ 4,2 s depois do fix** (`delayMs` 4178–4244 ms, constante). Nada se perde — o `t` é o do fix — mas o ecrã ao vivo anda 4 s atrasado, e em *doze* o atraso pode crescer. Se o teste mostrar atrasos de dezenas de segundos ou lotes agrupados, o problema é este transporte, não o GPS — e a alternativa é o módulo Kotlin (§5b), que não passa pelo `JobScheduler`.
 
 ### 3. Arquitetura da experiência
 

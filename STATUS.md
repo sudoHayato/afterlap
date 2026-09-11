@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Data**: 2026-09-11 · **Branch**: `main` · **Fase**: 1 e 2 concluídas (2026-09-10); **Fase 3 em curso — parte 1 (desportos sem GPS, sessão 05) e parte 2 (ritmo, precisão na base, exportação, sessão 06) concluídas; parte 3 (segundo plano) por iniciar**
+**Data**: 2026-09-11 · **Branch**: `feat/segundo-plano-spike` · **Fase**: 1 e 2 concluídas (2026-09-10); **Fase 3 em curso — partes 1 e 2 concluídas (sessões 05 e 06); parte 3a (sessão 07): experiência de segundo plano instalada no telemóvel, decisão do ADR 0010 pendente do teste de 30 min do fundador**
 
 ## Por pacote
 
@@ -51,6 +51,10 @@
 - **Sem EAS** (decisão do fundador, sem conta Expo): build local com `npx expo run:android`. Ver [docs/adr/0005-build-local-android.md](docs/adr/0005-build-local-android.md).
 - Telemóvel ligado por **USB**, com o `adb.exe` do Windows chamado diretamente da WSL (a firewall bloqueia a ponte para o `adb` da WSL; a depuração sem fios exige Wi-Fi e o fundador trabalha muitas vezes em hotspot). O Metro alcança-se por `adb.exe reverse tcp:8081 tcp:8082` através de um relé IPv4, porque o Metro da WSL só se expõe em `[::1]:8081` — ver o README da app. O modo espelhado da WSL não é opção em Windows 10.
 
+## Segundo plano — experiência em curso (sessão 07)
+
+O telemóvel tem instalado um **build de experiência** (branch `feat/segundo-plano-spike`): o GPS real corre numa tarefa do `expo-task-manager` com serviço em primeiro plano e notificação persistente, sem keep-awake; a tarefa escreve na base; instrumentação em `files/bg-diag.jsonl` e `logcat` (`BRICKLAP_BG`). Provado no cabo: serviço arranca **sem `ACCESS_BACKGROUND_LOCATION`**, lotes continuam com a app em segundo plano, ≈ 4 s de atraso por lote (`JobScheduler`). Exige `RECEIVE_BOOT_COMPLETED` (não documentado — a primeira versão rebentou). **Pendente**: o teste de 30 min do fundador com o ecrã apagado e sem cabo, a análise e o fecho do [ADR 0010](docs/adr/0010-segundo-plano.md) — procedimento em `docs/reports/2026-09-11-sessao-07.md` §7–§8. Este build **não** vai para `main` sem essa decisão.
+
 ## Próximo passo
 
-**Fase 3, parte 3 — segundo plano** (sessão 07, por iniciar): gravar com o ecrã desligado e a app em segundo plano (foreground service com notificação persistente, bateria/doze). Critério de saída no [ROADMAP.md](ROADMAP.md): 2 h de gravação contínua com o telemóvel no bolso, sem buracos superiores a 10 s. A Fase 4 parte de [docs/VISAO.md](docs/VISAO.md). Restantes itens no [BACKLOG](docs/BACKLOG.md).
+**Fase 3, parte 3 — segundo plano** (sessão 07 em curso; sessão 08 = versão final): gravar com o ecrã desligado e a app em segundo plano (foreground service com notificação persistente, bateria/doze). Critério de saída no [ROADMAP.md](ROADMAP.md): 2 h de gravação contínua com o telemóvel no bolso, sem buracos superiores a 10 s. A Fase 4 parte de [docs/VISAO.md](docs/VISAO.md). Restantes itens no [BACKLOG](docs/BACKLOG.md).
