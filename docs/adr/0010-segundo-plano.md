@@ -19,7 +19,9 @@ A app grava só com o ecrã ligado (ADR 0007: watcher em primeiro plano + `expo-
 
 O plugin de configuração (`withLocation.js`) só declara `ACCESS_BACKGROUND_LOCATION` com `isAndroidBackgroundLocationEnabled: true`, e `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_LOCATION` com `isAndroidForegroundServiceEnabled: true`. O manifesto da biblioteca declara o serviço `LocationTaskService` com `foregroundServiceType="location"`. Configuração escolhida em `app.json`: **`isAndroidBackgroundLocationEnabled: false`, `isAndroidForegroundServiceEnabled: true`** — o manifesto gerado tem as duas permissões de serviço e **não** tem `ACCESS_BACKGROUND_LOCATION` (verificado no `AndroidManifest.xml` gerado e no manifesto fundido do release; ver relatório §4.1).
 
-Resposta à pergunta do brief: **funciona só com `ACCESS_FINE_LOCATION` + `FOREGROUND_SERVICE_LOCATION`**, pelo código; o comportamento real neste telemóvel (Android 16, One UI 8.5) é o que o teste de campo confirma ou desmente.
+Resposta à pergunta do brief: **funciona só com `ACCESS_FINE_LOCATION` + `FOREGROUND_SERVICE_LOCATION`**, pelo código — e **provado no telemóvel** (Android 16, One UI 8.5): com o manifesto sem `ACCESS_BACKGROUND_LOCATION`, o `ActivityManager` registou `Background started FGS: Allowed … cmp=com.bricklap.app/expo.modules.location.services.LocationTaskService … uidState: TOP`, e o `LocationManagerService` abriu o pedido `Request[@+1s0ms HIGH_ACCURACY … WorkSource{com.bricklap.app}]` via `fused_location_provider`. A permissão "sempre" não é precisa para este caminho.
+
+**Uma exigência que nenhuma documentação diz — descoberta no primeiro fix.** O `expo-task-manager` agenda os *jobs* como **persistentes** (`JobInfo.Builder.setPersisted(true)`, para sobreviverem a um *reboot*), e o Android recusa-os com `IllegalArgumentException: Requested job cannot be persisted without holding android.permission.RECEIVE_BOOT_COMPLETED`. Nem o `expo-task-manager` nem o `expo-location` declaram essa permissão no manifesto da biblioteca, e o plugin de configuração também não; o primeiro build de experiência **rebentou** (`FATAL EXCEPTION` em `TaskManagerUtils.updateOrScheduleJob`) ao chegar o primeiro fix, e voltou a rebentar no `TaskBroadcastReceiver` a cada tentativa seguinte. Correção: `android.permission.RECEIVE_BOOT_COMPLETED` em `android.permissions` no `app.json` — permissão normal, sem diálogo. Fica registado para a versão final e para quem vier a ler a documentação do Expo sem este aviso.
 
 ### 2. Como os fixes chegam à tarefa — e o que isso obriga
 
@@ -75,6 +77,6 @@ Se chegar: a sessão 08 implementa a versão final sobre este desenho (ver a pro
 ## Consequências (da experiência)
 
 - Três dependências novas, todas emparelhadas com o SDK 57 e justificadas no relatório: `expo-task-manager`, `expo-battery`, `expo-intent-launcher`.
-- Manifesto: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` a mais; `ACCESS_BACKGROUND_LOCATION` continua ausente.
+- Manifesto: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` e `RECEIVE_BOOT_COMPLETED` a mais; `ACCESS_BACKGROUND_LOCATION` continua ausente.
 - O registo bruto (`gps-raw.jsonl`, só dev) deixa de ser escrito pela tarefa; a precisão já vive na base (ADR 0009).
 - O texto do cartão da exceção de bateria está fora do i18n, de propósito (o brief congelou os dicionários); passa para lá na sessão 08 se o desenho ficar.
