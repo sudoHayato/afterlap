@@ -3,15 +3,21 @@ import { isWeak, type Fix } from "./location";
 
 /**
  * Raw GPS log, one JSON line per fix, next to the SQLite database in the
- * app's files/ directory. The database keeps every fix as a plain `gps`
- * sample (ADR 0006 is closed); this file is where the raw data lives —
- * accuracy, altitude, heading, the fix's own timestamp, and the `weak` mark
- * for accuracy > WEAK_ACCURACY_M — so filters can be decided on real numbers
- * in Fase 3. Debug only: it never throws into the recording path.
+ * app's files/ directory. Since ADR 0009 the database itself keeps each
+ * fix's accuracy; this file is what is left of the raw fix — altitude,
+ * heading, the provider's own timestamp, `mocked` — and it exists **only in
+ * development builds** (`__DEV__`): a release build writes nothing here.
  *
- * Pull it with `adb exec-out run-as com.bricklap.app cat files/gps-raw.jsonl`.
+ * Rotation per session: when a session starts, the current log becomes
+ * `gps-raw.prev.jsonl` (replacing the one before) and a fresh log begins.
+ * At most two sessions of raw fixes live on disk, ~230 bytes per fix.
+ * Never throws into the recording path.
+ *
+ * Pull it with `adb exec-out run-as com.bricklap.app cat files/gps-raw.jsonl`
+ * (a debug build), or with the export button in the history screen.
  */
 export const RAW_LOG_NAME = "gps-raw.jsonl";
+export const RAW_LOG_PREV_NAME = "gps-raw.prev.jsonl";
 
 export type RawFixLine = {
   session: string;
@@ -48,7 +54,23 @@ export function rawFixLine(session: string, t: number, fix: Fix): RawFixLine {
 
 let file: File | null = null;
 
+/** Start a fresh log for a new session, keeping the previous session's as `.prev`. Dev only. */
+export function rotateRawLog(): void {
+  if (!__DEV__) return;
+  try {
+    const current = new File(Paths.document, RAW_LOG_NAME);
+    file = null;
+    if (!current.exists) return;
+    const previous = new File(Paths.document, RAW_LOG_PREV_NAME);
+    if (previous.exists) previous.delete();
+    current.moveSync(previous);
+  } catch (e) {
+    console.warn("BRICKLAP_RAWLOG", e);
+  }
+}
+
 export function appendRawFix(line: RawFixLine): void {
+  if (!__DEV__) return;
   try {
     file ??= new File(Paths.document, RAW_LOG_NAME);
     if (!file.exists) file.create();
@@ -57,6 +79,6 @@ export function appendRawFix(line: RawFixLine): void {
     handle.writeBytes(new TextEncoder().encode(JSON.stringify(line) + "\n"));
     handle.close();
   } catch (e) {
-    if (__DEV__) console.warn("BRICKLAP_RAWLOG", e);
+    console.warn("BRICKLAP_RAWLOG", e);
   }
 }
