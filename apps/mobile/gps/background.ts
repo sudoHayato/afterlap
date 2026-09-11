@@ -100,6 +100,12 @@ export function defineRecordingTask(): void {
       const live = store.live();
       if (live) appendRawFix(rawFixLine(live.id, sample.t, arrivedAt, loc));
     }
+    // Write the batch now, not on the store's 2 s timer. In a process Android
+    // revived for this job, expo-task-manager tears the whole React context
+    // down 2 s after the task resolves — measured on the phone in session 08:
+    // the timer lost that race on every batch and 99 s of fixes never reached
+    // the disk. One small transaction per batch (≈ 1 per second) is cheap.
+    store.flush();
     latest = locations[locations.length - 1]!;
     batches++;
     diag("batch", {

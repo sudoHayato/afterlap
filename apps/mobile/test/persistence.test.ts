@@ -338,6 +338,34 @@ describe("SqliteSessionStore", () => {
     );
   });
 
+  it("collapses consecutive headless hydrates into one row per revival (a fresh JS context per batch)", () => {
+    const db = openNodeDb();
+    const first = new SqliteSessionStore(db, { flushIntervalMs: 0 });
+    first.hydrate(T0);
+    const id = first.start("walk", T0);
+    first.pushSample(sample(T0, 0));
+    // The process dies. Android revives it; each batch of fixes runs in a new
+    // JS context that hydrates, pushes, and is torn down.
+    for (let i = 1; i <= 3; i++) {
+      const batch = new SqliteSessionStore(db, { flushIntervalMs: 0 });
+      const live = batch.hydrate(T0 + i * 9_000, "headless");
+      expect(live!.id).toBe(id);
+      batch.pushSample(sample(T0 + i * 9_000 + 500, i));
+    }
+    // The athlete opens the app, continues; later the process dies again.
+    new SqliteSessionStore(db, { flushIntervalMs: 0 }).hydrate(T0 + 60_000);
+    new SqliteSessionStore(db, { flushIntervalMs: 0 }).hydrate(T0 + 120_000, "headless");
+    new SqliteSessionStore(db, { flushIntervalMs: 0 }).hydrate(T0 + 129_000, "headless");
+    const rows = db.raw.prepare("SELECT type, at FROM events WHERE session_id = ? ORDER BY seq").all(id);
+    expect(rows).toEqual([
+      { type: "started", at: T0 },
+      { type: "recovered_headless", at: T0 + 9_000 },
+      { type: "recovered", at: T0 + 60_000 },
+      { type: "recovered_headless", at: T0 + 120_000 },
+    ]);
+    expect(countRows(db, "samples")).toBe(4);
+  });
+
   it("hydrate writes the samples still in the buffer before replaying (a revived process reopened by the athlete)", () => {
     const db = openNodeDb();
     const store = new SqliteSessionStore(db, { flushIntervalMs: 60_000, now: () => T0 });

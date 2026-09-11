@@ -35,7 +35,9 @@ export interface SessionStore {
    * Open, migrate, replay. Marks a live session as recovered and returns it.
    * Pending samples are written first: a hydrate on a store that already
    * holds a session (the app opened in a process the task revived) must not
-   * replay a database that is behind its own buffer.
+   * replay a database that is behind its own buffer. A headless hydrate
+   * right after another headless one (nothing but samples in between)
+   * writes nothing: it is the same revival, seen by the next batch.
    */
   hydrate(at?: number, origin?: RecoveryOrigin): Session | null;
   start(sport: Sport, at?: number): string;
@@ -113,6 +115,13 @@ export class SqliteSessionStore implements SessionStore {
     if (!live) {
       this.liveSession = null;
       return null;
+    }
+    if (origin === "headless" && this.lastEventType(live.id) === RECOVERED_HEADLESS_TYPE) {
+      // Still the same revival: in a process Android brought back, the task
+      // manager builds a fresh JS context for each batch of fixes and drops
+      // it after, so every batch hydrates. One row per revival, not per batch.
+      this.liveSession = live;
+      return live;
     }
     const recovered = applyRecovered(live, at);
     const added = recovered.events.length > live.events.length;
@@ -228,6 +237,14 @@ export class SqliteSessionStore implements SessionStore {
       chosen.session.id,
     ]);
     return replaySessions(events.filter((e) => e.session_id === chosen.session.id), samples)[0]!.session;
+  }
+
+  /** The stored type of a session's newest event row, before replay folds it. */
+  private lastEventType(sessionId: string): string | undefined {
+    return this.db.getAllSync<{ type: string }>(
+      "SELECT type FROM events WHERE session_id = ? ORDER BY seq DESC LIMIT 1",
+      [sessionId],
+    )[0]?.type;
   }
 
   private closeLive(at: number, discarded: boolean): string | null {
