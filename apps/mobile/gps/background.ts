@@ -94,7 +94,14 @@ export function defineRecordingTask(): void {
     }
 
     const arrivedAt = Date.now();
+    const startedAt = store.live()!.createdAt;
     for (const loc of locations) {
+      // The fused provider may hand over its last known position first, with
+      // the timestamp of when it was taken — minutes before this session, and
+      // wherever the phone was then (410 s old in the session 08 device
+      // test). With `t` = the fix's own time it would open the session with
+      // a false gap and pull the first leg towards that old place.
+      if (loc.timestamp < startedAt) continue;
       const sample = sampleFromGps(loc.coords, loc.timestamp);
       store.pushSample(sample);
       const live = store.live();

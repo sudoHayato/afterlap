@@ -156,9 +156,13 @@ describe("background recording on the device", () => {
     );
     afterKill = revived.s;
     const pidAfter = appPid();
+    // Not asserted: after a kill expo-location cannot bring the service back to
+    // the foreground from the background ("Foreground location task cannot be
+    // started while the app is in the background!" in logcat). The fixes keep
+    // coming without it until the athlete taps Continuar (ADR 0010).
     console.log(
       `revived ${revived.headless[0]!.at - killAt} ms after the kill: pid ${pidBefore} -> ${pidAfter}, ` +
-        `${revived.fresh.length} fixes newer than the kill, service foreground=${serviceRunning()}`,
+        `${revived.fresh.length} fixes newer than the kill, service record listed=${serviceRunning()}`,
     );
     // Nothing recorded before the kill was lost, and the engine sees a plain recovered.
     expect(afterKill.session.samples.length).toBeGreaterThan(beforeKill.session.samples.length);
