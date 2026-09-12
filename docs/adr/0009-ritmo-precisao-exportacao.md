@@ -1,6 +1,6 @@
 # ADR 0009 — Ritmo decidido com dados: sem filtro na distância, ritmo dos últimos 30 s, precisão na base, exportação de dentro da app
 
-**Estado**: aceite (sessão 06, 2026-09-11). **Decisão do CTO** quanto ao método e aos entregáveis; a escolha do filtro (nenhum) e da janela (30 s) é o resultado da análise, executada pela equipa de desenvolvimento.
+**Estado**: aceite (sessão 06, 2026-09-11). **Decisão do CTO** quanto ao método e aos entregáveis; a escolha do filtro (nenhum) e da janela (30 s) é o resultado da análise, executada pela equipa de desenvolvimento. **Revisto na sessão 09 (2026-09-12): a decisão 1 — nenhum filtro — foi revertida pelo CTO** com os dados do teste de campo de 1 h, que a sessão 06 não tinha: 348 m de deriva em 33 min com o telemóvel parado. O motor aplica desde então o limiar `k = 0,25 × precisão`. A secção "Revisão" no fim tem as duas leituras lado a lado; o resto deste documento fica como estava, porque é a evidência da altura.
 
 ## Contexto
 
@@ -19,7 +19,7 @@ Dados: a caminhada da sessão 04 (18:37, 1097 amostras, 1,489 km; segmentos cami
 
 ## Decisão
 
-1. **Nenhum filtro na distância.** `distanceMeters` continua a somar todos os troços abaixo de 55 m/s. As distâncias de referência ficam **exatamente** como estavam: 1 488,5 m na caminhada, 4 212,9 m na corrida (critério: ±2 %). Não se inventa um filtro para justificar a sessão.
+1. **Nenhum filtro na distância.** *(Revertida na sessão 09 — ver "Revisão".)* `distanceMeters` continua a somar todos os troços abaixo de 55 m/s. As distâncias de referência ficam **exatamente** como estavam: 1 488,5 m na caminhada, 4 212,9 m na corrida (critério: ±2 %). Não se inventa um filtro para justificar a sessão.
 2. **"Ritmo atual" = ritmo dos últimos 30 s do segmento**, ao lado do ritmo médio do segmento, no ecrã de gravação: `recentMetrics(session, segment, at, windowMs = RECENT_WINDOW_MS)` no motor, puro, cortado ao início do segmento (logo após um CHANGE a janela é tão curta quanto o segmento) e preso pela mesma cerca do ADR 0008 (nunca interpola através de um segmento sem GPS). Numa paragem a janela tem menos de 20 m e o formatador escreve "—", que é o que uma paragem é. Nos desportos de velocidade (bicicleta) é "Velocidade atual".
 3. **Migração v2: `samples.accuracy REAL NULL`.** O adaptador grava a precisão de cada fix (`Sample.accuracyM`, opcional; ausente nas amostras simuladas e nas anteriores à migração). Nada no motor a usa para calcular distância hoje. Fica gravada porque a próxima vez que este assunto se abrir — uma corrida entre prédios altos com fixes de 20 m, por exemplo — a decisão volta a ser sobre dados, e desta vez sem depender do registo bruto.
 4. **O registo bruto `gps-raw.jsonl` passa a existir só em builds de desenvolvimento** (`__DEV__`), rodado por sessão: o da sessão anterior fica em `gps-raw.prev.jsonl`, o de trás desaparece. Guarda o que a base não tem (altitude, rumo, timestamp do próprio fix, `mocked`). O release não escreve nada.
@@ -43,3 +43,25 @@ Dados: a caminhada da sessão 04 (18:37, 1097 amostras, 1,489 km; segmentos cami
 - O procedimento de trocar o APK de debug pelo release para exportar continua no README como alternativa, mas deixa de ser necessário.
 - `scripts/geojson.mjs` continua a ler a precisão do registo bruto; podia passar a lê-la da base — não é urgente.
 - Fica por fazer nesta fase: segundo plano (sessão 07).
+
+## Revisão (sessão 09, 2026-09-12) — filtro `k = 0,25 × precisão`, decisão do CTO
+
+**O que mudou foi a evidência, não o critério.** O critério de 2026-09-11 mantém-se à letra: distância das sessões de referência dentro de ±2 %, ritmo a correr não piora, e o filtro decide-se com dados. O que a sessão 06 não tinha era uma sessão com o telemóvel **parado**: as duas de referência foram sempre em movimento, e um limiar relativo à precisão só tinha 16,5 m de deriva (103 s de paragens) onde morder. O teste de campo de 1 h de 2026-09-12 (relatório da sessão 08 §8) trouxe **33 min de telemóvel pousado numa mesa**: o motor atribuiu-lhes **348,1 m**, 13 % dos 2,63 km da sessão, com a nuvem de fixes a nunca passar de 18 m do seu centróide. **O CTO reverteu a rejeição com esta justificação: 348 m em 33 min são inaceitáveis, e o caso de uso central do fundador — HIIT com o telemóvel pousado — é exactamente esse.**
+
+**A regra** (`gateByAccuracy` no motor, `ACCURACY_GATE_K = 0,25`): um fix só conta quando se afastou **≥ ¼ da sua própria precisão** do último fix que contou; o primeiro conta sempre; um fix **sem precisão** (simulador, amostras anteriores ao esquema v2) conta sempre — nada foi medido para o filtrar. Aplica-se **uma vez ao conjunto de amostras de cada segmento** (antes das fronteiras interpoladas), por isso a distância do segmento, o ritmo médio e cada janela de "ritmo atual" lêem a mesma pista guardada, e as distâncias dos segmentos continuam a somar a da sessão. `distanceMeters` continua a ser a soma simples dos troços abaixo de 55 m/s.
+
+**As duas leituras, lado a lado** (`gps-noise.mjs`, que desde a sessão 09 lê a precisão da base e espelha a regra do motor):
+
+| | Sessão 06 (só movimento) | Sessão 09 (com o telemóvel parado) |
+|---|---|---|
+| Caminhada de referência (1 488,5 m) | −1,27 % a k = 0,25 | **1 469,6 m, −1,27 %** — os mesmos 18,9 m, todos das paragens |
+| Corrida de referência (4 212,9 m) | −0,01 % | **4 212,5 m, −0,01 %**, 1480 de 1481 fixes contam |
+| Deriva com o telemóvel parado | 16,5 m em 103 s (a única que havia) | **348,1 m → 86,8 m** em 33 min (−75 %); em movimento **−0,12 %** |
+| Ritmo a correr, 30 s | "mais nervoso": salto p95 0,038 → 0,053 m/s (+40 %, caminhada 3) | **igual**: salto p95 **0,024 → 0,024 m/s**, cv 0,051 → 0,051, desvio máximo à média 11,9 % → 11,9 % |
+| Ritmo a andar, 30 s | — | caminhada 3: salto **0,035 → 0,034**; caminhada 1 (com paragens): **0,054 → 0,053**, cv 0,290 → 0,306 |
+
+**Uma correção à medição da sessão 06, registada por honestidade.** O "+40 % mais nervoso" media o ritmo em janela **uma leitura por fix**, com a janela a encolher para os fixes presentes; sobre uma série filtrada isso inventa saltos que o motor nunca mostra, porque `recentMetrics` lê uma janela **exacta** de 30 s com as fronteiras interpoladas, a cada *tick*. Medido como o motor lê (`engineWindowSpeed`, uma leitura por segundo), o filtro **não muda o ritmo a correr em nenhuma casa decimal** e baixa o salto a andar em 0,001 m/s. A rejeição da sessão 06 foi correcta com os dados que tinha; a medida que a suportava era a errada.
+
+**Validação no motor** (`packages/engine/test/gate.test.ts`, sobre excertos reais anonimizados): o telemóvel pousado 3 min (180 fixes a ~12 m de precisão, nunca a mais de 3 m do centróide) passa de 27 m para **0 m**; 2 min de rua do mesmo teste (precisão 4 m) ficam dentro de 1 %; o excerto de corrida da sessão 06 não perde um fix e o ritmo dos 30 s continua dentro de ±10 % da média a cada segundo; o excerto de caminhada com paragem perde só a deriva da paragem, menos de 2 %. **Aplicado ao teste de campo inteiro**, aquela hora passaria a marcar **2 365 m em vez de 2 629 m** (relatório da sessão 08 §8.4).
+
+**O que fica como estava**: janela de 30 s, precisão na base, registo bruto só em dev, exportação. A alternativa "filtro só na distância, ritmo sem filtro" não foi precisa, porque o ritmo não piorou; e um `k` mais alto (0,5: caminhada −2,78 %) continua fora do critério, como na sessão 06.

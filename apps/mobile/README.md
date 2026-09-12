@@ -40,7 +40,7 @@ Nesta fase:
   `stepSim` / `sampleFromSim`) continua disponível por um interruptor no ecrã
   inicial, **só em builds de desenvolvimento**; uma sessão retomada segue a
   fonte da sua última amostra.
-- **Ritmo, precisão e exportação** ([ADR 0009](../../docs/adr/0009-ritmo-precisao-exportacao.md)): o ecrã de gravação mostra o ritmo médio do segmento **e** o ritmo dos últimos 30 s ("Ritmo atual"; "Velocidade atual" na bicicleta) — uma paragem lê "—". Não há filtro na distância: a análise das duas sessões de campo mostrou que a caminhada estava bem calibrada e que o ritmo médio só diluía as paragens. Cada fix leva a sua precisão para a base (esquema v2, `samples.accuracy`).
+- **Ritmo, precisão e exportação** ([ADR 0009](../../docs/adr/0009-ritmo-precisao-exportacao.md)): o ecrã de gravação mostra o ritmo médio do segmento **e** o ritmo dos últimos 30 s ("Ritmo atual"; "Velocidade atual" na bicicleta) — uma paragem lê "—". Cada fix leva a sua precisão para a base (esquema v2, `samples.accuracy`), e desde a sessão 09 o motor filtra com ela (`gateByAccuracy`, `k = 0,25`): um fix só conta para a distância e o ritmo quando se afastou ¼ da sua precisão do último que contou — com o telemóvel pousado 33 min o teste de campo somava 348 m de ruído, agora 87. A sessão 06 tinha rejeitado o filtro com dados só de movimento; a reversão e as duas leituras estão no ADR 0009, "Revisão".
 - **Persistência local** em SQLite append-only (`persistence/`,
   [ADR 0006](../../docs/adr/0006-persistencia-sqlite-append-only.md)); a sessão
   sobrevive a fechar ou matar a app, e a um reinício do telemóvel (retoma ao
