@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bricklap — direção C · escuro em todo o lado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   Bricklap — direções visuais (sessão 11)
+   Este ficheiro é a direção C: escuro em todo o lado.
+   O markup dos ecrãs é o mesmo nas três direções; só os tokens de tema
+   (.tema-claro / .tema-escuro) e a atribuição de tema a cada ecrã mudam.
+   -------------------------------------------------------------------------
+   Fonte: Inter (Google Fonts), pesos 400–900, números tabulares ("tnum").
+   Acento: terracota #B8432A (claro) / #C94D31 (escuro), ligado ao nome.
+   ========================================================================= */
+.tema-claro {
+  --fundo: #FBF8F4;          /* branco-quente */
+  --superficie: #FFFFFF;
+  --superficie-2: #F3EEE7;
+  --linha: #E6DFD6;
+  --tinta: #16120F;          /* quase preta, quente */
+  --tinta-2: #5A524B;
+  --tinta-3: #948A81;
+  --acento: #B8432A;         /* terracota */
+  --acento-forte: #963321;   /* premido */
+  --acento-tinta: #A33A22;   /* texto em acento sobre o fundo */
+  --acento-fundo: #F8E7E1;   /* tinta do acento a 12 % */
+  --sobre-acento: #FFFFFF;
+  --veu: rgba(22, 18, 15, .55);
+  --sombra: 0 1px 2px rgba(22, 18, 15, .06), 0 8px 24px rgba(22, 18, 15, .06);
+  /* Desportos, discretos: uma barra ou um ponto, nunca blocos */
+  --d-forca: #6B4E3D;
+  --d-passadeira: #2F6A94;
+  --d-remo: #1F8079;
+  --d-rua: #4E8A3C;
+}
+.tema-escuro {
+  --fundo: #121010;
+  --superficie: #1C1917;
+  --superficie-2: #272220;
+  --linha: #332D2A;
+  --tinta: #F7F2EC;
+  --tinta-2: #B5ABA2;
+  --tinta-3: #776E67;
+  --acento: #C94D31;
+  --acento-forte: #A83D25;
+  --acento-tinta: #F0836A;
+  --acento-fundo: #3A1F18;
+  --sobre-acento: #FFFFFF;
+  --veu: rgba(0, 0, 0, .6);
+  --sombra: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  --d-forca: #B08A76;
+  --d-passadeira: #6FA6CF;
+  --d-remo: #5FBDB4;
+  --d-rua: #8AC176;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+  background: #D9D2C8;
+  color: #16120F;
+}
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Palco (ver as três capturas lado a lado) ---------- */
+.palco { padding: 32px 24px; max-width: 1320px; margin: 0 auto; }
+.palco h1 { font-size: 20px; font-weight: 800; margin: 0 0 4px; letter-spacing: -.01em; }
+.palco p { margin: 0 0 24px; color: #5A524B; font-size: 14px; max-width: 70ch; }
+.frames { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+.frame { width: 390px; }
+.frame h2 { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #5A524B; margin: 0 0 8px; }
+.frame .ecra { border-radius: 28px; box-shadow: 0 24px 48px rgba(22, 18, 15, .25); }
+body.solo { background: transparent; }
+body.solo .palco { display: none; }
+body.solo .ecra { display: none; }
+body.solo .ecra.mostrar { display: flex; position: fixed; inset: 0; width: 390px; height: 100vh; border-radius: 0; box-shadow: none; }
+
+/* ---------- Ecrã ---------- */
+.ecra {
+  width: 390px; height: 844px; overflow: hidden; position: relative;
+  background: var(--fundo); color: var(--tinta);
+  display: flex; flex-direction: column;
+}
+.barra-estado { height: 44px; flex: none; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 24px 6px; font-size: 13px; font-weight: 600; color: var(--tinta-2); }
+.rolar { flex: 1; overflow-y: auto; padding: 0 20px 28px; }
+.rolar::-webkit-scrollbar { width: 0; }
+.icone { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.icone.p { width: 18px; height: 18px; }
+.icone.g { width: 28px; height: 28px; }
+.kicker { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--tinta-3); }
+
+/* Cor por desporto: --d */
+.d-forca { --d: var(--d-forca); }
+.d-passadeira { --d: var(--d-passadeira); }
+.d-remo { --d: var(--d-remo); }
+.d-rua { --d: var(--d-rua); }
+.ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--d); flex: none; }
+
+/* ---------- Gravação ---------- */
+.g-topo { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px 0; }
+.g-topo .nome { font-size: 15px; font-weight: 700; }
+.pilula { font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta-2); letter-spacing: .02em; }
+.chrono { padding: 18px 20px 0; }
+.chrono .tempo { font-size: 96px; font-weight: 800; letter-spacing: -.045em; line-height: .95; color: var(--tinta); }
+.chrono .legenda { margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--tinta-2); font-weight: 500; }
+.chrono .legenda b { color: var(--tinta); font-weight: 700; }
+.bloco-atual {
+  margin: 20px 20px 0; padding: 16px 16px 16px 18px; border-radius: 16px;
+  background: var(--superficie); border: 1px solid var(--linha); box-shadow: var(--sombra);
+  position: relative; overflow: hidden;
+}
+.bloco-atual::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--d); }
+.bloco-atual .cima { display: flex; align-items: center; gap: 8px; color: var(--d); }
+.bloco-atual .cima .kicker { color: var(--tinta-3); }
+.bloco-atual .linha { display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px; }
+.bloco-atual .nome { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.bloco-atual .tempo { font-size: 40px; font-weight: 700; letter-spacing: -.03em; }
+.bloco-atual .ultima { margin-top: 6px; font-size: 14px; color: var(--tinta-2); }
+.bloco-atual .ultima b { color: var(--tinta); font-weight: 700; }
+.marcas { margin: 14px 20px 0; }
+.marcas .l { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--linha); font-size: 14px; color: var(--tinta-2); }
+.marcas .l:first-child { border-top: 0; }
+.marcas .l .n { flex: 1; font-weight: 600; color: var(--tinta); }
+.marcas .l .v { font-weight: 600; color: var(--tinta); }
+.marcas .l .t { width: 44px; text-align: right; }
+.marcas .l .icone { color: var(--d); }
+.acoes { margin-top: auto; padding: 12px 20px 24px; display: grid; gap: 10px; }
+.marca {
+  height: 104px; border-radius: 20px; border: 0; cursor: pointer;
+  background: var(--acento); color: var(--sobre-acento);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  box-shadow: 0 8px 24px rgba(184, 67, 42, .28);
+}
+.marca .rotulo { display: flex; align-items: center; gap: 10px; font-size: 30px; font-weight: 800; letter-spacing: -.01em; }
+.marca small { font-size: 13px; font-weight: 600; opacity: .85; }
+.botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.botao {
+  height: 56px; border-radius: 14px; border: 1.5px solid var(--linha); background: var(--superficie);
+  display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; font-weight: 700; color: var(--tinta); cursor: pointer;
+}
+.botao.acento { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
+.botao.discreto { background: transparent; border-color: transparent; color: var(--tinta-2); }
+.botao.parar { color: var(--acento-tinta); }
+
+/* Folha (ficha rápida) */
+.veu { position: absolute; inset: 0; background: var(--veu); display: flex; align-items: flex-end; z-index: 3; }
+.folha { width: 100%; background: var(--superficie); border-radius: 24px 24px 0 0; padding: 10px 20px 24px; box-shadow: 0 -12px 40px rgba(0, 0, 0, .2); }
+.folha .pega { width: 36px; height: 4px; border-radius: 2px; background: var(--linha); margin: 0 auto 14px; }
+.folha .cabeca { display: flex; align-items: center; gap: 10px; }
+.folha .cabeca .icone { color: var(--d); }
+.folha h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+.folha .sub { color: var(--tinta-2); font-size: 13px; margin: 2px 0 0 32px; font-weight: 500; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 4px; }
+.chip { height: 36px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--linha); background: var(--superficie); font-size: 14px; font-weight: 600; display: flex; align-items: center; color: var(--tinta-2); }
+.chip.ativo { background: var(--tinta); color: var(--fundo); border-color: var(--tinta); }
+.campo { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-top: 1px solid var(--linha); }
+.campo:nth-of-type(1) { border-top: 0; }
+.campo label { font-size: 16px; font-weight: 600; }
+.campo label small { display: block; font-size: 12px; color: var(--tinta-3); font-weight: 500; margin-top: 2px; }
+.passo { display: flex; align-items: center; gap: 6px; }
+.passo .b { width: 56px; height: 56px; border-radius: 14px; border: 1.5px solid var(--linha); background: var(--superficie-2); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 500; color: var(--tinta); }
+.passo .v { min-width: 92px; text-align: center; font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.passo .v small { font-size: 14px; font-weight: 600; color: var(--tinta-2); margin-left: 3px; letter-spacing: 0; }
+.folha .botoes { margin-top: 16px; grid-template-columns: 1fr 1.6fr; }
+
+/* ---------- Resumo ---------- */
+.r-topo { display: flex; justify-content: space-between; align-items: center; padding: 6px 20px 0; }
+.r-topo .voltar { display: flex; align-items: center; gap: 2px; font-size: 15px; font-weight: 600; color: var(--acento-tinta); }
+.r-topo .quando { font-size: 13px; font-weight: 600; color: var(--tinta-2); }
+.r-titulo { padding: 10px 20px 0; }
+.r-titulo h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.r-titulo .meta { margin-top: 4px; font-size: 14px; color: var(--tinta-2); font-weight: 500; }
+.heroi { padding: 14px 20px 0; display: flex; align-items: baseline; gap: 14px; }
+.heroi .total { font-size: 76px; font-weight: 800; letter-spacing: -.045em; line-height: .95; }
+.heroi .lado { font-size: 13px; color: var(--tinta-2); font-weight: 500; line-height: 1.4; }
+.heroi .lado { display: grid; gap: 2px; }
+.heroi .lado b { color: var(--tinta); font-size: 16px; font-weight: 700; margin-right: 5px; }
+.falta {
+  margin: 18px 20px 0; padding: 14px 16px; border-radius: 16px;
+  background: var(--acento-fundo); color: var(--acento-tinta);
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+}
+.falta .icone { color: var(--acento-tinta); }
+.falta b { display: block; font-size: 15px; font-weight: 800; color: var(--acento-tinta); white-space: nowrap; }
+.falta span { font-size: 12.5px; font-weight: 500; line-height: 1.35; display: block; margin-top: 2px; }
+.falta .botao { height: 44px; padding: 0 14px; font-size: 15px; border-radius: 12px; }
+.secao { padding: 22px 20px 0; }
+.secao .cabeca { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.secao .cabeca h3 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-3); }
+.secao .cabeca span { font-size: 13px; color: var(--tinta-3); font-weight: 500; }
+.cartoes { display: grid; gap: 8px; }
+.cartao {
+  background: var(--superficie); border: 1px solid var(--linha); border-radius: 16px; padding: 12px 14px 12px 16px;
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; position: relative; overflow: hidden;
+}
+.cartao::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 2px; background: var(--d); }
+.cartao .nome { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+.cartao .nome .icone { color: var(--d); }
+.cartao .numero { font-size: 26px; font-weight: 800; letter-spacing: -.025em; text-align: right; grid-row: span 2; }
+.cartao .numero small { display: block; font-size: 13px; font-weight: 600; color: var(--tinta-2); letter-spacing: 0; margin-top: 1px; }
+.cartao .detalhe { font-size: 13px; color: var(--tinta-2); font-weight: 500; }
+.cartao .detalhe.falta-txt { color: var(--acento-tinta); font-weight: 600; }
+.notas { background: var(--superficie); border: 1px solid var(--linha); border-radius: 16px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--tinta-2); }
+.notas .vazio { color: var(--tinta-3); }
+
+/* Linha do tempo por série: rótulos, não só cor */
+.series { display: grid; gap: 8px; }
+.serie { display: grid; grid-template-columns: 22px minmax(0, 1fr) 40px; gap: 8px; align-items: center; }
+.serie .n { font-size: 12px; font-weight: 700; color: var(--tinta-3); text-align: center; }
+.serie .t { font-size: 12px; font-weight: 600; color: var(--tinta-2); text-align: right; }
+.serie .fiada { display: flex; gap: 2px; height: 34px; min-width: 0; }
+.seg {
+  height: 100%; border-radius: 6px; background: var(--superficie-2); border-left: 3px solid var(--d);
+  display: flex; align-items: center; padding: 0 6px; min-width: 0; overflow: hidden;
+  font-size: 10.5px; font-weight: 600; color: var(--tinta-2); white-space: nowrap;
+}
+.seg.em-falta { background: var(--acento-fundo); color: var(--acento-tinta); border-left-color: var(--acento); outline: 1.5px dashed var(--acento); outline-offset: -2px; }
+.legenda { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--tinta-2); font-weight: 500; }
+.legenda span { display: flex; align-items: center; gap: 5px; }
+.legenda .icone { color: var(--d); }
+</style>
+</head>
+<body>
+
+<!-- Ícones originais, de linha: um por desporto e por ação. 24×24, traço 2. -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-forca" viewBox="0 0 24 24"><path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12"/></symbol>
+  <symbol id="i-passadeira" viewBox="0 0 24 24"><path d="M3 16h11l5-3M4 16l-1 3M14 16l1 3M18 13V5h2"/></symbol>
+  <symbol id="i-remo" viewBox="0 0 24 24"><path d="M3 18h18M9 18v-4h4v4M13 12l6-5M13 12l-3 6"/></symbol>
+  <symbol id="i-rua" viewBox="0 0 24 24"><path d="M4 19c0-6 6-5 8-8s2-6 8-6"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/></symbol>
+  <symbol id="i-marca" viewBox="0 0 24 24"><path d="M6 21V4M6 4h11l-2.5 4.5L17 13H6"/></symbol>
+  <symbol id="i-mudar" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
+  <symbol id="i-parar" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M10 3h4"/></symbol>
+  <symbol id="i-aviso" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></symbol>
+  <symbol id="i-editar" viewBox="0 0 24 24"><path d="M4 20l4.5-1L19 8.5 15.5 5 5 15.5 4 20zM13 7.5l3.5 3.5"/></symbol>
+  <symbol id="i-voltar" viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></symbol>
+  <symbol id="i-notas" viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 9h6M9 13h6M9 17h3"/></symbol>
+  <symbol id="i-serie" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h13"/></symbol>
+</svg>
+
+<div class="palco">
+  <h1>Direção C — escuro em todo o lado</h1>
+  <p>Fundo quase preto quente, tinta clara, o mesmo acento terracota. Gravação e consulta no mesmo tema, para comparar com a app atual. Abre com <code>?ecra=gravacao</code>, <code>?ecra=ficha</code> ou <code>?ecra=resumo</code> para ver um ecrã a cheio, à altura da janela (é assim que as capturas são tiradas).</p>
+  <div class="frames" id="frames"></div>
+</div>
+
+<!-- ================= 1. GRAVAÇÃO (5×5 em curso) ================= -->
+<div class="ecra tema-escuro" data-ecra="gravacao">
+  <div class="barra-estado"><span class="num">07:58</span><span>Bricklap</span></div>
+  <div class="g-topo"><span class="nome">Circuito 5×5</span><span class="pilula">Série 3 de 5</span></div>
+  <div class="chrono">
+    <div class="tempo num">18:42</div>
+    <div class="legenda"><svg class="icone p"><use href="#i-relogio"/></svg><span>Tempo total · <b>12 marcas</b> · desde as 07:40</span></div>
+  </div>
+  <div class="bloco-atual d-remo">
+    <div class="cima"><svg class="icone"><use href="#i-remo"/></svg><span class="kicker">A remar · bloco 3 de 5</span></div>
+    <div class="linha"><span class="nome">Remo</span><span class="tempo num">1:12</span></div>
+    <div class="ultima">Última vez <b>500 m</b></div>
+  </div>
+  <div class="marcas">
+    <div class="l d-passadeira"><svg class="icone p"><use href="#i-passadeira"/></svg><span class="n">Passadeira</span><span class="v">0,5 km @ 5:30</span><span class="t num">2:48</span></div>
+    <div class="l d-forca"><svg class="icone p"><use href="#i-forca"/></svg><span class="n">Supino</span><span class="v">10 × 85 kg</span><span class="t num">1:28</span></div>
+    <div class="l d-forca"><svg class="icone p"><use href="#i-forca"/></svg><span class="n">Elevações</span><span class="v">8 reps</span><span class="t num">1:02</span></div>
+  </div>
+  <div class="acoes">
+    <button class="marca"><span class="rotulo"><svg class="icone g"><use href="#i-marca"/></svg>Marca</span><small>premir: marca + ficha · a seguir: Agachamento</small></button>
+    <div class="botoes">
+      <button class="botao"><svg class="icone"><use href="#i-mudar"/></svg>Mudar</button>
+      <button class="botao parar"><svg class="icone"><use href="#i-parar"/></svg>Parar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 2. GRAVAÇÃO com FICHA RÁPIDA aberta ================= -->
+<div class="ecra tema-escuro" data-ecra="ficha">
+  <div class="barra-estado"><span class="num">07:57</span><span>Bricklap</span></div>
+  <div class="g-topo"><span class="nome">Circuito 5×5</span><span class="pilula">Série 3 de 5</span></div>
+  <div class="chrono">
+    <div class="tempo num">17:33</div>
+    <div class="legenda"><svg class="icone p"><use href="#i-relogio"/></svg><span>Tempo total · <b>11 marcas</b> · desde as 07:40</span></div>
+  </div>
+  <div class="bloco-atual d-passadeira">
+    <div class="cima"><svg class="icone"><use href="#i-passadeira"/></svg><span class="kicker">Na passadeira · bloco 2 de 5</span></div>
+    <div class="linha"><span class="nome">Passadeira</span><span class="tempo num">0:03</span></div>
+    <div class="ultima">Última vez <b>5:30 /km</b></div>
+  </div>
+  <div class="acoes">
+    <button class="marca"><span class="rotulo"><svg class="icone g"><use href="#i-marca"/></svg>Marca</span><small>premir: marca + ficha · a seguir: Remo</small></button>
+    <div class="botoes">
+      <button class="botao"><svg class="icone"><use href="#i-mudar"/></svg>Mudar</button>
+      <button class="botao parar"><svg class="icone"><use href="#i-parar"/></svg>Parar</button>
+    </div>
+  </div>
+  <div class="veu"><div class="folha d-forca">
+    <div class="pega"></div>
+    <div class="cabeca"><svg class="icone"><use href="#i-forca"/></svg><h2>Supino</h2></div>
+    <div class="sub">Série 3 · <span class="num">1:28</span> · o relógio já conta a passadeira</div>
+    <div class="chips"><span class="chip ativo">Supino</span><span class="chip">Agachamento</span><span class="chip">Elevações</span><span class="chip">Remada</span><span class="chip">Flexões</span></div>
+    <div class="campo"><label>Repetições</label><div class="passo"><span class="b">−</span><span class="v num">10</span><span class="b">+</span></div></div>
+    <div class="campo"><label>Carga<small>última vez 85 kg</small></label><div class="passo"><span class="b">−</span><span class="v num">85<small>kg</small></span><span class="b">+</span></div></div>
+    <div class="botoes"><button class="botao discreto">Depois</button><button class="botao acento">Guardar</button></div>
+  </div></div>
+</div>
+
+<!-- ================= 3. RESUMO POR BLOCOS ================= -->
+<div class="ecra tema-escuro" data-ecra="resumo">
+  <div class="barra-estado"><span class="num">08:31</span><span>Bricklap</span></div>
+  <div class="r-topo"><span class="voltar"><svg class="icone"><use href="#i-voltar"/></svg>Histórico</span><span class="quando">Hoje · 07:40 – 08:22</span></div>
+  <div class="rolar">
+    <div class="r-titulo" style="padding-left:0;padding-right:0"><h1>Circuito 5×5</h1><div class="meta">5 séries · 25 blocos · força, passadeira e remo</div></div>
+    <div class="heroi" style="padding-left:0;padding-right:0">
+      <div class="total num">42:10</div>
+      <div class="lado"><span><b class="num">2,0 km</b>passadeira</span><span><b class="num">2 000 m</b>remo</span></div>
+    </div>
+    <div class="falta" style="margin-left:0;margin-right:0">
+      <svg class="icone"><use href="#i-aviso"/></svg>
+      <div><b>3 blocos por preencher</b><span>Passadeira (série 3) · Remo (série 4) · carga do Supino (série 5)</span></div>
+      <button class="botao acento">Preencher</button>
+    </div>
+
+    <div class="secao" style="padding-left:0;padding-right:0">
+      <div class="cabeca"><h3>Por exercício</h3><span>5 exercícios</span></div>
+      <div class="cartoes">
+        <div class="cartao d-forca"><div class="nome"><svg class="icone p"><use href="#i-forca"/></svg>Supino</div><div class="numero num">5×10<small>80–85 kg</small></div><div class="detalhe falta-txt">carga da série 5 por preencher</div></div>
+        <div class="cartao d-passadeira"><div class="nome"><svg class="icone p"><use href="#i-passadeira"/></svg>Passadeira</div><div class="numero num">2,0 km<small>4 × 0,5 km @ 5:30</small></div><div class="detalhe falta-txt">série 3 por preencher</div></div>
+        <div class="cartao d-remo"><div class="nome"><svg class="icone p"><use href="#i-remo"/></svg>Remo</div><div class="numero num">2 000 m<small>4 × 500 m</small></div><div class="detalhe falta-txt">série 4 por preencher</div></div>
+        <div class="cartao d-forca"><div class="nome"><svg class="icone p"><use href="#i-forca"/></svg>Agachamento</div><div class="numero num">5×8<small>100–105 kg</small></div><div class="detalhe">5 séries completas</div></div>
+        <div class="cartao d-forca"><div class="nome"><svg class="icone p"><use href="#i-forca"/></svg>Elevações</div><div class="numero num">5×8<small>peso do corpo</small></div><div class="detalhe">5 séries completas</div></div>
+      </div>
+    </div>
+
+    <div class="secao" style="padding-left:0;padding-right:0">
+      <div class="cabeca"><h3>Notas</h3><svg class="icone p" style="color:var(--tinta-3)"><use href="#i-editar"/></svg></div>
+      <div class="notas">Supino a 85 kg nas últimas três. A passadeira desligou-se na série 3, daí o buraco.</div>
+    </div>
+
+    <div class="secao" style="padding-left:0;padding-right:0">
+      <div class="cabeca"><h3>Por série</h3><span>25 blocos</span></div>
+      <div class="series">
+        <div class="serie"><span class="n">1</span><div class="fiada"><span class="seg d-forca" style="flex:85">Supino</span><span class="seg d-passadeira" style="flex:165">Passadeira</span><span class="seg d-remo" style="flex:115">Remo</span><span class="seg d-forca" style="flex:75">Agach.</span><span class="seg d-forca" style="flex:60">Elev.</span></div><span class="t num">8:20</span></div>
+        <div class="serie"><span class="n">2</span><div class="fiada"><span class="seg d-forca" style="flex:88">Supino</span><span class="seg d-passadeira" style="flex:168">Passadeira</span><span class="seg d-remo" style="flex:118">Remo</span><span class="seg d-forca" style="flex:78">Agach.</span><span class="seg d-forca" style="flex:58">Elev.</span></div><span class="t num">8:30</span></div>
+        <div class="serie"><span class="n">3</span><div class="fiada"><span class="seg d-forca" style="flex:90">Supino</span><span class="seg d-passadeira em-falta" style="flex:162">Passadeira ?</span><span class="seg d-remo" style="flex:112">Remo</span><span class="seg d-forca" style="flex:80">Agach.</span><span class="seg d-forca" style="flex:64">Elev.</span></div><span class="t num">8:28</span></div>
+        <div class="serie"><span class="n">4</span><div class="fiada"><span class="seg d-forca" style="flex:84">Supino</span><span class="seg d-passadeira" style="flex:170">Passadeira</span><span class="seg d-remo em-falta" style="flex:120">Remo ?</span><span class="seg d-forca" style="flex:77">Agach.</span><span class="seg d-forca" style="flex:60">Elev.</span></div><span class="t num">8:31</span></div>
+        <div class="serie"><span class="n">5</span><div class="fiada"><span class="seg d-forca em-falta" style="flex:92">Supino ?</span><span class="seg d-passadeira" style="flex:166">Passadeira</span><span class="seg d-remo" style="flex:117">Remo</span><span class="seg d-forca" style="flex:76">Agach.</span><span class="seg d-forca" style="flex:50">Elev.</span></div><span class="t num">8:21</span></div>
+      </div>
+      <div class="legenda">
+        <span class="d-forca"><svg class="icone p"><use href="#i-forca"/></svg>Força</span>
+        <span class="d-passadeira"><svg class="icone p"><use href="#i-passadeira"/></svg>Passadeira</span>
+        <span class="d-remo"><svg class="icone p"><use href="#i-remo"/></svg>Remo</span>
+        <span style="color:var(--acento-tinta)">? por preencher</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ?ecra=gravacao|ficha|resumo mostra um ecrã a cheio (captura); sem parâmetro, os três lado a lado. */
+(function () {
+  const ecra = new URLSearchParams(location.search).get('ecra');
+  const ecras = [...document.querySelectorAll('.ecra')];
+  if (ecra && ecras.some((e) => e.dataset.ecra === ecra)) {
+    document.body.classList.add('solo');
+    ecras.find((e) => e.dataset.ecra === ecra).classList.add('mostrar');
+    return;
+  }
+  const nomes = { gravacao: '1 · Gravação (5×5 em curso)', ficha: '2 · Gravação com ficha rápida', resumo: '3 · Resumo por blocos' };
+  const frames = document.getElementById('frames');
+  ecras.forEach((e) => {
+    const f = document.createElement('div'); f.className = 'frame';
+    const h = document.createElement('h2'); h.textContent = nomes[e.dataset.ecra];
+    f.appendChild(h); f.appendChild(e); frames.appendChild(f);
+  });
+})();
+</script>
+</body>
+</html>
