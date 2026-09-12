@@ -157,17 +157,11 @@ function paceOrSpeed(sport: Sport, m: SegmentMetrics): string | null {
  * carries that clock so a frozen "25:12" an hour later reads as "at 18:04",
  * not as a stuck timer.
  */
-function recordingNotification(session: Session, now: number): RecordingNotification {
+function recordingNotification(session: Session): RecordingNotification {
   const sport = currentSport(session.events) ?? "run";
   return {
-    title: t("mobile.recordingNotificationTitle", {
-      sport: t(`sport.${sport}.label`),
-      elapsed: formatDuration(durationMs(session, now)),
-    }),
-    body: t("mobile.recordingNotificationBody", {
-      startedAt: formatClock(session.createdAt, locale),
-      updatedAt: formatClock(now, locale),
-    }),
+    title: t("mobile.recordingNotificationTitle", { sport: t(`sport.${sport}.label`) }),
+    body: t("mobile.recordingNotificationBody", { startedAt: formatClock(session.createdAt, locale) }),
   };
 }
 
@@ -354,7 +348,7 @@ export default function App() {
       }
       const live = getStore().live();
       if (!live) return;
-      await startBackgroundRecording(recordingNotification(live, Date.now()));
+      await startBackgroundRecording(recordingNotification(live));
       if (cancelled) await stopBackgroundRecording("segment changed before the service was up");
     })().catch((e: unknown) => {
       if (!cancelled) setGps({ kind: "error", message: String(e) });
@@ -375,7 +369,7 @@ export default function App() {
     if (!feedWanted || simEnabled) return;
     const live = getStore().live();
     if (!live) return;
-    void updateRecordingNotification(recordingNotification(live, Date.now()));
+    void updateRecordingNotification(recordingNotification(live));
   }, [liveSport, feedWanted, simEnabled]);
 
   /**

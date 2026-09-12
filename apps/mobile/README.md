@@ -26,9 +26,12 @@ Nesta fase:
   + as permissões de serviço e `RECEIVE_BOOT_COMPLETED` no manifesto). A tarefa
   escreve cada fix na base com o **timestamp do próprio fix**; se o Android
   matar o processo, reanima-o para o lote seguinte e a tarefa hidrata o store
-  sozinha (`recovered_headless` na base). A notificação mostra o desporto e o
-  tempo decorrido à data do último Iniciar / Mudar / Continuar (a API não deixa
-  refrescá-la sem reiniciar o pedido de localização). A notificação só aparece
+  sozinha (`recovered_headless` na base). A notificação diz o **desporto** e a
+  **hora de início** ("A gravar desde as 07:26") — e não o tempo decorrido: o
+  texto é uma opção da tarefa e a API não deixa refrescá-lo sem reiniciar o
+  pedido de localização, por isso um cronómetro ali ficaria parado no valor do
+  último Iniciar / Mudar / Continuar (era o que a sessão 08 mostrava, e o
+  fundador leu-o como avariado). A notificação só aparece
   com a permissão **`POST_NOTIFICATIONS`** (Android 13+), pedida no arranque da
   app; sem ela o serviço grava na mesma, mas nada o mostra na barra — a app
   avisa. A app pede também a **exceção de otimização de bateria** e explica

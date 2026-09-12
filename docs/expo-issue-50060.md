@@ -91,4 +91,4 @@ O corpo é o do issue #50060, que está guardado em `docs/expo-issue-50060-body.
 
 ## Se preferires não enviar
 
-O remendo fica no repositório e é revisto a cada atualização do SDK (o `patch-package` falha de forma ruidosa se o ficheiro mudar). A regra do CTO sobre a camada expo está no ADR 0010: à quarta surpresa, ou se o teste de 2 h mostrar perdas, passa-se ao módulo Kotlin.
+O remendo fica no repositório e é revisto a cada atualização do SDK (o `patch-package` falha de forma ruidosa se o ficheiro mudar). A regra do CTO sobre a camada expo está no ADR 0010: à quarta surpresa, ou se o teste de campo mostrar perdas, passa-se ao módulo Kotlin. O teste de campo de 1 h (2026-09-12) **não** mostrou perdas — zero `recovered`, serviço em primeiro plano a hora inteira — por isso o gatilho não disparou.

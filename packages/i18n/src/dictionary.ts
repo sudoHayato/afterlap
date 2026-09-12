@@ -125,9 +125,11 @@ export type Dictionary = {
     exportFailed: string;
     /**
      * The persistent notification while a session records in the background
-     * (ADR 0010). Title takes `{sport}` and `{elapsed}`; body takes
-     * `{startedAt}` and `{updatedAt}` — the text only changes at START,
-     * CHANGE and resume, so it says when it was last refreshed.
+     * (ADR 0010). Title takes `{sport}`, body takes `{startedAt}`, and
+     * neither carries elapsed time: the text is an option of the location
+     * task, so it only changes at START, CHANGE and resume, and a clock in
+     * it would sit frozen — which the founder read as broken (session 09).
+     * The clock that runs is inside the app.
      */
     recordingNotificationTitle: string;
     recordingNotificationBody: string;
