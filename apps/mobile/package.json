@@ -10,25 +10,38 @@
     "export:android": "expo export --platform android --output-dir dist",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "doctor": "expo-doctor",
-    "test:device": "vitest run --config vitest.device.config.mts",
+    "test:device": "vitest run --config vitest.device.config.mts device/recovery",
+    "test:device:background": "vitest run --config vitest.device.config.mts device/background",
     "export:geojson": "node scripts/geojson.mjs"
   },
   "dependencies": {
     "@bricklap/engine": "*",
     "@bricklap/i18n": "*",
     "expo": "~57.0.21",
+    "expo-battery": "~57.0.3",
     "expo-dev-client": "~57.0.18",
     "expo-file-system": "~57.0.6",
-    "expo-keep-awake": "~57.0.1",
+    "expo-intent-launcher": "~57.0.1",
     "expo-location": "~57.0.16",
     "expo-sharing": "~57.0.19",
     "expo-sqlite": "~57.0.2",
     "expo-status-bar": "~57.0.1",
+    "expo-task-manager": "~57.0.17",
     "react": "19.2.3",
     "react-native": "0.86.3"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
+  },
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-task-manager",
+          "unimodules-app-loader"
+        ]
+      }
+    }
   }
 }

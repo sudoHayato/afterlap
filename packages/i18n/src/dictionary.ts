@@ -123,6 +123,24 @@ export type Dictionary = {
     /** Export button in the history screen and its failure line. */
     exportData: string;
     exportFailed: string;
+    /**
+     * The persistent notification while a session records in the background
+     * (ADR 0010). Title takes `{sport}`, body takes `{startedAt}`, and
+     * neither carries elapsed time: the text is an option of the location
+     * task, so it only changes at START, CHANGE and resume, and a clock in
+     * it would sit frozen — which the founder read as broken (session 09).
+     * The clock that runs is inside the app.
+     */
+    recordingNotificationTitle: string;
+    recordingNotificationBody: string;
+    /** Battery-optimisation exemption: the idle-screen card that asks, and the live-screen warning while it is missing. */
+    batteryExemptionCopy: string;
+    batteryExemptionButton: string;
+    batteryWarning: string;
+    /** Notification permission (Android 13+): the idle-screen card that asks, its button, and the live-screen warning while it is missing. */
+    notificationsCopy: string;
+    notificationsButton: string;
+    notificationsWarning: string;
   };
   meta: {
     title: string;

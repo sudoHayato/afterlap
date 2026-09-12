@@ -57,8 +57,10 @@ export type Sample = {
    * Horizontal accuracy the provider reported for this fix, in metres
    * (68 % confidence radius on Android). Absent when unknown — simulated
    * samples, and real fixes recorded before the accuracy column existed
-   * (ADR 0009). Recorded so filters can be decided on data; nothing in the
-   * engine changes distance because of it today.
+   * (ADR 0009). Since session 09 it gates what counts for distance and pace
+   * (`gateByAccuracy`): a fix only counts once it has moved at least
+   * ¼ of its accuracy away from the last one that did. A sample without it
+   * always counts.
    */
   accuracyM?: number;
 };

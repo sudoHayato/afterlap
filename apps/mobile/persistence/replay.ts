@@ -22,6 +22,14 @@ export type SampleRow = {
   accuracy: number | null;
 };
 
+/**
+ * A `recovered` written by the background task when Android revived the
+ * dead process for a batch of fixes (ADR 0010), as opposed to the athlete
+ * reopening the app. Same event for the engine — `eventFromRow` folds it
+ * into `recovered` — only the row remembers who restarted; no new column.
+ */
+export const RECOVERED_HEADLESS_TYPE = "recovered_headless";
+
 export type StoredSession = {
   session: Session;
   /** True when the STOP that closed it carried the discard flag. */
@@ -45,6 +53,7 @@ export function eventFromRow(row: EventRow): SessionEvent {
     case "stopped":
       return { type: "stopped", at: row.at };
     case "recovered":
+    case RECOVERED_HEADLESS_TYPE:
       return { type: "recovered", at: row.at };
     default:
       throw new Error(`events.seq=${row.seq}: unknown type ${JSON.stringify(row.type)}`);

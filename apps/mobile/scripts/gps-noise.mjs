@@ -14,7 +14,7 @@
  * Never prints a coordinate: legs are reduced to (dt, distance, accuracy,
  * speed) before anything is reported. Self-contained like geojson.mjs:
  * node:sqlite, no dependency, its own segment walk (sport_changed / stopped
- * cut segments, `recovered` is ignored — the engine's rules, mirrored).
+ * cut segments, `recovered` and `recovered_headless` are ignored — the engine's rules, mirrored).
  */
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -33,16 +33,20 @@ for (let i = 0; i < args.length; i++) {
   else files.push(args[i]);
 }
 const [dbPath, rawPath] = files;
-if (!dbPath || !rawPath || sessionIds.length === 0) {
-  console.error("usage: gps-noise.mjs <bricklap.db> <gps-raw.jsonl> --session <id> [--svg out.svg]");
+if (!dbPath || sessionIds.length === 0) {
+  console.error("usage: gps-noise.mjs <bricklap.db> [gps-raw.jsonl] --session <id> [--svg out.svg]");
   process.exit(2);
 }
 
 // -- load -------------------------------------------------------------------
 
+// The raw log is optional since session 09: a v2 database carries the
+// accuracy of every fix (ADR 0009), and a release build writes no raw log.
+// The raw line still wins when present (it is the same number).
 const db = new DatabaseSync(dbPath, { readOnly: true });
+const hasAccuracyColumn = db.prepare("PRAGMA table_info(samples)").all().some((c) => c.name === "accuracy");
 const raw = new Map();
-for (const line of readFileSync(rawPath, "utf8").split("\n")) {
+for (const line of rawPath ? readFileSync(rawPath, "utf8").split("\n") : []) {
   if (!line.trim()) continue;
   const r = JSON.parse(line);
   raw.set(`${r.session}:${r.t}`, r);
@@ -59,7 +63,9 @@ function haversineM(a, b) {
 /** Segments of a session with their samples; a sample is reduced to what the analysis needs. */
 function loadSession(id) {
   const events = db.prepare("SELECT type, at, sport FROM events WHERE session_id = ? ORDER BY seq").all(id);
-  const rows = db.prepare("SELECT t, lat, lng, speed_mps FROM samples WHERE session_id = ? ORDER BY seq").all(id);
+  const rows = db
+    .prepare(`SELECT t, lat, lng, speed_mps, ${hasAccuracyColumn ? "accuracy" : "NULL AS accuracy"} FROM samples WHERE session_id = ? ORDER BY seq`)
+    .all(id);
   const segments = [];
   for (const e of events) {
     const open = segments.at(-1);
@@ -72,7 +78,7 @@ function loadSession(id) {
     const seg = segments.find((s) => r.t >= s.startAt && r.t < (s.endAt ?? Infinity));
     if (!seg) continue;
     const line = raw.get(`${id}:${r.t}`);
-    seg.samples.push({ t: r.t, lat: r.lat, lng: r.lng, speedMps: r.speed_mps, accuracyM: line?.accuracyM ?? null });
+    seg.samples.push({ t: r.t, lat: r.lat, lng: r.lng, speedMps: r.speed_mps, accuracyM: line?.accuracyM ?? r.accuracy ?? null });
   }
   return { id, startAt: events[0]?.at ?? 0, segments };
 }
@@ -141,20 +147,17 @@ function histogram(label, xs, edges, unit) {
 
 /**
  * Keep a fix only when it moved at least `k × accuracy` from the last kept
- * fix (accuracy of the candidate; unknown accuracy counts as 30 m). The
- * first fix is always kept. Returns the kept samples.
+ * fix (accuracy of the candidate). The first fix is always kept, and so is a
+ * fix without accuracy — the engine's rule (`gateByAccuracy`, ADR 0009
+ * revised in session 09), mirrored here so the numbers below are the
+ * engine's. Returns the kept samples.
  */
 function gateByAccuracy(samples, k) {
   if (k <= 0) return samples;
   const kept = [];
   for (const s of samples) {
     const last = kept.at(-1);
-    if (!last) {
-      kept.push(s);
-      continue;
-    }
-    const acc = s.accuracyM ?? 30;
-    if (haversineM(last, s) >= k * acc) kept.push(s);
+    if (!last || s.accuracyM === null || haversineM(last, s) >= k * s.accuracyM) kept.push(s);
   }
   return kept;
 }
@@ -190,6 +193,39 @@ function windowedSpeed(samples, windowS) {
     const span = (samples[i].t - samples[j].t) / 1000;
     if (span < windowS * 0.8) continue;
     out.push((cum[i] - cum[j]) / span);
+  }
+  return out;
+}
+
+/**
+ * What `recentMetrics` in the engine reads once a second: the distance over
+ * an exact trailing window of `windowS`, both bounds interpolated along the
+ * leg they fall in, over the given (already gated) samples. `windowedSpeed`
+ * above reads once per fix with a window that shrinks to the fixes present,
+ * which overstates the jumps of a gated series; this is the athlete's view.
+ */
+function engineWindowSpeed(samples, windowS, stepS = 1) {
+  if (samples.length < 2) return [];
+  const cum = [0];
+  for (let i = 1; i < samples.length; i++) {
+    const d = haversineM(samples[i - 1], samples[i]);
+    const dt = Math.max(0.001, (samples[i].t - samples[i - 1].t) / 1000);
+    cum.push(cum[i - 1] + (d / dt > 55 ? 0 : d));
+  }
+  let i = 0;
+  const distAt = (t) => {
+    while (i < samples.length - 2 && samples[i + 1].t <= t) i++;
+    const a = samples[i], b = samples[i + 1];
+    const f = Math.min(1, Math.max(0, (t - a.t) / (b.t - a.t)));
+    return cum[i] + (cum[i + 1] - cum[i]) * f;
+  };
+  const out = [];
+  const t0 = samples[0].t, tEnd = samples.at(-1).t;
+  for (let t = t0 + windowS * 1000; t <= tEnd; t += stepS * 1000) {
+    i = 0;
+    const dStart = distAt(t - windowS * 1000);
+    const dEnd = distAt(t);
+    out.push((dEnd - dStart) / windowS);
   }
   return out;
 }
@@ -267,7 +303,7 @@ for (const id of sessionIds) {
       );
     }
 
-    console.log("  candidate filters — distance change and windowed pace stability:");
+    console.log("  candidate filters — distance change, windowed pace stability, and what the athlete reads at 30 s (jump p95 between readings; max deviation of the 30 s pace from the segment average):");
     for (const k of [0, 0.25, 0.5, 1, 1.5]) {
       const kept = gateByAccuracy(seg.samples, k);
       const d = distanceOf(kept);
@@ -276,8 +312,12 @@ for (const id of sessionIds) {
         const ws = windowedSpeed(kept, w);
         parts.push(`w${w} cv ${f3(cv(ws))}`);
       }
+      const w30 = engineWindowSpeed(kept, 30);
+      const jumps = w30.slice(1).map((v, j) => Math.abs(v - w30[j]));
+      const avg = d / durS;
+      const maxDev = Math.max(...w30.map((v) => Math.abs(v - avg) / avg));
       console.log(
-        `    k=${String(k).padEnd(4)} kept ${String(kept.length).padStart(5)}/${seg.samples.length}  distance ${f1(d)} m (${(d - dist >= 0 ? "+" : "") + f2((100 * (d - dist)) / dist)} %)  ${parts.join("  ")}`,
+        `    k=${String(k).padEnd(4)} kept ${String(kept.length).padStart(5)}/${seg.samples.length}  distance ${f1(d)} m (${(d - dist >= 0 ? "+" : "") + f2((100 * (d - dist)) / dist)} %)  ${parts.join("  ")}  | engine w30 (1 s ticks): cv ${f3(cv(w30))}  jump p95 ${f3(pct(jumps, 0.95))} m/s  max |w30 − avg| ${f1(100 * maxDev)} %`,
       );
     }
 

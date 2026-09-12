@@ -13,7 +13,7 @@ import {
   type SessionEvent,
   type Sport,
 } from "@bricklap/engine";
-import { replaySessions, type EventRow, type SampleRow, type StoredSession } from "./replay";
+import { RECOVERED_HEADLESS_TYPE, replaySessions, type EventRow, type SampleRow, type StoredSession } from "./replay";
 import { migrate } from "./schema";
 import type { SqlDb } from "./sql";
 
@@ -23,9 +23,23 @@ import type { SqlDb } from "./sql";
  * is underneath — SQLite instead of localStorage, and nothing is ever deleted:
  * discardLive writes a STOP with a flag.
  */
+/**
+ * Who restarted the process before a hydrate: the athlete opening the app
+ * (`user`, the default) or Android reviving it for the background task
+ * (`headless`, ADR 0010). Only the stored row differs.
+ */
+export type RecoveryOrigin = "user" | "headless";
+
 export interface SessionStore {
-  /** Open, migrate, replay. Marks a live session as recovered and returns it. */
-  hydrate(at?: number): Session | null;
+  /**
+   * Open, migrate, replay. Marks a live session as recovered and returns it.
+   * Pending samples are written first: a hydrate on a store that already
+   * holds a session (the app opened in a process the task revived) must not
+   * replay a database that is behind its own buffer. A headless hydrate
+   * right after another headless one (nothing but samples in between)
+   * writes nothing: it is the same revival, seen by the next batch.
+   */
+  hydrate(at?: number, origin?: RecoveryOrigin): Session | null;
   start(sport: Sport, at?: number): string;
   changeSport(sport: Sport, at?: number): void;
   stop(at?: number): string | null;
@@ -94,16 +108,26 @@ export class SqliteSessionStore implements SessionStore {
     this.onTiming = options.onTiming;
   }
 
-  hydrate(at = this.now()): Session | null {
+  hydrate(at = this.now(), origin: RecoveryOrigin = "user"): Session | null {
     migrate(this.db);
+    this.flush();
     const live = this.loadLive();
     if (!live) {
       this.liveSession = null;
       return null;
     }
+    if (origin === "headless" && this.lastEventType(live.id) === RECOVERED_HEADLESS_TYPE) {
+      // Still the same revival: in a process Android brought back, the task
+      // manager builds a fresh JS context for each batch of fixes and drops
+      // it after, so every batch hydrates. One row per revival, not per batch.
+      this.liveSession = live;
+      return live;
+    }
     const recovered = applyRecovered(live, at);
     const added = recovered.events.length > live.events.length;
-    if (added) this.writeEvent(recovered.id, recovered.events[recovered.events.length - 1]!, false);
+    if (added) {
+      this.writeEvent(recovered.id, recovered.events[recovered.events.length - 1]!, false, origin);
+    }
     this.liveSession = recovered;
     return recovered;
   }
@@ -215,6 +239,14 @@ export class SqliteSessionStore implements SessionStore {
     return replaySessions(events.filter((e) => e.session_id === chosen.session.id), samples)[0]!.session;
   }
 
+  /** The stored type of a session's newest event row, before replay folds it. */
+  private lastEventType(sessionId: string): string | undefined {
+    return this.db.getAllSync<{ type: string }>(
+      "SELECT type FROM events WHERE session_id = ? ORDER BY seq DESC LIMIT 1",
+      [sessionId],
+    )[0]?.type;
+  }
+
   private closeLive(at: number, discarded: boolean): string | null {
     const live = this.liveSession;
     if (!live) return null;
@@ -229,9 +261,10 @@ export class SqliteSessionStore implements SessionStore {
   /**
    * Synchronous, one transaction: pending samples first (so a boundary sample
    * lands before the CHANGE/STOP that follows it), then the event. When this
-   * returns, the event is on disk.
+   * returns, the event is on disk. A headless recovery is the one event
+   * whose row type differs from the engine's (`recovered_headless`).
    */
-  private writeEvent(sessionId: string, event: SessionEvent, discarded: boolean): void {
+  private writeEvent(sessionId: string, event: SessionEvent, discarded: boolean, origin: RecoveryOrigin = "user"): void {
     if (this.flushTimer !== null) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;
@@ -242,9 +275,10 @@ export class SqliteSessionStore implements SessionStore {
     this.db.withTransactionSync(() => {
       for (const p of batch) this.insertSample(p.sessionId, p.sample);
       const sport = event.type === "started" || event.type === "sport_changed" ? event.sport : null;
+      const type = event.type === "recovered" && origin === "headless" ? RECOVERED_HEADLESS_TYPE : event.type;
       this.db.runSync("INSERT INTO events (session_id, type, at, sport, discarded) VALUES (?, ?, ?, ?, ?)", [
         sessionId,
-        event.type,
+        type,
         event.at,
         sport,
         discarded ? 1 : 0,

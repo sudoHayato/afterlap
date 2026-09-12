@@ -13,7 +13,7 @@
  * dependency) and its own tiny segment walk. Node cannot import the engine
  * or the persistence adapter without a loader (their relative imports have
  * no extension), and a debug script does not justify one. The rules mirrored
- * here — segments cut at sport_changed / stopped, `recovered` ignored — are
+ * here — segments cut at sport_changed / stopped, `recovered` and `recovered_headless` ignored — are
  * the engine's; if they ever change, change this too.
  */
 import { DatabaseSync } from "node:sqlite";

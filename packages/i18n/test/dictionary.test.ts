@@ -84,3 +84,18 @@ describe("en and pt-PT dictionaries — mesmo conjunto de chaves", () => {
     );
   });
 });
+
+describe("recording notification (ADR 0010) — placeholders present in both languages", () => {
+  it("title takes only {sport}; body takes only {startedAt} — no elapsed time", () => {
+    for (const dict of [en, ptPT] as const) {
+      expect(dict.mobile.recordingNotificationTitle).toContain("{sport}");
+      expect(dict.mobile.recordingNotificationBody).toContain("{startedAt}");
+      // A clock in a text refreshed only at START / CHANGE / resume would sit
+      // frozen; the founder read "Caminhada · 00:00" as broken (session 09).
+      for (const text of [dict.mobile.recordingNotificationTitle, dict.mobile.recordingNotificationBody]) {
+        expect(text).not.toContain("{elapsed}");
+        expect(text).not.toContain("{updatedAt}");
+      }
+    }
+  });
+});

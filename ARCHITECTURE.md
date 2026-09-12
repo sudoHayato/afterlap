@@ -60,8 +60,8 @@ Dicionários de tradução e formatação por sistema de unidades. TypeScript pu
 
 - **`packages/engine`** não importa DOM, React, React Native, zustand nem armazenamento. Recebe tempos (`at`) e aleatoriedade (`rng`) por parâmetro, o que torna os testes determinísticos. Também não tem texto de interface — só `SPORT_PACE_KIND` e `SPORT_HAS_GPS` (lógica), nunca rótulos.
 - **`packages/i18n`** depende só do motor (tipo `Sport` + formatadores). Não importa DOM nem React Native.
-- **Adaptadores vivem nas apps.** O lab web tem `apps/web-lab/src/lib/store.ts` (zustand + `localStorage`, chave `bricklap.v1`, migração única de `afterlap.v1`; a leitura está isolada em `loadFrom(storage)` e testada com um storage em memória) e `apps/web-lab/src/lib/i18n.ts` (deteção de locale via `navigator`). A app Android tem `apps/mobile/persistence/` (SQLite append-only, esquema v2 com a precisão de cada fix — ADR 0006 e 0009), `apps/mobile/gps/` (expo-location, registo bruto só em dev), `apps/mobile/export.ts` (cópia consistente da base pela folha de partilha) e `apps/mobile/i18n.ts` para a deteção via `I18nManager`.
-- Cada app tem o seu próprio "relógio" e o seu próprio fornecedor de amostras (o lab web usa o simulador; a app Android usa `expo-location` em primeiro plano, com o simulador por interruptor só em desenvolvimento — ADR 0007), e limita-se a chamar as funções puras do motor.
+- **Adaptadores vivem nas apps.** O lab web tem `apps/web-lab/src/lib/store.ts` (zustand + `localStorage`, chave `bricklap.v1`, migração única de `afterlap.v1`; a leitura está isolada em `loadFrom(storage)` e testada com um storage em memória) e `apps/web-lab/src/lib/i18n.ts` (deteção de locale via `navigator`). A app Android tem `apps/mobile/persistence/` (SQLite append-only, esquema v2 com a precisão de cada fix — ADR 0006 e 0009; a linha `recovered_headless` marca uma recuperação feita pela tarefa em segundo plano, ADR 0010), `apps/mobile/gps/` (tarefa de localização do `expo-location` com serviço em primeiro plano, definida em `index.ts` antes do React e a escrever diretamente no store; permissão; bateria; registo bruto e diagnóstico só em dev), `apps/mobile/export.ts` (cópia consistente da base pela folha de partilha) e `apps/mobile/i18n.ts` para a deteção via `I18nManager`.
+- Cada app tem o seu próprio "relógio" e o seu próprio fornecedor de amostras (o lab web usa o simulador; a app Android usa a tarefa de localização do `expo-location` em segundo plano — o `t` de cada amostra é o timestamp do fix — com o simulador por interruptor só em desenvolvimento — ADR 0007 e 0010), e limita-se a chamar as funções puras do motor. O ecrã da app Android não recebe *callbacks* do GPS: relê a cópia em memória do store a cada tick do relógio.
 
 ## Mecânica do monorepo
 
@@ -78,15 +78,15 @@ Dicionários de tradução e formatação por sistema de unidades. TypeScript pu
 
 ## Estratégia de testes
 
-- **Motor**: vitest, `packages/engine/test/*.test.ts`, 169 testes em 10 ficheiros, cobertura 100% (statements, branches, functions, lines) sobre `packages/engine/src`. Os testes fixam os limiares (55 m/s, 2000 ms, 30 s de janela, fronteiras inclusivas e interpoladas, arredondamento do ritmo) de forma a falharem se alguém os alterar — verificado por mutação. `test/pace.test.ts` corre sobre **excertos reais anonimizados** das sessões de campo (`test/fixtures/field-legs.json`: só Δt, distância e precisão por troço).
-- **i18n**: vitest, `packages/i18n/test/*.test.ts`, 26 testes em 4 ficheiros, cobertura 100%. Confirma em runtime que `en` e `pt-PT` têm exatamente o mesmo conjunto de chaves (a par da garantia do compilador), testa `resolveLocale` (correspondência exacta, língua-base, ordem, fallback) e o lançamento em `formatDistanceForUnit(..., "imperial")`.
+- **Motor**: vitest, `packages/engine/test/*.test.ts`, 181 testes em 11 ficheiros, cobertura 100% (statements, branches, functions, lines) sobre `packages/engine/src`. Os testes fixam os limiares (55 m/s, 2000 ms, 30 s de janela, fronteiras inclusivas e interpoladas, arredondamento do ritmo) de forma a falharem se alguém os alterar — verificado por mutação. `test/pace.test.ts` corre sobre **excertos reais anonimizados** das sessões de campo (`test/fixtures/field-legs.json`: só Δt, distância e precisão por troço).
+- **i18n**: vitest, `packages/i18n/test/*.test.ts`, 27 testes em 4 ficheiros, cobertura 100%. Confirma em runtime que `en` e `pt-PT` têm exatamente o mesmo conjunto de chaves (a par da garantia do compilador), que os textos da notificação têm os mesmos `{placeholders}` nas duas línguas, testa `resolveLocale` (correspondência exacta, língua-base, ordem, fallback) e o lançamento em `formatDistanceForUnit(..., "imperial")`.
 - **Lab web**: 9 testes ao `loadFrom`/`parsePersisted` do store (migração de chave, payloads corrompidos, lista vazia depois de apagar tudo). Sem testes de UI.
-- **App Android**: 21 testes do adaptador de persistência em Node (`node:sqlite`, mesmo motor SQLite do telemóvel), incluindo a migração v1 → v2; teste de recuperação num telemóvel real (`npm run test:device`).
+- **App Android**: 24 testes do adaptador de persistência em Node (`node:sqlite`, mesmo motor SQLite do telemóvel), incluindo a migração v1 → v2 e a marca `recovered_headless` (uma linha por reanimação); dois testes num telemóvel real — recuperação depois de `am force-stop` com o simulador (`npm run test:device`, dev client + Metro) e gravação em segundo plano com GPS real e `kill -9` do processo a meio (`npm run test:device:background`, release *debuggable*).
 - **Apps**: verificação por `tsc`, `vite build` (web) e `expo export --platform android` (mobile).
 
 ## O que ainda não existe
 
-- Gravação em segundo plano (foreground service), gestão de bateria.
+- Retoma automática da gravação depois de um reinício do telemóvel (o Android não deixa o `expo-location` arrancar o serviço em segundo plano; a retoma é ao abrir a app — ADR 0010).
 - Exportação GPX/FIT; resumo e histórico por blocos (Fase 4, a partir de `docs/VISAO.md`).
 - Relógio (Wear OS / Garmin Connect IQ), contas, nuvem, iOS.
 - Sistema de unidades imperial (`UnitSystem` já declara `"imperial"`; as funções lançam).

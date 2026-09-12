@@ -206,6 +206,37 @@ export function samplesBetween(samples: Sample[], start: number, end: number): S
   return out;
 }
 
+/**
+ * How far a fix must have moved from the last fix that counted, as a
+ * fraction of its own reported accuracy, before it counts too (ADR 0009,
+ * revised in session 09). Decided on data: with the phone lying still for
+ * 33 min the plain sum attributed 348 m to GPS jitter (13 % of that session)
+ * while the fixes never left an 18 m circle; k = 0.25 removes three quarters
+ * of that and costs 0.12 % of the distance actually walked.
+ */
+export const ACCURACY_GATE_K = 0.25;
+
+/**
+ * The fixes that count for distance and pace: the first one always, and
+ * then only a fix that sits at least `k × its own accuracy` away from the
+ * last fix kept. A fix without a reported accuracy always counts — nothing
+ * was measured to gate it on, so simulated and pre-v2 samples behave as
+ * before. Pure over the list it is given; callers gate the whole pool of a
+ * segment once, so every window of that segment reads the same kept track.
+ */
+export function gateByAccuracy(samples: Sample[], k = ACCURACY_GATE_K): Sample[] {
+  if (k <= 0) return samples;
+  const kept: Sample[] = [];
+  let last: Sample | null = null;
+  for (const s of samples) {
+    if (last === null || s.accuracyM === undefined || haversineMeters(last, s) >= k * s.accuracyM) {
+      kept.push(s);
+      last = s;
+    }
+  }
+  return kept;
+}
+
 export function distanceMeters(samples: Sample[]): number {
   let total = 0;
   for (let i = 1; i < samples.length; i++) {
@@ -248,10 +279,15 @@ function gpsSpan(session: Session, segment: Segment): { start: number; end: numb
   };
 }
 
-/** The samples a GPS segment may draw on: the session's, fenced by gpsSpan. */
+/**
+ * The samples a GPS segment may draw on: the session's, fenced by gpsSpan,
+ * then gated by accuracy over the whole span — so a segment's distance, its
+ * average pace and every recent-pace window are read off one and the same
+ * kept track, and the segment distances still add up to the session's.
+ */
 function segmentPool(session: Session, segment: Segment): Sample[] {
   const span = gpsSpan(session, segment);
-  return samplesInRange(session.samples, span.start, span.end);
+  return gateByAccuracy(samplesInRange(session.samples, span.start, span.end));
 }
 
 /**
@@ -304,7 +340,7 @@ export function metricsFor(
   startAt: number,
   endAt: number,
 ): SegmentMetrics {
-  const slice = samplesBetween(samples, startAt, endAt);
+  const slice = samplesBetween(gateByAccuracy(samples), startAt, endAt);
   const durationMs = Math.max(0, endAt - startAt);
   const distanceM = distanceMeters(slice);
   const avgSpeedMps = durationMs > 0 ? distanceM / (durationMs / 1000) : 0;

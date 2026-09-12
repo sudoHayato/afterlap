@@ -1,9 +1,11 @@
 import { defineConfig } from "vitest/config";
 
 /**
- * The on-device recovery test. Kept out of the root config on purpose: it
- * needs a phone on adb and Metro reachable from it, and takes minutes.
- * Run with `npm run test:device -w @bricklap/mobile`.
+ * The on-device tests. Kept out of the root config on purpose: they need a
+ * phone on adb and take minutes. `npm run test:device -w @bricklap/mobile`
+ * runs the recovery test (dev client + Metro, simulator);
+ * `npm run test:device:background` the background-recording test (debuggable
+ * release build, real GPS). See each file's header.
  */
 export default defineConfig({
   test: {
