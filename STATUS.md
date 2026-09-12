@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Data**: 2026-09-12 · **Branch**: `main` · **Fase**: 1 e 2 concluídas (2026-09-10); **Fase 3 concluída em 2026-09-12** (sessões 05–09: desportos sem GPS, ritmo, segundo plano, teste de campo de 1 h, filtro por precisão); **Fase 4 — design e histórico, a partir de [docs/VISAO.md](docs/VISAO.md) — por iniciar**
+**Data**: 2026-09-12 · **Branch**: `feat/prototipo-blocos` · **Fase**: 1 e 2 concluídas (2026-09-10); **Fase 3 concluída em 2026-09-12** (sessões 05–09: desportos sem GPS, ritmo, segundo plano, teste de campo de 1 h, filtro por precisão); **Fase 4 — design e histórico, a partir de [docs/VISAO.md](docs/VISAO.md) — em curso: sessão 10, protótipo clicável em [docs/prototipo/](docs/prototipo/README.md), branch `feat/prototipo-blocos`**
 
 ## Por pacote
 
@@ -71,4 +71,4 @@ Branch `feat/segundo-plano-spike`, **fundido em `main` a 2026-09-12** no fecho d
 
 ## Próximo passo
 
-**Fase 4 — design e histórico**, a partir de [docs/VISAO.md](docs/VISAO.md): resumo e histórico por blocos como o fundador treina (força, passadeira, remo, corrida), introdução de dados após o treino, ritmo em movimento, apagar sessões do histórico (ADR 0006), exportação GPX. O CTO escreve o brief. Restantes itens no [BACKLOG](docs/BACKLOG.md).
+**Fase 4 — design e histórico**, a partir de [docs/VISAO.md](docs/VISAO.md). Parte 1 (sessão 10) é um **protótipo clicável** — [docs/prototipo/blocos.html](docs/prototipo/blocos.html), um ficheiro, abre do disco — com os oito ecrãs do modelo do CTO (Marca, ficha rápida, HIIT, pós-treino, resumo por blocos, histórico com apagar, modelos) e o 5×5 do fundador como exemplo; o [README](docs/prototipo/README.md) tem os toques por ação e as perguntas para o fundador responder depois de o usar. A parte 2 (código de produto: resumo e histórico por blocos, introdução após o treino, ritmo em movimento, apagar sessões, exportação GPX) espera essas respostas e o brief do CTO. Restantes itens no [BACKLOG](docs/BACKLOG.md).
