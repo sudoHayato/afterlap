@@ -1,4 +1,4 @@
-# Protótipo clicável — nove ecrãs (Fase 4, sessões 10 a 13a)
+# Protótipo clicável — nove ecrãs (Fase 4, sessões 10 a 13b)
 
 Ecrãs para o fundador **reagir**. Não é código de produto: não toca em `apps/mobile` nem no motor. Um ficheiro só, sem dependências: [`bricklap.html`](bricklap.html). Duplo clique abre no browser, a partir do disco (precisa de internet para as duas fontes; sem ela cai para a fonte do sistema e o desenho mantém-se).
 
@@ -8,6 +8,7 @@ Ecrãs para o fundador **reagir**. Não é código de produto: não toca em `app
 | 11 | Três **direções visuais** (claro, híbrido, escuro) sobre dois ecrãs — em [direcoes/](direcoes/README.md), mantidas como registo da escolha. |
 | 12 | O **sistema visual** aplicado aos nove ecrãs, com tema à escolha do atleta. O sistema está escrito em [docs/DESIGN.md](../DESIGN.md), que é o documento que a app vai seguir. |
 | 13a | Dois acertos do fundador depois de ver as capturas: a **fiada** passou de segmentos duros a barra contínua e suave, e os **números** passaram para Archivo Expanded. Comparativas em [fiada.html](fiada.html). |
+| 13b | Três correções: **fora as barras de cor** na lateral dos cartões, a **fiada** mais discreta, e o cartão **"por preencher"** redesenhado. |
 
 O ficheiro `blocos.html` da sessão 10 foi substituído por este; o fluxo é o mesmo.
 
@@ -80,11 +81,17 @@ Com o 5×5 completo (25 blocos), preencher tudo no momento são 25 marcas premid
 
 O sistema completo está em [docs/DESIGN.md](../DESIGN.md). Em resumo, a identidade recorrente é:
 
-1. **A fiada** — uma barra fina **contínua**, de cantos arredondados, um troço por bloco, largura proporcional ao tempo. Aparece na gravação (a sessão a crescer com cada marca), em cada linha da tabela de séries, em cada cartão do histórico e em cada cartão de modelo. É sempre dado, nunca ornamento: nunca aparece sem rótulo e tempo ao lado — foi isso que afundou a "parede de tijolos" da sessão 10.
+1. **A fiada** — uma barra fina **contínua**, de cantos arredondados, um troço por bloco, largura proporcional ao tempo. Aparece na gravação (a sessão a crescer com cada marca), em cada linha da tabela de séries, em cada cartão do histórico e em cada cartão de modelo. É sempre dado, nunca ornamento: nunca aparece sem rótulo e tempo ao lado — foi isso que afundou a "parede de tijolos" da sessão 10. Desde a sessão 13b é **contexto e não protagonista**: 5 px de altura e 72 % de opacidade.
 2. **Os números** — Archivo Expanded, sempre tabulares e sempre maiores do que se espera.
-3. **O entalhe** — 3 px da cor do desporto na aresta esquerda de tudo o que é bloco.
+3. **Os ícones do desporto** — desenhados para o Bricklap, e o único sítio, além da fiada, onde a cor do desporto aparece.
 
-E as regras de distinção, a cumprir em todos os ecrãs: nada de laranja (o acento é vermelho-tijolo, matiz 7°), nada de mapas como fundo, nada de botão redondo de gravar, ícones e tipografia só nossos, uma só coisa grande por ecrã e é sempre um número, cor de desporto em fio e nunca em bloco.
+E as regras de distinção, a cumprir em todos os ecrãs: nada de laranja (o acento é vermelho-tijolo, matiz 7°), nada de mapas como fundo, nada de botão redondo de gravar, ícones e tipografia só nossos, uma só coisa grande por ecrã e é sempre um número, cor de desporto **só no ícone e na fiada** — nunca em barras na lateral dos cartões, que saíram na sessão 13b.
+
+## As três correções da sessão 13b
+
+1. **Fora as barras de cor na lateral dos cartões.** Eram redundantes — o ícone já identifica o exercício — e decoração a fingir que era dado. Saíram de todos os cartões, em todos os ecrãs e nos dois temas. A cor do desporto ficou onde faz falta: no ícone e na fiada.
+2. **A fiada, mais discreta.** Ainda se lia como um gráfico de barras. Baixou de 7 para **5 px** (10 → 7 no total da sessão) e passou a desenhar-se a **72 % de opacidade**, sem contorno nem sombra. Continua a ser dado — os blocos são identificáveis e o vinco mantém-se onde a cor não muda.
+3. **O cartão "por preencher", redesenhado.** Era um retângulo vermelho com o botão encostado ao título e o detalhe a partir em três linhas. Dois tratamentos comparados nos dois temas ([aviso-tratamentos.png](capturas/aviso-tratamentos.png)): um em superfície normal e um tingido. **Ficou o tingido** — o outro era mais contido mas camuflava-se na pilha de cartões brancos do resumo, que é precisamente onde está a única coisa que exige ação. Agora tem folga a dobrar, hierarquia clara (o que falta, o detalhe, a ação), título em tinta normal em vez de vermelho, e o botão com largura própria numa linha só dele.
 
 ## A fiada, redesenhada (sessão 13a)
 
@@ -116,8 +123,7 @@ Duas coisas medidas, não supostas: a Archivo Expanded serve mesmo **números ta
 
 1. **Tema predefinido**: fica o **Híbrido** (treino escuro, consulta clara), com os três presets à escolha no ecrã 9.
 2. **Fonte dos números**: **Archivo Expanded**, em vez da Anybody.
-3. **A fiada**: **fica** como assinatura, mas suave — contínua, não segmentada.
+3. **A fiada**: **fica** como assinatura, contínua e — desde a sessão 13b — discreta.
+4. **Barras de cor na lateral dos cartões**: **fora**, em todos os ecrãs.
 
-## A pergunta desta sessão
-
-**A fiada da 2b é a que querias?** É contínua, as cores passam umas para as outras, e há uma junta fina só onde dois blocos seguidos são do mesmo desporto. Se preferires **sem junta nenhuma** (o tratamento 1), fica mais suave ainda — mas três blocos de força seguidos passam a ler-se como um só, e a fiada deixa de dizer quantos blocos fizeste. Compara na [captura](capturas/fiada-tratamentos.png).
+E duas decisões do CTO na sessão 13b, sem desenho nenhum: **medalhas e recordes pessoais** aceites para a Fase 6 (saem da base local, sem contas nem servidor), e **feed social e desafios entre atletas adiados sem fase atribuída**. Os motivos estão no [ROADMAP](../../ROADMAP.md) e na [VISAO](../VISAO.md).

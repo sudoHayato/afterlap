@@ -53,6 +53,18 @@ Decisão do fundador em [docs/VISAO.md](VISAO.md): um treino HIIT/AMRAP é uma s
 - [ ] `scripts/geojson.mjs` ainda lê a precisão do registo bruto; podia lê-la da base (v2). Não é urgente.
 - [x] ~~`t` da amostra = hora de chegada~~ — **desde a sessão 08 (ADR 0010, decisão do CTO) `t` é o timestamp do fix**; o registo bruto (dev) guarda `arrivedAt` para medir o atraso de entrega.
 
+## Medalhas e recordes pessoais (Fase 6, sem desenho)
+
+Decisão do CTO na sessão 13b ([ROADMAP](../ROADMAP.md), Fase 6; [VISAO](VISAO.md)): aceites porque saem **da base local**, sem contas e sem servidor. Uma linha por tipo de recorde, nenhuma desenhada. Todos derivados dos eventos já gravados — **nada de métricas novas e nada persistido além do que a base já tem**.
+
+- [ ] **Primeira vez** a fazer um exercício, um desporto ou um plano (Fase 6).
+- [ ] **Carga máxima** por exercício — a maior carga registada, medida e não estimada (sem 1RM calculado) (Fase 6).
+- [ ] **Melhor tempo num plano** — o mesmo plano repetido, comparado do princípio ao fim (Fase 6). Depende dos planos de treino (4.5).
+- [ ] **Melhor distância e melhor ritmo** por desporto, sobre os segmentos já gravados (Fase 6).
+- [ ] **Sequências** — dias ou semanas seguidas com treino (Fase 6).
+
+Fora daqui, e de propósito: **feed social e desafios entre atletas** estão **adiados sem fase atribuída** (ROADMAP, "Adiado, sem fase atribuída") — exigem contas, servidor, nuvem, moderação e tornam o fundador responsável pelo tratamento de dados de terceiros. Não entram no backlog até haver utilizadores reais que os peçam.
+
 ## P1 — i18n (sessão 02)
 
 - [ ] **Sistema de unidades imperial**: `UnitSystem` já declara `"imperial"`; `formatDistanceForUnit`/`formatSpeedForUnit`/`formatPaceForUnit` lançam em vez de o implementar. Implementar quando houver pedido real (milhas, pés, mph).

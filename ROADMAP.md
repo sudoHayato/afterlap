@@ -69,9 +69,19 @@ Fases 0–6. As Fases 3–6 são **proposta a validar pelo fundador**; as Fases 
 ## Fase 6 — Contas, sincronização, iOS e lançamento (proposta)
 
 - **Objetivo**: produto público.
-- **Entregáveis**: contas e sincronização opcionais (novo tratamento de dados: RGPD, avaliação de impacto, política atualizada), iOS, distribuição nas lojas.
+- **Entregáveis**: contas e sincronização opcionais (novo tratamento de dados: RGPD, avaliação de impacto, política atualizada), iOS, distribuição nas lojas, **medalhas e recordes pessoais**.
+- **Medalhas e recordes pessoais** — decisão do CTO, sessão 13b: **aceites, para esta fase**. Entram porque não custam o que o feed custa: funcionam **sem contas e sem servidor**, só com os dados que já estão na base local do telemóvel — primeira vez a fazer um exercício, carga máxima, melhor tempo num plano repetido, sequências. Ficam para a Fase 6 e não antes por uma razão de substância: um recorde precisa de histórico acumulado para significar alguma coisa, e a app ainda não o tem. **Sem desenho e sem código nesta fase**: uma linha por tipo de recorde no [BACKLOG](docs/BACKLOG.md), mais nada.
 - **Critério de saída**: publicação com textos legais completos e responsável identificado.
+
+## Adiado, sem fase atribuída
+
+**Feed social e desafios entre atletas** — decisão do CTO, sessão 13b. Não é "não"; é "não agora, e não sem uma razão que hoje não existe". Duas razões, cada uma suficiente por si:
+
+1. **É outra escala de risco e de custo.** Exigem contas, servidor, base de dados na nuvem e moderação. E põem o fundador como **responsável pelo tratamento de dados de terceiros** — RGPD, Lei 58/2019, CNPD —, o que não tem comparação com o que a app faz hoje: guardar os dados do próprio atleta no próprio telemóvel, sem os enviar para lado nenhum.
+2. **Um feed sem massa crítica não tem valor.** Um mural com três pessoas é pior do que não existir, e o custo acima paga-se na mesma.
+
+**Só se reavalia depois de a app ter utilizadores reais que o peçam.** Até lá não entra em roadmap, nem em desenho, nem em backlog.
 
 ## Fora do âmbito por agora
 
-Herdado das notas do Grok e mantido: contas, nuvem, feed social, auto-deteção de desporto, dados de saúde (frequência cardíaca, VO₂). Qualquer um destes é um tratamento de dados novo e exige decisão do fundador antes de entrar no roadmap.
+Herdado das notas do Grok e mantido: contas, nuvem, auto-deteção de desporto, dados de saúde (frequência cardíaca, VO₂). Qualquer um destes é um tratamento de dados novo e exige decisão do fundador antes de entrar no roadmap. O **feed social** saiu desta lista para a secção acima, que tem a decisão e o motivo por escrito.

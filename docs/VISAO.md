@@ -23,6 +23,15 @@ O motor foi desenhado para isto desde a Fase 0: **Session → Event → Segment*
 2. **O problema difícil é a introdução de dados durante o treino, não o cálculo.** Resolve-se na Fase 5 (relógio) e/ou por introdução **após** o treino sobre os segmentos já gravados.
 3. **A tese fica registada, não se constrói agora.** É o ponto de partida da Fase 4 (design e histórico). Nenhuma fase anterior antecipa UI ou código por causa dela.
 
+## Âmbito: o que entra e o que fica de fora
+
+Duas decisões do CTO na sessão 13b, registadas aqui porque são de produto e não de desenho. Nenhuma das duas se constrói agora.
+
+- **Medalhas e recordes pessoais: aceites, para a Fase 6.** Cabem na tese porque saem dos dados que a app já tem, no telemóvel do atleta: primeira vez a fazer um exercício, carga máxima, melhor tempo num plano repetido, sequências. **Sem contas, sem servidor, sem enviar nada para lado nenhum** — é a mesma base local que já grava os blocos. Ficam para a Fase 6 porque um recorde sem histórico acumulado não diz nada. Uma linha por tipo no [BACKLOG](BACKLOG.md), sem desenho.
+- **Feed social e desafios entre atletas: adiados, sem fase atribuída.** Exigem contas, servidor, base de dados na nuvem e moderação, e põem o fundador como **responsável pelo tratamento de dados de terceiros** (RGPD, Lei 58/2019, CNPD) — outra escala de risco e de custo face a guardar os dados do próprio atleta no próprio telemóvel. Acresce que um feed sem massa crítica de utilizadores não tem valor. **Só se reavalia depois de a app ter utilizadores reais que o peçam.**
+
+A diferença entre os dois é essa e está escrita de propósito: **o que se calcula com os dados que já cá estão é barato; o que precisa de dados de outras pessoas é caro e muda a natureza jurídica do produto.**
+
 ## O que isto implica, sem desenhar nada
 
 - Os segmentos de ginásio continuam só de tempo até à Fase 4. Reps, carga, metros e ritmo × distância são linhas no BACKLOG (marcadas Fase 4+), não código.

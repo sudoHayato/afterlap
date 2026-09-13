@@ -42,7 +42,7 @@
   --acento-fundo: #F9EBE9;
   --sobre-acento: #FFFFFF;
   --veu: rgba(22, 18, 15, .55);
-  --junta: rgba(255, 253, 250, .55);
+  --junta: rgba(255, 253, 250, .72);
   --sombra: 0 1px 2px rgba(22, 18, 15, .05), 0 10px 28px rgba(22, 18, 15, .07);
   --sombra-marca: 0 8px 24px rgba(176, 58, 42, .26);
   --d-forca: #6B4E3D;
@@ -68,7 +68,7 @@
   --acento-fundo: #341714;
   --sobre-acento: #FFFFFF;
   --veu: rgba(0, 0, 0, .62);
-  --junta: rgba(14, 12, 12, .6);
+  --junta: rgba(14, 12, 12, .76);
   --sombra: 0 1px 2px rgba(0, 0, 0, .45), 0 10px 28px rgba(0, 0, 0, .38);
   --sombra-marca: 0 8px 24px rgba(209, 79, 61, .22);
   --d-forca: #C49A82;
@@ -173,7 +173,9 @@ body.solo .telemovel { width: 390px; height: 100vh; border-radius: 0; }
 .icone.g { width: 28px; height: 28px; }
 .kicker { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--tinta3); }
 
-/* Cor por desporto (--d), sempre em fio fino: entalhe, ícone ou fiada */
+/* Cor por desporto (--d): só no ÍCONE e na fiada. As barras verticais na
+   lateral dos cartões saíram na sessão 13b — o ícone já identifica o bloco e
+   a barra era decoração a fingir que era dado. */
 .d-strength { --d: var(--d-forca); }
 .d-treadmill { --d: var(--d-passadeira); }
 .d-rowing { --d: var(--d-remo); }
@@ -210,20 +212,19 @@ body.solo .telemovel { width: 390px; height: 100vh; border-radius: 0; }
 .tabs button { flex: 1; background: none; border: 0; padding: 8px 4px 4px; cursor: pointer; color: var(--tinta3); font-size: 11.5px; font-weight: 700; display: grid; justify-items: center; gap: 3px; letter-spacing: .02em; }
 .tabs button.ativo { color: var(--acento-tinta); }
 
-/* --------- Cartão e entalhe --------- */
+/* --------- Cartão --------- */
 .cartao { background: var(--sup); border: 1px solid var(--linha); border-radius: var(--r-g); padding: var(--e4); box-shadow: var(--sombra); }
 .cartao.tocavel { cursor: pointer; }
 .cartao.tocavel:active { background: var(--sup2); }
-.entalhe { position: relative; overflow: hidden; }
-.entalhe::before { content: ""; position: absolute; left: 0; top: var(--e3); bottom: var(--e3); width: 3px; border-radius: 0 2px 2px 0; background: var(--d); }
 .lista { display: grid; gap: var(--e2); }
 
 /* --------- FIADA: a assinatura. Barra contínua de cantos arredondados, um
    troço por bloco; são as cores a passar umas para as outras que os separam.
    A junta (1 px, um vinco da cor do fundo) aparece só onde a cor não muda:
    um corte mais forte partia a barra numa sessão de voltas iguais. --------- */
-.fiada { position: relative; display: block; height: 7px; border-radius: var(--r-pill); overflow: hidden; min-width: 0; }
-.fiada.alta { height: 10px; }
+.fiada { position: relative; display: block; height: 5px; border-radius: var(--r-pill); overflow: hidden; min-width: 0;
+  opacity: .72; border: 0; box-shadow: none; }
+.fiada.alta { height: 7px; }
 .fiada i { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--junta); transform: translateX(-.5px); }
 
 /* --------- Chips --------- */
@@ -244,8 +245,7 @@ body.solo .telemovel { width: 390px; height: 100vh; border-radius: 0; }
 .chrono .legenda b { color: var(--tinta); font-weight: 700; }
 .chrono .fiada { margin-top: var(--e3); }
 
-.bloco-atual { margin: var(--e4) var(--e5) 0; padding: var(--e4) var(--e4) var(--e4) var(--e5); border-radius: var(--r-g); background: var(--sup); border: 1px solid var(--linha); box-shadow: var(--sombra); }
-.bloco-atual::before { top: 0; bottom: 0; width: 5px; border-radius: 0; }
+.bloco-atual { margin: var(--e4) var(--e5) 0; padding: var(--e4); border-radius: var(--r-g); background: var(--sup); border: 1px solid var(--linha); box-shadow: var(--sombra); }
 .bloco-atual .cima { display: flex; align-items: center; gap: var(--e2); color: var(--d); }
 .bloco-atual .linha { display: flex; justify-content: space-between; align-items: baseline; gap: var(--e2); margin-top: 5px; }
 .bloco-atual .nome { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.05; }
@@ -313,14 +313,18 @@ body.solo .telemovel { width: 390px; height: 100vh; border-radius: 0; }
 .heroi .lado span { font-size: 13px; color: var(--tinta2); font-weight: 500; }
 .heroi .lado b { font-size: 16px; font-weight: 800; color: var(--tinta); margin-right: 5px; letter-spacing: -.01em; }
 
-/* Cartão "por preencher" */
-.aviso { margin-top: var(--e4); padding: var(--e3) var(--e4); border-radius: var(--r-g); background: var(--acento-fundo); color: var(--acento-tinta);
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "i t b" "d d d"; gap: var(--e2) var(--e3); align-items: center; }
-.aviso .icone { grid-area: i; }
-.aviso b { grid-area: t; font-size: 15px; font-weight: 800; white-space: nowrap; }
-.aviso .botao { grid-area: b; }
-.aviso .det { grid-area: d; font-size: 12.5px; font-weight: 500; line-height: 1.35; }
-.aviso .botao { min-height: 44px; padding: 0 14px; font-size: 15px; border-radius: var(--r-s); }
+/* Cartão "por preencher" — um aviso ÚTIL, não um alarme (sessão 13b).
+   Fundo de acento muito leve para não desaparecer na pilha de cartões do
+   resumo; o título em tinta normal e o acento só no rótulo, no ícone e no
+   botão; hierarquia o que falta > detalhe > ação, com o botão a ter largura
+   própria numa linha só dele. */
+.aviso { margin-top: var(--e4); padding: var(--e4) var(--e5); border-radius: var(--r-g); background: var(--acento-fundo);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "i k" "t t" "d d" "b b"; gap: 0 var(--e2); align-items: center; }
+.aviso .icone { grid-area: i; color: var(--acento-tinta); }
+.aviso .kick { grid-area: k; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--acento-tinta); }
+.aviso b { grid-area: t; font-size: 16.5px; font-weight: 800; letter-spacing: -.01em; color: var(--tinta); margin-top: 7px; }
+.aviso .det { grid-area: d; font-size: 13px; font-weight: 500; line-height: 1.45; color: var(--tinta2); margin-top: 3px; }
+.aviso .botao { grid-area: b; justify-self: end; min-width: 140px; min-height: 44px; padding: 0 var(--e4); font-size: 15px; border-radius: var(--r-s); margin-top: var(--e3); }
 .heroi .lado span { white-space: nowrap; }
 
 /* Secção */
@@ -330,7 +334,7 @@ body.solo .telemovel { width: 390px; height: 100vh; border-radius: 0; }
 .secao > .titulo span { font-size: 12.5px; color: var(--tinta3); font-weight: 500; }
 
 /* Cartão por exercício */
-.ex { background: var(--sup); border: 1px solid var(--linha); border-radius: var(--r-g); padding: var(--e3) var(--e4) var(--e3) var(--e5);
+.ex { background: var(--sup); border: 1px solid var(--linha); border-radius: var(--r-g); padding: var(--e3) var(--e4);
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 3px var(--e3); }
 .ex .nome { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; }
 .ex .nome .icone { color: var(--d); }
@@ -352,9 +356,8 @@ body.solo .telemovel { width: 390px; height: 100vh; border-radius: 0; }
 .serie.aberta .serie-cab .seta { transform: rotate(180deg); }
 .selo { min-width: 22px; height: 22px; border-radius: var(--r-pill); background: var(--acento-fundo); color: var(--acento-tinta); font-size: 12px; font-weight: 800; display: grid; place-items: center; padding: 0 6px; }
 .serie-corpo { border-top: 1px solid var(--linha); }
-.linha-bloco { display: grid; grid-template-columns: 1fr auto 46px; align-items: center; gap: var(--e2); padding: 10px var(--e3) 10px var(--e4); border-top: 1px solid var(--linha); position: relative; }
+.linha-bloco { display: grid; grid-template-columns: 1fr auto 46px; align-items: center; gap: var(--e2); padding: 10px var(--e3); border-top: 1px solid var(--linha); }
 .linha-bloco:first-child { border-top: 0; }
-.linha-bloco::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 2px 2px 0; background: var(--d); }
 .linha-bloco .nome { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; min-width: 0; }
 .linha-bloco .nome .icone { color: var(--d); }
 .linha-bloco .valor { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; }
@@ -386,7 +389,7 @@ textarea.notas { width: 100%; min-height: 86px; resize: vertical; display: block
 .vazio { text-align: center; color: var(--tinta3); padding: var(--e7) 0; }
 
 /* =========================== Modelos =========================== */
-.mb { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--e2); background: var(--sup); border: 1px solid var(--linha); border-radius: var(--r-m); padding: var(--e2) var(--e3) var(--e2) var(--e4); }
+.mb { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--e2); background: var(--sup); border: 1px solid var(--linha); border-radius: var(--r-m); padding: var(--e2) var(--e3); }
 .mb .nome { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; }
 .mb .nome .icone { color: var(--d); }
 .mb .desp { font-size: 12.5px; color: var(--tinta3); margin-top: 1px; }
@@ -831,7 +834,7 @@ function viewInicio() {
   const chips = (grupo) => ORDEM.filter((k) => SPORTS[k].grupo === grupo)
     .map((k) => `<button class="tijolo d-${k}" data-act="start-sport" data-id="${k}">${ico(k, 'p')}${SPORTS[k].label}</button>`).join('');
   const modelo = (m) => `
-    <div class="cartao tocavel entalhe d-${m.blocks[0].sport}" data-act="start-model" data-id="${m.id}">
+    <div class="cartao tocavel d-${m.blocks[0].sport}" data-act="start-model" data-id="${m.id}">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
         <h3 style="margin:0;font-size:18px;font-weight:800;letter-spacing:-.015em">${esc(m.name)}</h3>
         <span style="color:var(--acento-tinta);font-weight:800;font-size:14px">Iniciar</span>
@@ -883,7 +886,7 @@ function viewGravacao() {
     <div class="legenda">${ico('relogio', 'p')}<span>desde as ${s.startedAt} · <b class="num">${fechados.length}</b> ${fechados.length === 1 ? 'marca' : 'marcas'}</span></div>
     ${fiadaDe(fechados, true)}
   </div>
-  <div class="bloco-atual entalhe d-${b.sport}">
+  <div class="bloco-atual d-${b.sport}">
     <div class="cima">${ico(b.sport, 'p')}<span class="kicker">${hiit ? 'Volta em curso' : SPORTS[b.sport].live}${s.model && !hiit ? ` · bloco ${b.modelIndex + 1} de ${s.model.blocks.length}` : ''}</span></div>
     <div class="linha"><span class="nome">${esc(b.name)}</span><span class="tempo num" data-chrono="bloco">${fmtTime(dur(b))}</span></div>
     ${ultima ? `<div class="ultima">${ultima}</div>` : ''}
@@ -1002,8 +1005,10 @@ function ladoDeDistancias(s) {
 function avisoFalta(s) {
   const faltam = blocosEmFalta(s);
   if (!faltam.length) return '';
-  return `<div class="aviso">${ico('aviso')}<b>${faltam.length} ${faltam.length === 1 ? 'bloco por preencher' : 'blocos por preencher'}</b>` +
-    `<button class="botao acento" data-act="preencher-proximo">Preencher</button><span class="det">${frasesEmFalta(s).join(' · ')}</span></div>`;
+  return `<div class="aviso">${ico('aviso', 'p')}<span class="kick">Por preencher</span>` +
+    `<b>${faltam.length} ${faltam.length === 1 ? 'bloco' : 'blocos'}</b>` +
+    `<span class="det">${frasesEmFalta(s).join(' · ')}</span>` +
+    `<button class="botao acento" data-act="preencher-proximo">Preencher</button></div>`;
 }
 
 /* ------------------------- 5. Pós-treino ------------------------- */
@@ -1036,7 +1041,7 @@ function viewResumo() {
     <div class="secao"><div class="titulo"><h3>Por exercício</h3><span>${grupos.length} ${grupos.length === 1 ? 'exercício' : 'exercícios'}</span></div>
       <div class="lista">${grupos.map((g) => {
         const r = resumoExercicio(g);
-        return `<div class="ex entalhe d-${g.sport}">
+        return `<div class="ex d-${g.sport}">
           <span class="nome">${ico(g.sport, 'p')}${esc(g.name)}</span>
           <span class="n num">${r.n}</span>
           <span class="det${r.falta ? ' em-falta' : ''}">${r.falta ? `${r.falta} de ${r.total} por preencher` : `${r.total} ${r.total === 1 ? 'bloco' : 'blocos'}`}</span>
@@ -1075,7 +1080,7 @@ function viewModelos() {
   return `
   <div class="cabeca"><div class="linha"><span class="kicker">Bricklap</span><button class="redondo" data-act="ir" data-id="definicoes">${ico('definicoes', 'p')}</button></div><h1>Modelos</h1><div class="sub">Uma lista de blocos com nomes. Ao iniciar, as marcas já vêm preenchidas.</div></div>
   <div class="rolar"><div class="lista" style="margin-top:16px">
-    ${MODELS.map((m) => `<div class="cartao entalhe d-${m.blocks[0].sport}">
+    ${MODELS.map((m) => `<div class="cartao d-${m.blocks[0].sport}">
       <div style="display:flex;justify-content:space-between;align-items:baseline"><h3 style="margin:0;font-size:18px;font-weight:800">${esc(m.name)}</h3><button class="botao fantasma pequeno" data-act="edit-model" data-id="${m.id}">${ico('editar', 'p')}Editar</button></div>
       <div style="font-size:13px;color:var(--tinta2);margin-top:2px">${m.hiit ? 'Só marcas · preenche-se no fim' : `${m.series} séries · ${m.blocks.length} blocos`}</div>
       <div style="margin-top:12px">${fiadaDe(m.blocks)}</div>
@@ -1096,7 +1101,7 @@ function viewModelo() {
     <div class="linha-campo"><label>Modo<small>HIIT: só marcas, preenche no fim</small></label>
       <div class="alternar"><button class="${m.hiit ? '' : 'ativo'}" data-act="model-hiit" data-id="0">Fichas</button><button class="${m.hiit ? 'ativo' : ''}" data-act="model-hiit" data-id="1">HIIT</button></div></div>
     <div class="secao"><div class="titulo"><h3>Blocos, por ordem</h3><span>${m.blocks.length}</span></div>
-      <div class="lista">${m.blocks.map((b, i) => `<div class="mb entalhe d-${b.sport}">
+      <div class="lista">${m.blocks.map((b, i) => `<div class="mb d-${b.sport}">
         <div><div class="nome">${ico(b.sport, 'p')}${esc(b.name)}</div><div class="desp">${SPORTS[b.sport].label}</div></div>
         <div class="setas">
           <button data-act="mb-up" data-id="${i}" ${i === 0 ? 'disabled' : ''}>${ico('cima', 'p')}</button>
