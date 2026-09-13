@@ -1,4 +1,4 @@
-# Protótipo clicável — nove ecrãs (Fase 4, sessões 10 a 12)
+# Protótipo clicável — nove ecrãs (Fase 4, sessões 10 a 13a)
 
 Ecrãs para o fundador **reagir**. Não é código de produto: não toca em `apps/mobile` nem no motor. Um ficheiro só, sem dependências: [`bricklap.html`](bricklap.html). Duplo clique abre no browser, a partir do disco (precisa de internet para as duas fontes; sem ela cai para a fonte do sistema e o desenho mantém-se).
 
@@ -7,6 +7,7 @@ Ecrãs para o fundador **reagir**. Não é código de produto: não toca em `app
 | 10 | O **fluxo**: marca, ficha rápida ao premir, passadeira por ritmo **ou** distância, modelos, pós-treino, apagar. Aprovado pelo fundador e pelo CTO; não se reabriu. |
 | 11 | Três **direções visuais** (claro, híbrido, escuro) sobre dois ecrãs — em [direcoes/](direcoes/README.md), mantidas como registo da escolha. |
 | 12 | O **sistema visual** aplicado aos nove ecrãs, com tema à escolha do atleta. O sistema está escrito em [docs/DESIGN.md](../DESIGN.md), que é o documento que a app vai seguir. |
+| 13a | Dois acertos do fundador depois de ver as capturas: a **fiada** passou de segmentos duros a barra contínua e suave, e os **números** passaram para Archivo Expanded. Comparativas em [fiada.html](fiada.html). |
 
 O ficheiro `blocos.html` da sessão 10 foi substituído por este; o fluxo é o mesmo.
 
@@ -18,6 +19,7 @@ No portátil aparece um telemóvel ao lado de um guia com os temas, a lista de e
 - O relógio anda a tempo real; **×30** no guia acelera-o para ver blocos com tamanhos plausíveis sem esperar.
 - Nada fica guardado: **Reiniciar** (ou F5) volta ao início. As sessões do histórico são inventadas, e os números da rua são fingidos a velocidade constante.
 - Para ver um ecrã isolado (é assim que as capturas saem): `bricklap.html?solo=1&ecra=resumo&tema=claro`. Os `ecra` são `inicio`, `gravacao`, `ficha`, `hiit`, `pos`, `resumo`, `historico`, `modelos`, `definicoes`, mais `ficha-forca` e `modelo`; os `tema` são `claro`, `escuro`, `hibrido`, `sistema`.
+- `&fonte=anybody` repõe a fonte de números da sessão 12 no ecrã real, para comparar com a atual sem sair do sítio.
 
 ## Os três temas
 
@@ -78,28 +80,44 @@ Com o 5×5 completo (25 blocos), preencher tudo no momento são 25 marcas premid
 
 O sistema completo está em [docs/DESIGN.md](../DESIGN.md). Em resumo, a identidade recorrente é:
 
-1. **A fiada** — barra de segmentos com 2 px de argamassa, um segmento por bloco, largura proporcional ao tempo. Aparece na gravação (a sessão a crescer com cada marca), em cada linha da tabela de séries e em cada cartão do histórico. É sempre dado, nunca ornamento: nunca aparece sem rótulo e tempo ao lado — foi isso que afundou a "parede de tijolos" da sessão 10.
-2. **Os números** — Anybody Expanded, de formas quadradas, sempre tabulares e sempre maiores do que se espera. A escolha entre três candidatas está na [captura das fontes](capturas/fontes-candidatas.png).
+1. **A fiada** — uma barra fina **contínua**, de cantos arredondados, um troço por bloco, largura proporcional ao tempo. Aparece na gravação (a sessão a crescer com cada marca), em cada linha da tabela de séries, em cada cartão do histórico e em cada cartão de modelo. É sempre dado, nunca ornamento: nunca aparece sem rótulo e tempo ao lado — foi isso que afundou a "parede de tijolos" da sessão 10.
+2. **Os números** — Archivo Expanded, sempre tabulares e sempre maiores do que se espera.
 3. **O entalhe** — 3 px da cor do desporto na aresta esquerda de tudo o que é bloco.
 
 E as regras de distinção, a cumprir em todos os ecrãs: nada de laranja (o acento é vermelho-tijolo, matiz 7°), nada de mapas como fundo, nada de botão redondo de gravar, ícones e tipografia só nossos, uma só coisa grande por ecrã e é sempre um número, cor de desporto em fio e nunca em bloco.
 
+## A fiada, redesenhada (sessão 13a)
+
+O fundador viu as capturas da sessão 12 e disse o que estava errado: **as barras segmentadas são duras e feias** — blocos separados num ecrã que devia ser suave. A fiada **fica**, como assinatura e como dado; muda a forma.
+
+Quatro tratamentos, nos sítios reais e nos dois temas: [fiada-tratamentos.png](capturas/fiada-tratamentos.png), e ao vivo em [fiada.html](fiada.html).
+
+| | Tratamento | Leitura |
+|---|---|---|
+| — | **Atual (sessão 12)** | Segmentos separados por 2 px de argamassa. Dura, e a parecer uma grelha. |
+| 1 | **Esbatida** | Contínua e suave, mas **perde o dado**: três blocos de força seguidos ficam uma barra lisa, sem fronteiras. Chumbou. |
+| 2 | **Junta** | Contínua, com uma junta ténue em cada marca. Legível, mas com 25 blocos ainda se lê como uma régua de 24 riscas. |
+| 3 | **Nós** | Um nó redondo em cada marca. O nó rouba a atenção ao que separa, e com 25 blocos vira um colar de contas. |
+| **2b** | **Junta só onde é precisa** ✓ | Contínua. **São as cores a passar umas para as outras** que separam os blocos; a junta fica só onde a cor não muda (força a seguir a força), que é o único sítio onde sem ela se perdia um bloco. |
+
+**É a 2b que está aplicada**, nos quatro sítios. Numa sessão de 25 blocos há três ou quatro juntas em vez de vinte e quatro: lê-se como uma fita, não como uma grelha, e continua a contar-se bloco a bloco. O desenho exato (transições, junta, piso de largura) está em [docs/DESIGN.md](../DESIGN.md) §7.
+
 ## A fonte dos números
 
-Três candidatas de exibição, todas com números tabulares e licença aberta, vistas com os mesmos valores:
+O fundador achou a **Anybody Expanded** da sessão 12 **robótica**, e trocou-a por **Archivo Expanded**. Está trocada.
 
-| | Candidata | Leitura | Captura |
-|---|---|---|---|
-| 1 | Space Grotesk 700 | Tem carácter (o 1 com bandeira, o 4 aberto), mas afina em corpo grande. | [fonte-1](capturas/fonte-1-space-grotesk.png) |
-| 2 | Archivo Expanded 800 | Sólida e neutra. É a mais segura e a menos nossa: podia ser de qualquer app desportiva. | [fonte-2](capturas/fonte-2-archivo-expanded.png) |
-| 3 | **Anybody Expanded 800** | Dígitos quadrados de contraforma fechada: em corpo grande parecem **tijolos**. | [fonte-3](capturas/fonte-3-anybody-expanded.png) |
+A comparação foi feita **nos ecrãs reais**, não num espécime isolado — a mesma sessão, só a fonte a mudar: [gravação](capturas/fonte-gravacao.png) e [resumo](capturas/fonte-resumo.png). Para comparar ao vivo, `bricklap.html?fonte=anybody`.
 
-As três juntas, para comparar de uma vez: [fontes-candidatas.png](capturas/fontes-candidatas.png).
+Não contraproponho. O argumento da sessão 12 a favor da Anybody era que os dígitos quadrados amarravam o número ao nome do produto; vista aplicada, o que ela dá ao cronómetro é ar de mostrador de máquina. **A identidade não estava na fonte**: está na fiada, no entalhe, no acento e na estrutura dos ecrãs. A Archivo Expanded mantém a largura e o peso que o cronómetro de 84 px precisa, com formas mais abertas.
 
-**Recomendação: a 3, Anybody Expanded**, e é a que está aplicada. É a única das três que amarra o número ao nome do produto e que ninguém confunde com o tipo de outra app de treino; a Archivo fica como alternativa sóbria se o fundador achar a 3 demasiado marcada. O texto corrido é Inter nas três hipóteses.
+Duas coisas medidas, não supostas: a Archivo Expanded serve mesmo **números tabulares** (`00:00`, `11:11` e `88:88` medem os mesmos 291,66 px a 84/800 — sem isso o cronómetro saltava a cada segundo), e é **6 % mais estreita** do que a Anybody, o que dá folga num ecrã de 390 px. As candidatas da sessão 12 ficam como registo da escolha: [fontes-candidatas.png](capturas/fontes-candidatas.png).
 
-## Três perguntas fechadas para o fundador
+## O que o fundador já decidiu
 
-1. **Tema predefinido**: fica o **Híbrido** (treino escuro, consulta clara), ou preferes que a app abra em **Claro** ou em **Escuro**? (Os três continuam à escolha no ecrã 9; a pergunta é só qual vem de origem.)
-2. **Fonte dos números**: fica a **Anybody Expanded** (a dos dígitos quadrados, nas capturas), ou preferes a **Archivo Expanded**, mais sóbria? Compara na [captura das fontes](capturas/fontes-candidatas.png).
-3. **A fiada**: fica como assinatura da app, nos três sítios onde aparece, ou tiro-a e deixo só os números e os nomes?
+1. **Tema predefinido**: fica o **Híbrido** (treino escuro, consulta clara), com os três presets à escolha no ecrã 9.
+2. **Fonte dos números**: **Archivo Expanded**, em vez da Anybody.
+3. **A fiada**: **fica** como assinatura, mas suave — contínua, não segmentada.
+
+## A pergunta desta sessão
+
+**A fiada da 2b é a que querias?** É contínua, as cores passam umas para as outras, e há uma junta fina só onde dois blocos seguidos são do mesmo desporto. Se preferires **sem junta nenhuma** (o tratamento 1), fica mais suave ainda — mas três blocos de força seguidos passam a ler-se como um só, e a fiada deixa de dizer quantos blocos fizeste. Compara na [captura](capturas/fiada-tratamentos.png).

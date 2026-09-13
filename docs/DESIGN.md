@@ -45,6 +45,7 @@ Dois conjuntos de tokens. Nenhum componente usa um hex diretamente: usa sempre o
 | `acento-tinta` | `#9A3122` | acento em **texto** sobre fundo claro |
 | `acento-fundo` | `#F9EBE9` | fundo do que está por preencher |
 | `sobre-acento` | `#FFFFFF` | texto sobre o acento |
+| `junta` | `rgba(255,253,250,.55)` | o vinco da fiada |
 
 ### Tema escuro
 
@@ -62,6 +63,7 @@ Dois conjuntos de tokens. Nenhum componente usa um hex diretamente: usa sempre o
 | `acento-tinta` | `#E88073` | acento em texto sobre fundo escuro |
 | `acento-fundo` | `#341714` | por preencher |
 | `sobre-acento` | `#FFFFFF` | texto sobre o acento |
+| `junta` | `rgba(14,12,12,.6)` | o vinco da fiada |
 
 O acento é **vermelho-tijolo (terracota)**, matiz 7°, ligado ao nome do produto. O `#D14F3D` do tema escuro é o mesmo matiz e a mesma saturação do `#B03A2A`, com a luminosidade subida para manter o contraste: é o **mesmo acento**, calibrado, não uma segunda cor.
 
@@ -82,7 +84,7 @@ Contrastes medidos (WCAG 2.1, sobre o `fundo` do respetivo tema):
 
 ### Cor por desporto
 
-Identifica, não decora, e aparece **sempre em fio fino**: entalhe de 3–5 px, ícone, ou segmento de fiada. Nunca como fundo de um bloco, nunca em texto.
+Identifica, não decora, e aparece **sempre em fio fino**: entalhe de 3–5 px, ícone, ou troço de fiada. Nunca como fundo de um bloco, nunca em texto.
 
 | Desporto | Claro | Escuro |
 |---|---|---|
@@ -98,11 +100,15 @@ Identifica, não decora, e aparece **sempre em fio fino**: entalhe de 3–5 px, 
 Duas famílias, ambas de licença aberta, servidas pelo Google Fonts no protótipo e **embutidas** na app.
 
 - **Texto: Inter**, pesos 400/500/600/700/800. Tudo o que é palavra: rótulos, nomes, explicações, botões.
-- **Números: Anybody**, instância **Expanded** (eixo `wdth` 125), pesos 600/700/800/900, com `tabular-nums`. Tudo o que é medida: cronómetro, tempo de bloco, totais, valores dos cartões, número de série, distâncias, cargas.
+- **Números: Archivo**, instância **Expanded** (eixo `wdth` 125), pesos 600/700/800/900, com `tabular-nums`. Tudo o que é medida: cronómetro, tempo de bloco, totais, valores dos cartões, número de série, distâncias, cargas.
 
-**Porque Anybody Expanded.** Foram comparadas três candidatas de exibição com números tabulares e licença aberta ([captura](prototipo/capturas/fontes-candidatas.png)): Space Grotesk 700, Archivo Expanded 800 e Anybody Expanded 800. A Space Grotesk tem carácter mas afina em corpo grande; a Archivo Expanded é sólida e neutra — demasiado próxima de uma grotesca de app desportiva qualquer. A **Anybody Expanded** tem dígitos de formas quadradas e contraformas fechadas: em corpo grande parecem **tijolos**, o que amarra o número ao nome do produto, e é a única das três que ninguém confunde com o tipo de outra app de treino.
+**Porque Archivo Expanded.** Decisão do fundador na sessão 13a. A sessão 12 tinha proposto a Anybody Expanded pelos dígitos de formas quadradas, que em corpo grande parecem tijolos; o fundador viu-a aplicada e achou-a **robótica**, e tem razão: as contraformas fechadas e os terminais a esquadro dão ao cronómetro um ar de mostrador de máquina, que é precisamente o que a app não é. A **Archivo Expanded** mantém a largura e o peso que o cronómetro de 84 px precisa, com formas humanistas e contraformas abertas — sóbria sem ser fria. A comparação foi feita **nos ecrãs reais**, não num espécime: [gravação](prototipo/capturas/fonte-gravacao.png) e [resumo](prototipo/capturas/fonte-resumo.png), a mesma sessão, só a fonte a mudar.
 
-Implementação na app: descarregar a instância estática `Anybody Expanded ExtraBold` (wdth 125, wght 800) e `SemiBold`/`Bold` se forem precisas; não depender do eixo variável em React Native.
+A identidade não estava na fonte: está na fiada, no entalhe, no acento e na estrutura dos ecrãs (§7). Trocar os dígitos não tira ao Bricklap nada do que o distingue.
+
+Medido, não suposto: a Archivo Expanded serve mesmo números tabulares — `00:00`, `11:11` e `88:88` medem os mesmos **291,66 px** a 84/800; sem `tnum` seriam 293,00 e 265,11, e o cronómetro saltaria a cada segundo. É também **6 % mais estreita** do que a Anybody (308,80 px), o que dá folga ao cronómetro num ecrã de 390 px.
+
+Implementação na app: descarregar as instâncias estáticas `Archivo Expanded` nos pesos 600/700/800/900 (`wdth` 125); não depender do eixo variável em React Native. O Google Fonts serve as quatro faces a `stretch 125%` — verificado com `document.fonts.check`.
 
 Escala (px), a mesma nos dois temas:
 
@@ -120,9 +126,9 @@ Escala (px), a mesma nos dois temas:
 | Texto secundário, detalhe de cartão | 12,5–13,5 / 500–600 |
 | Rótulo em maiúsculas (`kicker`) | 11 / 700, `letter-spacing .1em` |
 
-Regras: números **nunca** em Inter; palavras **nunca** em Anybody; uma só coisa por ecrã acima de 40 px.
+Regras: números **nunca** em Inter; palavras **nunca** em Archivo; uma só coisa por ecrã acima de 40 px.
 
-A abreviatura da unidade que pertence ao número (`km`, `m`, `kg`, `/km`, `reps`) fica **dentro** da corrida de Anybody: é parte da medida, não texto — `2 000 m` e `5:30 /km` lêem-se como uma coisa só. Palavras que descrevem a medida ("passadeira", "em movimento", "última vez") são Inter.
+A abreviatura da unidade que pertence ao número (`km`, `m`, `kg`, `/km`, `reps`) fica **dentro** da corrida de Archivo: é parte da medida, não texto — `2 000 m` e `5:30 /km` lêem-se como uma coisa só. Palavras que descrevem a medida ("passadeira", "em movimento", "última vez") são Inter.
 
 ## 4. Espaçamento, raios, alvos
 
@@ -165,8 +171,15 @@ Não usar ícone para: o nome de um exercício de força (o nome é o nome), o e
 
 O que faz um ecrã ser do Bricklap e de mais nenhuma app, por ordem de importância:
 
-1. **A fiada** — uma barra de 8 px (12 quando é o total da sessão) feita de segmentos com **2 px de argamassa** entre eles, um segmento por bloco, largura proporcional ao tempo, cor do desporto. Aparece: sob o cronómetro durante a gravação (a sessão até agora, a crescer com cada marca), em cada linha da tabela de séries, e em cada cartão do histórico. É o mesmo objeto nos três sítios, e é sempre **dado**, nunca ornamento: nunca aparece sozinha sem rótulo nem tempo ao lado — foi isso que afundou a "parede" da sessão 10.
-2. **Os números** — Anybody Expanded, quadrados, sempre tabulares, sempre maiores do que se espera.
+1. **A fiada** — uma **barra fina contínua de cantos arredondados**, 7 px (10 quando é o total da sessão), um troço por bloco, largura proporcional ao tempo, cor do desporto. Aparece: sob o cronómetro durante a gravação (a sessão até agora, a crescer com cada marca), em cada linha da tabela de séries, em cada cartão do histórico e em cada cartão de modelo. É o mesmo objeto nos quatro sítios, e é sempre **dado**, nunca ornamento: nunca aparece sozinha sem rótulo nem tempo ao lado — foi isso que afundou a "parede" da sessão 10.
+
+   **Como se desenha** (redesenhada na sessão 13a; a versão da sessão 12 eram segmentos separados por 2 px de argamassa, que o fundador rejeitou por dura e por parecer uma grelha):
+   - **São as cores que separam os blocos**, não a argamassa: entre dois troços de cor diferente há uma transição curta (no máximo 2,2 pontos percentuais da largura da barra, e nunca mais de 45 % do troço mais curto que lhe toca).
+   - **A junta** — **1 px** do token `junta`, um **vinco** da cor do fundo e não um corte — aparece **só onde a cor não muda**, que é o único sítio onde sem ela se perdia um bloco (força a seguir a força). É a exceção, não a regra: numa sessão de 25 blocos há três ou quatro juntas, não vinte e quatro. A 1,5 px e opaca, como ficou na primeira tentativa desta sessão, a junta **partia a barra** numa sessão de voltas iguais (um AMRAP de 14 voltas lia-se como uma régua tracejada) — o vinco mantém a silhueta contínua e continua a separar.
+   - **O pior caso assume-se**: numa sessão de um só desporto com muitas voltas iguais, a fiada mostra tantos vincos quantas as voltas, porque é isso que a sessão é. O que não pode acontecer é o inverso — apagar os vincos e a fiada dizer que houve um bloco só.
+   - **Piso de largura**: 82 % proporção ao tempo + 18 % repartido por igual, para que um bloco de 50 s não desapareça ao lado de um de 10 min.
+   - Os tratamentos comparados e o porquê da escolha estão em [docs/prototipo/fiada.html](prototipo/fiada.html) e na [captura](prototipo/capturas/fiada-tratamentos.png). Um degradé **sem** junta nenhuma foi testado e chumbou: três blocos de força seguidos ficavam uma barra lisa, e a fiada deixava de ser dado.
+2. **Os números** — Archivo Expanded, sempre tabulares, sempre maiores do que se espera.
 3. **O entalhe** — 3 px da cor do desporto na aresta esquerda de tudo o que representa um bloco. É a junta de argamassa vista de lado.
 
 ## 8. Regras de distinção

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bricklap — tratamentos da fiada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Archivo:wdth,wght@125,700;125,800&display=swap" rel="stylesheet">
+<style>
+/* Comparação dos tratamentos da fiada (sessão 13a). O fundador rejeitou a barra
+   de segmentos separados por argamassa: dura, e a parecer uma grelha. A fiada
+   mantém-se como assinatura e como dado, mas passa a contínua e suave.
+   Esta página é o registo da escolha, como direcoes/ foi o da sessão 11. */
+.t-claro { --fundo:#FBF8F4; --sup:#FFFFFF; --sup2:#F2ECE4; --linha:#E6DFD6; --tinta:#16120F; --tinta2:#5A524B; --tinta3:#948A81; --acento-tinta:#9A3122;
+  --junta: rgba(255,253,250,.92); --junta2: rgba(255,253,250,.55); --no: #FFFDFA;
+  --d-forca:#6B4E3D; --d-passadeira:#2F6A94; --d-remo:#1F8079; --d-rua:#4E8A3C; }
+.t-escuro { --fundo:#121010; --sup:#1C1917; --sup2:#272220; --linha:#332D2A; --tinta:#F7F2EC; --tinta2:#B5ABA2; --tinta3:#7A716A; --acento-tinta:#E88073;
+  --junta: rgba(14,12,12,.92); --junta2: rgba(14,12,12,.6); --no: #121010;
+  --d-forca:#C49A82; --d-passadeira:#7FB2D9; --d-remo:#5FBDB4; --d-rua:#8AC176; }
+
+*{box-sizing:border-box}
+body{margin:0;font-family:"Inter",system-ui,sans-serif;background:#DCD5CB;color:#16120F;font-size:14px;line-height:1.35}
+.num{font-family:"Archivo",system-ui;font-variation-settings:"wdth" 125;font-weight:800;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.topo{max-width:1080px;margin:0 auto;padding:22px 20px 6px}
+.topo h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.topo p{margin:4px 0 0;color:#5A524B;max-width:70ch}
+.par{max-width:1080px;margin:0 auto;padding:14px 20px 26px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.painel{background:var(--fundo);color:var(--tinta);border-radius:16px;padding:16px;border:1px solid rgba(0,0,0,.08)}
+.painel > h2{margin:0 0 12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta3);font-weight:700}
+.trat{border-top:1px solid var(--linha);padding:14px 0 2px}
+.trat:first-of-type{border-top:0;padding-top:0}
+.trat h3{margin:0;font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+.trat h3 em{font-style:normal;color:var(--tinta3);font-weight:600;font-size:12.5px;margin-left:6px}
+.trat .desc{margin:2px 0 10px;font-size:12.5px;color:var(--tinta2);max-width:46ch}
+.ctx{margin:0 0 11px}
+.ctx .rot{display:block;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tinta3);font-weight:700;margin-bottom:5px}
+.cartao{background:var(--sup);border:1px solid var(--linha);border-radius:12px;padding:10px 12px}
+.cartao .cab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.cartao .cab b{font-size:13.5px;font-weight:700}
+.cartao .cab span{font-size:15px}
+.serie{display:flex;align-items:center;gap:10px}
+.serie .n{width:22px;height:22px;border-radius:6px;background:var(--sup2);display:grid;place-items:center;font-size:11.5px;flex:none}
+.serie .meio{flex:1;min-width:0}
+.serie .meio small{display:block;font-size:11px;color:var(--tinta2);margin-bottom:4px}
+.serie .tt{font-size:13px}
+
+/* ---- ATUAL: segmentos com 2 px de argamassa (sessão 12) ---- */
+.seg{display:flex;gap:2px;height:8px;align-items:stretch;min-width:0}
+.seg span{border-radius:2px;min-width:3px}
+.seg.alta{height:12px}
+
+/* ---- NOVA: barra contínua de cantos arredondados ---- */
+.fio{position:relative;height:7px;border-radius:999px;overflow:hidden;min-width:0}
+.fio.alta{height:10px}
+.fio i{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--junta);transform:translateX(-.75px)}
+.fio.final i{width:1px;background:var(--junta2);transform:translateX(-.5px)}
+.fio.nos i{top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:999px;background:var(--no);transform:translateX(-2.5px);bottom:auto}
+</style>
+</head>
+<body>
+<div class="topo">
+  <h1>A fiada, suave — três tratamentos</h1>
+  <p>A fiada é a assinatura do Bricklap e é sempre <b>dado</b>: um bloco, uma faixa, largura proporcional ao tempo. O que muda é a forma. Em baixo, os três tratamentos nos sítios reais onde ela aparece, nos dois temas, com os dados do 5×5. A quarta linha de cada painel é o caso difícil: <b>três blocos de força seguidos</b>, todos da mesma cor.</p>
+</div>
+<div class="par">
+  <div class="painel t-claro" id="claro"><h2>Tema claro — consulta</h2></div>
+  <div class="painel t-escuro" id="escuro"><h2>Tema escuro — treino</h2></div>
+</div>
+<script>
+/* O 5×5 real do protótipo: Supino, Passadeira, Remo, Agachamento, Elevações, 5 vezes. */
+const MODELO = [
+  { s: 'forca', d: 85 }, { s: 'passadeira', d: 165 }, { s: 'remo', d: 115 }, { s: 'forca', d: 75 }, { s: 'forca', d: 60 },
+];
+const SESSAO = []; for (let r = 0; r < 5; r++) MODELO.forEach((b) => SESSAO.push({ s: b.s, d: b.d + (r % 3) * 4 }));
+const SERIE = MODELO;
+const HISTORICO = [{ s: 'rua', d: 620 }, { s: 'forca', d: 180 }, { s: 'rua', d: 540 }, { s: 'forca', d: 175 }, { s: 'rua', d: 600 }, { s: 'forca', d: 170 }];
+const IGUAIS = [{ s: 'forca', d: 75 }, { s: 'forca', d: 60 }, { s: 'forca', d: 85 }];
+
+/* Largura proporcional ao tempo, com um piso para nenhum bloco desaparecer:
+   82 % proporção + 18 % repartido por igual. O piso é 18/n do total. */
+function larguras(bs) {
+  const total = bs.reduce((a, b) => a + b.d, 0), igual = 100 / bs.length;
+  return bs.map((b) => 0.82 * (b.d / total * 100) + 0.18 * igual);
+}
+function cor(s) { return `var(--d-${s})`; }
+
+/* Degradé com transição por junta: cada junta esbate no máximo `mistura` pontos
+   percentuais, e nunca mais de 45 % do bloco mais curto que lhe toca. */
+function degrade(bs, ws, mistura) {
+  const p = [`${cor(bs[0].s)} 0%`]; let cum = 0;
+  for (let j = 0; j < bs.length - 1; j++) {
+    cum += ws[j];
+    const b = Math.min(mistura, 0.45 * Math.min(ws[j], ws[j + 1]));
+    p.push(`${cor(bs[j].s)} ${(cum - b).toFixed(2)}%`, `${cor(bs[j + 1].s)} ${(cum + b).toFixed(2)}%`);
+  }
+  p.push(`${cor(bs[bs.length - 1].s)} 100%`);
+  return `linear-gradient(90deg,${p.join(',')})`;
+}
+function marcas(bs, ws, so_iguais) {
+  let cum = 0, out = '';
+  for (let j = 0; j < bs.length - 1; j++) {
+    cum += ws[j];
+    if (so_iguais && bs[j].s !== bs[j + 1].s) continue;
+    out += `<i style="left:${cum.toFixed(2)}%"></i>`;
+  }
+  return out;
+}
+/* Os quatro tratamentos. `alta` = a variante do cronómetro. */
+function atual(bs, alta) {
+  return `<span class="seg${alta ? ' alta' : ''}" style="display:flex">${bs.map((b) => `<span style="background:${cor(b.s)};flex:${b.d}"></span>`).join('')}</span>`;
+}
+function esbatida(bs, alta) {
+  const ws = larguras(bs);
+  return `<span class="fio${alta ? ' alta' : ''}" style="display:block;background:${degrade(bs, ws, 3.5)}"></span>`;
+}
+function junta(bs, alta) {
+  const ws = larguras(bs);
+  return `<span class="fio${alta ? ' alta' : ''}" style="display:block;background:${degrade(bs, ws, 0.9)}">${marcas(bs, ws)}</span>`;
+}
+function nos(bs, alta) {
+  const ws = larguras(bs);
+  return `<span class="fio nos${alta ? ' alta' : ''}" style="display:block;background:${degrade(bs, ws, 2.4)}">${marcas(bs, ws)}</span>`;
+}
+/* 2b: a transição entre cores é que separa os blocos — é o que o brief pede.
+   A junta fica só onde a cor não muda, que é o único sítio onde sem ela se
+   perdia um bloco. Blend mais longo, porque já não tem de competir com a junta. */
+function juntaPrecisa(bs, alta) {
+  const ws = larguras(bs);
+  return `<span class="fio final${alta ? ' alta' : ''}" style="display:block;background:${degrade(bs, ws, 2.2)}">${marcas(bs, ws, true)}</span>`;
+}
+
+const TRATAMENTOS = [
+  { t: 'Atual', n: '(sessão 12)', d: 'Segmentos separados por 2 px de argamassa. É a que o fundador rejeitou: dura, e a parecer uma grelha.', f: atual },
+  { t: '1 — Esbatida', n: '', d: 'Barra contínua de cantos arredondados; as cores esbatem uma na outra ao longo de 3,5 %. Nada separa blocos seguidos da mesma cor.', f: esbatida },
+  { t: '2 — Junta', n: '', d: 'Contínua e arredondada, com a transição curta e uma junta de 1,5 px da cor do fundo em cada marca. A argamassa reduzida a um sussurro, sem buraco.', f: junta },
+  { t: '3 — Nós', n: '', d: 'Contínua, com transição longa e um nó redondo de 5 px em cada marca. Cada nó é literalmente uma Marca.', f: nos },
+  { t: '2b — Junta só onde é precisa', n: 'a escolhida', d: 'Como a 2, mas a transição entre cores é que separa os blocos — a junta fica só onde a cor não muda. E é um vinco de 1 px a 55 %, não um corte: com voltas iguais, um corte partia a barra.', f: juntaPrecisa },
+];
+
+function contexto(rot, html) { return `<div class="ctx"><span class="rot">${rot}</span>${html}</div>`; }
+function painel(el) {
+  el.insertAdjacentHTML('beforeend', TRATAMENTOS.map((tr) => `
+    <div class="trat">
+      <h3>${tr.t}<em>${tr.n}</em></h3>
+      <div class="desc">${tr.d}</div>
+      ${contexto('Gravação · 25 blocos, a sessão até agora', tr.f(SESSAO, true))}
+      ${contexto('Cartão do histórico · 6 blocos', `<div class="cartao"><div class="cab"><b>Corrida + força</b><span class="num">31:05</span></div>${tr.f(HISTORICO)}</div>`)}
+      ${contexto('Linha da tabela de séries · 5 blocos', `<div class="serie"><span class="n num">3</span><span class="meio"><small>Série 3</small>${tr.f(SERIE)}</span><span class="tt num">8:20</span></div>`)}
+      ${contexto('Caso difícil · três blocos de força seguidos', tr.f(IGUAIS))}
+    </div>`).join(''));
+}
+painel(document.getElementById('claro'));
+painel(document.getElementById('escuro'));
+</script>
+</body>
+</html>

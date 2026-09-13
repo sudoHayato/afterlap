@@ -6,10 +6,10 @@
 <title>Bricklap — protótipo dos nove ecrãs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Anybody:wdth,wght@125,600;125,700;125,800;125,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Archivo:wdth,wght@125,600;125,700;125,800;125,900&display=swap" rel="stylesheet">
 <style>
 /* =========================================================================
-   BRICKLAP — sistema visual (sessão 12). O documento vivo é docs/DESIGN.md;
+   BRICKLAP — sistema visual (sessões 12 e 13a). O documento vivo é docs/DESIGN.md;
    este ficheiro é a sua primeira aplicação, nos nove ecrãs do protótipo.
 
    Dois temas de superfície (claro / escuro) e três presets que os combinam:
@@ -20,10 +20,11 @@
    O tema é escolha do atleta (decisão do fundador, sessão 12). Sem
    personalização livre de cores ou fontes.
 
-   Identidade recorrente: (1) a FIADA — barra segmentada, um segmento por
-   bloco, largura proporcional ao tempo, 2 px de argamassa entre segmentos;
-   (2) os NÚMEROS em Anybody Expanded, de formas quadradas; (3) o ENTALHE —
-   barra de 3 px da cor do desporto na aresta esquerda de tudo o que é bloco.
+   Identidade recorrente: (1) a FIADA — barra fina contínua de cantos
+   arredondados, um troço por bloco, largura proporcional ao tempo, as cores a
+   passar umas para as outras e uma junta ténue em cada marca (sessão 13a);
+   (2) os NÚMEROS em Archivo Expanded, tabulares; (3) o ENTALHE — barra de
+   3 px da cor do desporto na aresta esquerda de tudo o que é bloco.
    ========================================================================= */
 
 /* ---------- Tokens: tema claro ---------- */
@@ -41,6 +42,7 @@
   --acento-fundo: #F9EBE9;
   --sobre-acento: #FFFFFF;
   --veu: rgba(22, 18, 15, .55);
+  --junta: rgba(255, 253, 250, .55);
   --sombra: 0 1px 2px rgba(22, 18, 15, .05), 0 10px 28px rgba(22, 18, 15, .07);
   --sombra-marca: 0 8px 24px rgba(176, 58, 42, .26);
   --d-forca: #6B4E3D;
@@ -66,6 +68,7 @@
   --acento-fundo: #341714;
   --sobre-acento: #FFFFFF;
   --veu: rgba(0, 0, 0, .62);
+  --junta: rgba(14, 12, 12, .6);
   --sombra: 0 1px 2px rgba(0, 0, 0, .45), 0 10px 28px rgba(0, 0, 0, .38);
   --sombra-marca: 0 8px 24px rgba(209, 79, 61, .22);
   --d-forca: #C49A82;
@@ -79,7 +82,7 @@
 
 :root {
   --fonte: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --fonte-num: "Anybody", "Inter", system-ui, sans-serif;
+  --fonte-num: "Archivo", "Inter", system-ui, sans-serif;
   /* espaçamento */
   --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 20px; --e6: 24px; --e7: 32px;
   /* raios */
@@ -101,7 +104,7 @@ body {
 button { font: inherit; color: inherit; margin: 0; }
 input, textarea { font: inherit; color: inherit; }
 
-/* Números: a assinatura tipográfica. Anybody Expanded, tabular. */
+/* Números: a assinatura tipográfica. Archivo Expanded, tabular. */
 .num {
   font-family: var(--fonte-num);
   font-variation-settings: "wdth" 125;
@@ -215,10 +218,13 @@ body.solo .telemovel { width: 390px; height: 100vh; border-radius: 0; }
 .entalhe::before { content: ""; position: absolute; left: 0; top: var(--e3); bottom: var(--e3); width: 3px; border-radius: 0 2px 2px 0; background: var(--d); }
 .lista { display: grid; gap: var(--e2); }
 
-/* --------- FIADA: a assinatura. Um segmento por bloco, 2 px de argamassa --------- */
-.fiada { display: flex; gap: 2px; height: 8px; align-items: stretch; min-width: 0; }
-.fiada span { background: var(--d); border-radius: 2px; min-width: 3px; }
-.fiada.alta { height: 12px; }
+/* --------- FIADA: a assinatura. Barra contínua de cantos arredondados, um
+   troço por bloco; são as cores a passar umas para as outras que os separam.
+   A junta (1 px, um vinco da cor do fundo) aparece só onde a cor não muda:
+   um corte mais forte partia a barra numa sessão de voltas iguais. --------- */
+.fiada { position: relative; display: block; height: 7px; border-radius: var(--r-pill); overflow: hidden; min-width: 0; }
+.fiada.alta { height: 10px; }
+.fiada i { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--junta); transform: translateX(-.5px); }
 
 /* --------- Chips --------- */
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -773,9 +779,30 @@ function viewTabs() {
   const t = (id, label, icone) => `<button class="${S.tab === id ? 'ativo' : ''}" data-act="tab" data-id="${id}">${ico(icone)}<span>${label}</span></button>`;
   return `<nav class="tabs">${t('inicio', 'Início', 'inicio')}${t('historico', 'Histórico', 'historico')}${t('modelos', 'Modelos', 'modelos')}</nav>`;
 }
+/* A FIADA (redesenhada na sessão 13a). Um troço por bloco, largura proporcional
+   ao tempo, numa barra fina contínua: são as CORES a passar umas para as outras
+   que separam os blocos, não a argamassa. A junta — 1,5 px da cor do fundo —
+   aparece só onde a cor NÃO muda (força a seguir a força), que é o único sítio
+   onde sem ela se perdia um bloco. Piso de largura: 82 % proporção + 18 %
+   repartido por igual, para nenhum troço desaparecer numa sessão de 25 blocos.
+   COR_D espelha o bloco `.d-*` do CSS, lá em cima. */
+const COR_D = { strength: 'forca', treadmill: 'passadeira', rowing: 'remo', pool: 'piscina', run: 'rua', walk: 'rua', bike: 'bicicleta', transition: 'transicao' };
 function fiadaDe(blocos, alta) {
   if (!blocos.length) return '';
-  return `<span class="fiada${alta ? ' alta' : ''}">${blocos.map((b) => `<span class="d-${b.sport}" style="flex:${Math.max(1, dur(b))}"></span>`).join('')}</span>`;
+  const tok = (b) => COR_D[b.sport] || 'transicao';
+  const durs = blocos.map((b) => Math.max(1, dur(b) || 0));
+  const total = durs.reduce((a, d) => a + d, 0), igual = 100 / blocos.length;
+  const ws = durs.map((d) => 0.82 * (d / total * 100) + 0.18 * igual);
+  const paradas = [`var(--d-${tok(blocos[0])}) 0%`];
+  let cum = 0, juntas = '';
+  for (let j = 0; j < blocos.length - 1; j++) {
+    cum += ws[j];
+    const m = Math.min(2.2, 0.45 * Math.min(ws[j], ws[j + 1]));
+    paradas.push(`var(--d-${tok(blocos[j])}) ${(cum - m).toFixed(2)}%`, `var(--d-${tok(blocos[j + 1])}) ${(cum + m).toFixed(2)}%`);
+    if (tok(blocos[j]) === tok(blocos[j + 1])) juntas += `<i style="left:${cum.toFixed(2)}%"></i>`;
+  }
+  paradas.push(`var(--d-${tok(blocos[blocos.length - 1])}) 100%`);
+  return `<span class="fiada${alta ? ' alta' : ''}" style="background:linear-gradient(90deg,${paradas.join(',')})">${juntas}</span>`;
 }
 function render() {
   const tema = temaDoEcra(S.screen), ecra = $('#ecra');
@@ -810,7 +837,7 @@ function viewInicio() {
         <span style="color:var(--acento-tinta);font-weight:800;font-size:14px">Iniciar</span>
       </div>
       <div style="font-size:13px;color:var(--tinta2);margin-top:2px">${m.hiit ? 'Só marcas · preenche-se no fim' : `${m.series} séries · ${m.blocks.map((b) => b.name).join(' · ')}`}</div>
-      <div style="margin-top:12px">${m.hiit ? `<span class="fiada">${'<span class="d-strength" style="flex:1"></span>'.repeat(8)}</span>` : `<span class="fiada">${m.blocks.map((b) => `<span class="d-${b.sport}" style="flex:1"></span>`).join('')}</span>`}</div>
+      <div style="margin-top:12px">${m.hiit ? fiadaDe(Array.from({ length: 8 }, () => ({ sport: 'strength' }))) : fiadaDe(m.blocks)}</div>
     </div>`;
   return `
   <div class="cabeca">
@@ -1051,7 +1078,7 @@ function viewModelos() {
     ${MODELS.map((m) => `<div class="cartao entalhe d-${m.blocks[0].sport}">
       <div style="display:flex;justify-content:space-between;align-items:baseline"><h3 style="margin:0;font-size:18px;font-weight:800">${esc(m.name)}</h3><button class="botao fantasma pequeno" data-act="edit-model" data-id="${m.id}">${ico('editar', 'p')}Editar</button></div>
       <div style="font-size:13px;color:var(--tinta2);margin-top:2px">${m.hiit ? 'Só marcas · preenche-se no fim' : `${m.series} séries · ${m.blocks.length} blocos`}</div>
-      <div style="margin-top:12px">${`<span class="fiada">${m.blocks.map((b) => `<span class="d-${b.sport}" style="flex:1"></span>`).join('')}</span>`}</div>
+      <div style="margin-top:12px">${fiadaDe(m.blocks)}</div>
       <div style="margin-top:14px"><button class="botao acento pequeno largo" data-act="start-model" data-id="${m.id}">${ico('marca', 'p')}Iniciar</button></div>
     </div>`).join('')}
     <button class="botao largo" data-act="new-model">${ico('mais')}Novo modelo</button>
@@ -1105,7 +1132,7 @@ function viewDefinicoes() {
       <div class="cartao" style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700">Métrico</span><span style="color:var(--tinta3);font-size:13px">km, m, kg</span></div>
     </div>
     <div class="secao"><div class="titulo"><h3>Sobre</h3></div>
-      <div class="notas">Protótipo da sessão 12. Nove ecrãs, três temas. Não é a app: nada fica guardado.</div>
+      <div class="notas">Protótipo da sessão 13a. Nove ecrãs, três temas. Não é a app: nada fica guardado.</div>
     </div>
   </div>`;
 }
@@ -1153,7 +1180,7 @@ function renderGuia() {
   const atual = guiaAtual(), toques = TOQUES[atual] || [];
   $('#guia').innerHTML = `
     <h1>Bricklap · nove ecrãs</h1>
-    <p class="sub">Protótipo da sessão 12: o fluxo aprovado na sessão 10 com o sistema visual novo. <b>Premir</b> = manter meio segundo. Nada fica guardado.</p>
+    <p class="sub">Protótipo da sessão 13a: o fluxo aprovado na sessão 10, com o sistema visual da sessão 12 e a fiada e a fonte acertadas. <b>Premir</b> = manter meio segundo. Nada fica guardado.</p>
     <h2>Tema (como o atleta escolhe)</h2>
     <div class="temas">${TEMAS.map((t) => `<button class="${S.tema === t.id ? 'ativo' : ''}" data-tema="${t.id}">${t.nome}${t.pre ? ' ★' : ''}</button>`).join('')}</div>
     <h2>Ecrãs</h2>
@@ -1280,6 +1307,16 @@ setInterval(() => {
   const q = new URLSearchParams(location.search);
   const tema = q.get('tema');
   if (tema && TEMAS.some((t) => t.id === tema)) S.tema = tema;
+  /* Comparação de fontes (sessão 13a): ?fonte=anybody repõe a candidata da
+     sessão 12 no ecrã real, para se compararem lado a lado e não num espécime
+     isolado. A fonte do produto é a Archivo Expanded, carregada no <head>. */
+  if (q.get('fonte') === 'anybody') {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@125,600;125,700;125,800;125,900&display=swap';
+    document.head.appendChild(l);
+    document.documentElement.style.setProperty('--fonte-num', '"Anybody", "Inter", system-ui, sans-serif');
+  }
   if (q.get('solo')) document.body.classList.add('solo');
   const e = q.get('ecra'), item = ECRAS.find((x) => x.id === e);
   if (item) item.go();

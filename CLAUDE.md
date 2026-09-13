@@ -12,7 +12,9 @@ Na documentação, decisões e aprovações são "do fundador"; orientação de 
 
 ## Ler primeiro
 
-1. `README.md` → `STATUS.md` → `ARCHITECTURE.md` → `ROADMAP.md`.
+**Nenhuma sessão começa sem ler `STATUS.md`, `ROADMAP.md` e `docs/VISAO.md`.** É a primeira coisa a fazer, antes de qualquer trabalho, e o relatório da sessão **abre com uma secção "Estado lido"** a resumir em cinco linhas onde o projeto está segundo esses ficheiros. Se o que lá está contradisser o brief, **parar e perguntar ao CTO** em vez de decidir.
+
+1. `STATUS.md` → `ROADMAP.md` → `docs/VISAO.md` (obrigatórios), depois `README.md` e `ARCHITECTURE.md`.
 2. O relatório mais recente em `docs/reports/`.
 3. `packages/engine/src/index.ts` (API do motor) e `git log --oneline | head -30`.
 
@@ -57,7 +59,8 @@ Uma tarefa só está feita quando:
 2. `npm run typecheck` verde em todos os workspaces.
 3. `npm run build:web` verde.
 4. `npm run export:android -w @bricklap/mobile` verde (Metro resolve o monorepo).
-5. `STATUS.md` atualizado e relatório da sessão em `docs/reports/AAAA-MM-DD-sessao-NN.md` (feito, por fazer, decisões, dúvidas para o CTO, próximos passos).
+5. `STATUS.md` atualizado e relatório da sessão em `docs/reports/AAAA-MM-DD-sessao-NN.md`, **a abrir com "Estado lido"** e depois feito, por fazer, decisões, dúvidas para o CTO, próximos passos.
+5b. **`ROADMAP.md` reflete as decisões tomadas na sessão.** Nenhuma sessão termina com uma decisão do fundador só no relatório: o roadmap é o que a sessão seguinte lê.
 6. Nenhuma dependência nova sem justificação escrita.
 7. Textos legais intocados (salvo pedido explícito do fundador).
 8. **Branch de trabalho publicado no remoto** (`git push -u origin <branch>`), com o commit local confirmado igual ao remoto. Regra permanente: nenhuma sessão termina sem este push.
