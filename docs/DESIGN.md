@@ -45,7 +45,7 @@ Dois conjuntos de tokens. Nenhum componente usa um hex diretamente: usa sempre o
 | `acento-tinta` | `#9A3122` | acento em **texto** sobre fundo claro |
 | `acento-fundo` | `#F9EBE9` | fundo do que está por preencher |
 | `sobre-acento` | `#FFFFFF` | texto sobre o acento |
-| `junta` | `rgba(255,253,250,.72)` | o vinco da fiada |
+| `junta` | `rgba(255,253,250,.55)` | o vinco da fiada |
 
 ### Tema escuro
 
@@ -63,7 +63,7 @@ Dois conjuntos de tokens. Nenhum componente usa um hex diretamente: usa sempre o
 | `acento-tinta` | `#E88073` | acento em texto sobre fundo escuro |
 | `acento-fundo` | `#341714` | por preencher |
 | `sobre-acento` | `#FFFFFF` | texto sobre o acento |
-| `junta` | `rgba(14,12,12,.76)` | o vinco da fiada |
+| `junta` | `rgba(14,12,12,.6)` | o vinco da fiada |
 
 O acento é **vermelho-tijolo (terracota)**, matiz 7°, ligado ao nome do produto. O `#D14F3D` do tema escuro é o mesmo matiz e a mesma saturação do `#B03A2A`, com a luminosidade subida para manter o contraste: é o **mesmo acento**, calibrado, não uma segunda cor.
 
@@ -84,7 +84,7 @@ Contrastes medidos (WCAG 2.1, sobre o `fundo` do respetivo tema):
 
 ### Cor por desporto
 
-Identifica, não decora, e aparece em **dois sítios apenas**: o **ícone** do desporto e o troço de **fiada**. Nunca como fundo de um bloco, nunca em texto, e — desde a sessão 13b — **nunca como barra vertical na lateral de um cartão**: o ícone já identifica o bloco, e a barra era decoração a fingir que era dado (decisão do fundador, com o CTO de acordo).
+Identifica, não decora, e aparece em **dois sítios apenas**: o **ícone** do desporto, com a cor cheia, e o troço de **fiada**, a 84 % sobre o fundo do tema. A legenda de um resumo usa os **ícones**, não quadradinhos de cor (sessão 13c). Nunca como fundo de um bloco, nunca em texto, e — desde a sessão 13b — **nunca como barra vertical na lateral de um cartão**: o ícone já identifica o bloco, e a barra era decoração a fingir que era dado (decisão do fundador, com o CTO de acordo).
 
 | Desporto | Claro | Escuro |
 |---|---|---|
@@ -151,7 +151,16 @@ Não usar ícone para: o nome de um exercício de força (o nome é o nome), o e
 
 **Botão.** Altura 56 (44 em consulta), raio 12, contorno de 1,5 px em `linha`, fundo `sup`. Variantes: `acento` (fundo de acento, texto branco) — no máximo **um** por ecrã; `fantasma` (sem fundo nem contorno, texto `tinta2`) para ações de saída; `perigo` (texto `acento-tinta`) para Parar e Apagar. Ícone à esquerda do rótulo, 22 px.
 
-**Botão Marca.** 108 px de altura, largura total, raio 20, fundo de acento, sombra de acento a 26 %. Rótulo a 29/800 com a bandeira, e uma linha de 12,5 px por baixo a dizer o que faz o toque longo e qual é o bloco seguinte. Toque = marca; **premir 0,5 s** = marca + ficha, com uma barra branca a 16 % a encher durante o gesto. Parar usa o mesmo gesto a 0,8 s, com a barra em acento a 16 %.
+**Botão Marca.** O gesto central da app, redesenhado na sessão 13c. **Nada de instruções lá dentro**: um botão que se tem de explicar por escrito já falhou, e quem o toca está a suar, a tremer e a olhar de relance.
+
+- **Silhueta própria**, e não um retângulo de cantos iguais: 110 px de altura, largura total, raios **8 px à esquerda e 30 px à direita**. A aresta cortada encosta ao que já está construído; a aberta é por onde entra o bloco seguinte. É a única forma no sistema que não se repete em mais lado nenhum — e continua a não ser redonda, que o §8 proíbe.
+- **Profundidade real**: o casco é `acento-premido` e a face é `acento`, assente 6 px acima do fundo do casco. Ao premir a face desce para `top: 4px` e o leito encolhe de 6 para 2 px, em 90 ms. O que muda é **geometria**, não cor: duas terracotas vizinhas são a mesma cor ao sol, e o dedo tapa o centro do botão mas não a aresta de baixo.
+- **Indicador do gesto longo**: um anel de 3 px em branco a 92 %, recuado 10 px, com os mesmos raios da silhueta, desenhado por `clip-path` da esquerda para a direita ao longo dos **500 ms** exatos do premir. Em repouso está inteiramente recortado — **não existe**, e o botão fica com uma palavra e uma bandeira e mais nada.
+- **Rótulo alinhado à esquerda**, 29/800 com 26 px de recuo: o polegar direito cai no terço direito do botão, e a palavra nunca fica debaixo do dedo.
+- **Alvo**: 110 px de altura por toda a largura, quase o dobro do mínimo de 56.
+- Parar mantém o gesto de 0,8 s com a barra em acento a 16 %; Mudar e Parar mantêm-se como estão.
+
+**"A seguir".** Linha própria **acima** do botão, dentro de `.acoes`: rótulo `A SEGUIR` em maiúsculas a 11/700 em `tinta3`, e o nome do bloco seguinte a 17/800 em `tinta`, truncado com reticências. Não é um cartão e não leva acento — o ecrã só tem um bloco de acento e é o Marca. Quando não há bloco seguinte (HIIT, sessão sem modelo) a linha não se desenha: não se põe lá um traço à espera de texto.
 
 **Cartão.** Fundo `sup`, contorno `linha`, raio 16, sombra dupla suave, folga interior de 16. **Sem barra de cor na lateral** — um cartão que representa um bloco identifica-se pelo ícone do desporto, à esquerda do nome, e por mais nada.
 
@@ -175,13 +184,26 @@ O fundo tingido mantém-se de propósito: o resumo é uma pilha de cartões `sup
 
 O que faz um ecrã ser do Bricklap e de mais nenhuma app, por ordem de importância:
 
-1. **A fiada** — uma **barra fina contínua de cantos arredondados**, **5 px** (7 quando é o total da sessão), desenhada a **72 % de opacidade** e sem contorno nem sombra, um troço por bloco, largura proporcional ao tempo, cor do desporto. É **contexto, não protagonista**: afinada na sessão 13b porque ainda se lia como um gráfico de barras. Aparece: sob o cronómetro durante a gravação (a sessão até agora, a crescer com cada marca), em cada linha da tabela de séries, em cada cartão do histórico e em cada cartão de modelo. É o mesmo objeto nos quatro sítios, e é sempre **dado**, nunca ornamento: nunca aparece sozinha sem rótulo nem tempo ao lado — foi isso que afundou a "parede" da sessão 10.
+1. **A fiada** — uma **barra fina contínua de cantos arredondados**, **6 px** (9 quando é o total da sessão), sem contorno nem sombra, um troço por bloco, largura proporcional ao tempo, com a cor do desporto a **84 % sobre o fundo do tema**. É **contexto, não protagonista** — mas continua a ser **dado**, e o dado manda: a versão da sessão 13b, a 5 px e 72 % de opacidade, ficou ilegível e foi revertida na 13c. Aparece: sob o cronómetro durante a gravação (a sessão até agora, a crescer com cada marca), em cada linha da tabela de séries, em cada cartão do histórico e em cada cartão de modelo. É o mesmo objeto nos quatro sítios, e é sempre **dado**, nunca ornamento: nunca aparece sozinha sem rótulo nem tempo ao lado — foi isso que afundou a "parede" da sessão 10.
 
    **Como se desenha** (redesenhada na sessão 13a; a versão da sessão 12 eram segmentos separados por 2 px de argamassa, que o fundador rejeitou por dura e por parecer uma grelha):
    - **São as cores que separam os blocos**, não a argamassa: entre dois troços de cor diferente há uma transição curta (no máximo 2,2 pontos percentuais da largura da barra, e nunca mais de 45 % do troço mais curto que lhe toca).
    - **A junta** — **1 px** do token `junta`, um **vinco** da cor do fundo e não um corte — aparece **só onde a cor não muda**, que é o único sítio onde sem ela se perdia um bloco (força a seguir a força). É a exceção, não a regra: numa sessão de 25 blocos há três ou quatro juntas, não vinte e quatro. A 1,5 px e opaca, como ficou na primeira tentativa desta sessão, a junta **partia a barra** numa sessão de voltas iguais (um AMRAP de 14 voltas lia-se como uma régua tracejada) — o vinco mantém a silhueta contínua e continua a separar.
    - **O pior caso assume-se**: numa sessão de um só desporto com muitas voltas iguais, a fiada mostra tantos vincos quantas as voltas, porque é isso que a sessão é. O que não pode acontecer é o inverso — apagar os vincos e a fiada dizer que houve um bloco só.
    - **Piso de largura**: 82 % proporção ao tempo + 18 % repartido por igual, para que um bloco de 50 s não desapareça ao lado de um de 10 min.
+   - **A mistura entre cores é curta**: `min(0,9 pontos percentuais; 18 % do troço mais curto que lhe toca)`. Este valor não é gosto, é o que o critério de aceitação obriga (ver abaixo). A fórmula anterior — `min(2,2 pp; 45 %)`, em vigor desde a sessão 13a — deixava **0,9 px de cor cheia** no troço mais estreito de uma sessão de 25 blocos; com 18 % sobram **5,8 px no pior troço e 10,0 px em média**.
+   - **Saturação: 84 % da cor do desporto misturada com o `fundo` do tema** (`color-mix(in srgb, var(--d-X) 84%, var(--fundo))`), e **nunca `opacity`** — a opacidade apaga também o vinco, e foi o que borrou a fiada na sessão 13b. O ícone do mesmo desporto mantém a **cor cheia**: é o ícone que identifica, a fiada dá a proporção. Valores a usar na app, onde não há `color-mix`:
+
+     | Desporto | Fiada, claro | Fiada, escuro |
+     |---|---|---|
+     | Força | `#82695A` | `#A88470` |
+     | Passadeira | `#5081A3` | `#6E98B9` |
+     | Remo / Natação | `#42938D` | `#53A19A` |
+     | Rua | `#6A9C59` | `#77A566` |
+     | Bicicleta | `#AA8140` | `#B99552` |
+     | Transição | `#908A81` | `#918A83` |
+
+   - **Critério de aceitação, verificável em captura**: numa fiada de **25 blocos** à largura da gravação (350 px), tem de conseguir contar-se quantos troços há de cada desporto — no 5×5, **15 de força, 5 de passadeira e 5 de remo**. Se não se conseguir, a fiada está errada, por mais discreta que pareça. Qualquer mudança de altura, saturação ou raio passa por este teste antes de entrar.
    - **Sessões de um só desporto com voltas iguais: a fiada fica** (decisão do CTO, sessão 13b). Num AMRAP de 14 voltas a fiada mostra 14 troços e lê-se rítmica — a dúvida levantada na sessão 13a. Não se esconde: quantas voltas houve e quanto durou cada uma é informação útil, e o texto sozinho ("14 voltas") não a dá. Fica com o vinco suave e assume-se.
    - Os tratamentos comparados e o porquê da escolha estão em [docs/prototipo/fiada.html](prototipo/fiada.html) e na [captura](prototipo/capturas/fiada-tratamentos.png). Um degradé **sem** junta nenhuma foi testado e chumbou: três blocos de força seguidos ficavam uma barra lisa, e a fiada deixava de ser dado.
 2. **Os números** — Archivo Expanded, sempre tabulares, sempre maiores do que se espera.
